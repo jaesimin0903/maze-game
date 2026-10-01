@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "instrumentation.ts",
+    "vitest.config.ts",
+    "app/api/**/*.ts",
+    "src/server/**/*.ts",
+    "test/server/**/*.ts",
+    "test/integration/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

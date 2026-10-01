@@ -1,0 +1,40 @@
+{
+  "name": "maze-game",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.1",
+  "engines": {
+    "node": ">=25.0.0"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck && tsc --noEmit -p tsconfig.json",
+    "test:integration": "pnpm --filter @maze/web test:integration",
+    "abi:check": "tsx scripts/abi-check.ts",
+    "ownership:check": "tsx scripts/ownership-check.ts",
+    "tuning:build": "tsx scripts/tuning-build.ts",
+    "tuning:check": "tsx scripts/tuning-check.ts",
+    "tuning:apply": "tsx scripts/tuning-apply.ts",
+    "dev:up": "bash scripts/dev-up.sh",
+    "dev:down": "bash scripts/dev-down.sh",
+    "start:web": "if [ -n \"${MAZE_ALLOW_TEST_HOOKS:-}${MAZE_TEST_SEED_SECRET:-}${MAZE_TUNING_FIXTURE:-}\" ]; then echo 'start:web: refusing to start, a test-hook flag is set in the environment' >&2; exit 1; fi; pnpm --filter @maze/web start",
+    "sim:bench": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js bench",
+    "sim:exact": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js exact",
+    "sim:calibrate": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js calibrate",
+    "sim:certify": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js certify",
+    "sim:sensitivity": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js sensitivity",
+    "tune": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js tune",
+    "e2e:aside": "bash scripts/e2e-aside.sh",
+    "audit:exploit": "tsx scripts/audit-check.ts",
+    "report:check": "tsx scripts/report-check.ts",
+    "verify:all": "bash scripts/verify-all.sh"
+  },
+  "devDependencies": {
+    "@maze/shared": "workspace:*",
+    "@noble/hashes": "2.4.0",
+    "@types/node": "25.9.9",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "viem": "2.57.2"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "app/layout.tsx",
+    "app/page.tsx",
+    "app/verify/**/*.ts",
+    "app/verify/**/*.tsx",
+    "src/client/**/*.ts",
+    "src/client/**/*.tsx",
+    "test/client/**/*.ts",
+    "test/client/**/*.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

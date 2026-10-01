@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+.next*/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# local runtime state (generated)
+deployments/
+.data*/
+*.log
+*.pid
+
+# environment files (.env.example is the only tracked one)
+.env
+.env.*
+!.env.example
+
+# tooling
+coverage/
+.DS_Store
+.omc/*
+!.omc/skills/

@@ -1,0 +1,156 @@
+{
+  "description": "Owned paths per stream and the streams active in each phase (plan 8.1, 8.4, 8.5). Read by scripts/ownership-check.ts. Globs: ** = any depth, * = within one path segment. 'except' removes paths from a stream.",
+  "streams": {
+    "orchestrator": {
+      "paths": [
+        "package.json",
+        "pnpm-workspace.yaml",
+        "pnpm-lock.yaml",
+        "tsconfig.base.json",
+        "tsconfig.json",
+        ".gitignore",
+        ".env.example",
+        "packages/shared/package.json",
+        "packages/shared/tsconfig.json",
+        "packages/shared/vitest.config.ts",
+        "packages/sim/package.json",
+        "packages/sim/tsconfig.json",
+        "packages/sim/vitest.config.ts",
+        "packages/sim/tsup.config.ts",
+        "apps/web/package.json",
+        "apps/web/tsconfig.json",
+        "apps/web/tsconfig.server.json",
+        "apps/web/tsconfig.client.json",
+        "apps/web/next.config.mjs",
+        "apps/web/vitest.config.ts",
+        "contracts/foundry.toml",
+        "contracts/remappings.txt",
+        "contracts/lib/**",
+        "packages/shared/src/types.ts",
+        "packages/shared/src/api.ts",
+        "packages/shared/src/abi.ts",
+        "packages/shared/src/eip712.ts",
+        "packages/shared/test/fixtures/**",
+        "scripts/ports.sh",
+        "scripts/abi-check.ts",
+        "scripts/ownership-check.ts",
+        "scripts/ownership.json"
+      ]
+    },
+    "phase0": {
+      "paths": [
+        "packages/shared/src/index.ts",
+        "packages/shared/src/tuning.json",
+        "apps/web/app/api/health/route.ts",
+        "apps/web/app/layout.tsx",
+        "apps/web/app/page.tsx"
+      ]
+    },
+    "WS-A": {
+      "paths": [
+        "packages/shared/src/rng.ts",
+        "packages/shared/src/maze.ts",
+        "packages/shared/src/hash.ts",
+        "packages/shared/src/economics.ts",
+        "packages/shared/src/tuning.ts",
+        "packages/shared/src/replay.ts",
+        "packages/shared/src/verify.ts",
+        "packages/shared/src/index.ts",
+        "packages/shared/test/**",
+        "scripts/tuning-build.ts"
+      ],
+      "except": ["packages/shared/test/fixtures/**"]
+    },
+    "WS-B": {
+      "paths": ["contracts/src/**", "contracts/test/**"]
+    },
+    "WS-C": {
+      "paths": [
+        "apps/web/src/server/**",
+        "apps/web/app/api/**",
+        "apps/web/instrumentation.ts",
+        "apps/web/test/server/**",
+        "apps/web/test/integration/**",
+        "scripts/deploy-local.ts",
+        "scripts/reclaim.sh"
+      ]
+    },
+    "WS-D": {
+      "paths": [
+        "apps/web/app/layout.tsx",
+        "apps/web/app/page.tsx",
+        "apps/web/app/globals.css",
+        "apps/web/app/verify/**",
+        "apps/web/src/client/**",
+        "apps/web/test/client/**"
+      ]
+    },
+    "WS-E": {
+      "paths": ["packages/sim/**"],
+      "except": [
+        "packages/sim/package.json",
+        "packages/sim/tsconfig.json",
+        "packages/sim/vitest.config.ts",
+        "packages/sim/tsup.config.ts"
+      ]
+    },
+    "phase3": {
+      "paths": [
+        "scripts/dev-up.sh",
+        "scripts/dev-down.sh",
+        "scripts/verify-all.sh",
+        "scripts/tuning-check.ts",
+        "scripts/tuning-apply.ts",
+        "scripts/audit-check.ts",
+        "scripts/report-check.ts"
+      ]
+    },
+    "WS-F": {
+      "paths": ["e2e/aside/**", "scripts/e2e-aside.sh"]
+    },
+    "WS-F-testability": {
+      "paths": [
+        "apps/web/src/client/**",
+        "apps/web/app/page.tsx",
+        "apps/web/app/layout.tsx",
+        "apps/web/app/verify/**"
+      ]
+    },
+    "WS-G": {
+      "paths": [
+        "docs/exploit-audit.md",
+        "apps/web/src/server/**",
+        "apps/web/app/api/**",
+        "apps/web/test/server/**",
+        "contracts/src/**",
+        "contracts/test/**"
+      ]
+    },
+    "WS-H": {
+      "paths": ["packages/sim/**", "docs/tuning-report.md"],
+      "except": [
+        "packages/sim/package.json",
+        "packages/sim/tsconfig.json",
+        "packages/sim/vitest.config.ts",
+        "packages/sim/tsup.config.ts"
+      ]
+    },
+    "phase5": {
+      "paths": [
+        "packages/shared/src/tuning.json",
+        "docs/spec-deviations.md",
+        "docs/final-report.md",
+        "README.md"
+      ]
+    }
+  },
+  "phases": {
+    "0": ["orchestrator", "phase0"],
+    "1": ["WS-A", "WS-B"],
+    "2": ["WS-C", "WS-D", "WS-E"],
+    "3": ["phase3", "WS-A", "WS-B", "WS-C", "WS-D", "WS-E"],
+    "4a": ["WS-F", "WS-G", "WS-H"],
+    "4b": ["WS-F", "WS-F-testability", "WS-H"],
+    "5": ["phase5", "WS-F", "WS-H"]
+  }
+}

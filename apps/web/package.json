@@ -1,0 +1,31 @@
+{
+  "name": "@maze/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit -p tsconfig.server.json && tsc --noEmit -p tsconfig.client.json",
+    "test": "sh -c 'if [ \"${1:-}\" = \"--\" ]; then shift; fi; case \"${1:-}\" in server|client) project=\"$1\"; shift; exec vitest run --project \"$project\" \"$@\" ;; *) exec vitest run --project server --project client \"$@\" ;; esac' sh",
+    "test:integration": "vitest run --project integration"
+  },
+  "dependencies": {
+    "@maze/shared": "workspace:*",
+    "@noble/hashes": "2.4.0",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "viem": "2.57.2"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "25.9.9",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "happy-dom": "20.14.5",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

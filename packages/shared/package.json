@@ -1,0 +1,26 @@
+{
+  "name": "@maze/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./tuning.json": "./src/tuning.json",
+    "./fixtures/tuning.fixture.json": "./test/fixtures/tuning.fixture.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.4.0",
+    "viem": "2.57.2"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.9",
+    "happy-dom": "20.14.5",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

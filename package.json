@@ -23,6 +23,7 @@
     "sim:calibrate": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js calibrate",
     "sim:certify": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js certify",
     "sim:sensitivity": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js sensitivity",
+    "sim:stats": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js stats",
     "tune": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js tune",
     "e2e:aside": "bash scripts/e2e-aside.sh",
     "audit:exploit": "tsx scripts/audit-check.ts",

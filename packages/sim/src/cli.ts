@@ -9,6 +9,8 @@
 //   certify      [--table <file>] [--tiers 0,1,2] [--check]
 //   tune         [--report-out <file>] [--sizes 5,7,10]
 //   sensitivity
+//   stats        [--table <file>] [--compare <file>] [--tier all|0,1,2] [--bots all|<name>,..] [--games <n>]
+//                [--seed <n>] [--sessions <n>] [--bankroll <bets>] [--out <dir>] [--open]
 //
 //   common: --profile production|smoke   --workers <n> (0 = no worker threads)
 //           --rng fast|seed               --slice-minutes <m>   --reports <dir>
@@ -34,6 +36,8 @@ import { simulationBackend } from './campaign';
 import { certifyTable, formatCertification, type CertifyFile } from './certify';
 import { hashedFiles, simCodeHash, simPackageRoot } from './codehash';
 import { BOT_VARIANTS, distinctCurves, exactGate, type ExactGateReport } from './exact';
+import { PLAYER_IDS, STATS_LIMITS } from './playstats';
+import { runStats, type StatsArguments } from './playstats-command';
 import { InlineExecutor, simWorkers, WorkerPool, type Executor } from './pool';
 import { PRODUCTION, SMOKE, type Profile } from './profile';
 import { renderTuningReport } from './report';
@@ -62,19 +66,25 @@ const EXIT_FAIL = 1;
 const EXIT_INCOMPLETE = 2;
 const EXIT_BLOCKED = 3;
 
-const USAGE = `usage: cli.js <bench | exact | calibrate | certify | tune | sensitivity> [options]
+/** `sim:stats` without options: enough games for a stable picture in well under a minute. */
+const STATS_DEFAULTS = { games: 100_000, seed: 1, sessions: 10_000, bankroll: ASSUMPTIONS.e11Bankroll };
+
+const USAGE = `usage: cli.js <bench | exact | calibrate | certify | tune | sensitivity | stats> [options]
   bench        [--table <file>]
   exact        [--table <file>] [--variant 0..3] [--check]
   calibrate    --curve <i|ii|iii|point:<tier>:<aBps>:<phi>> [--base <file>] [--sizes 5,7,10] [--ceiling <bps>[,..]] [--variant 0..3] [--screen-last]
   certify      [--table <file>] [--tiers 0,1,2] [--check]
   tune         [--report-out <file>] [--sizes 5,7,10]
   sensitivity
+  stats        [--table <file>] [--compare <file>] [--tier all|0,1,2] [--bots all|${PLAYER_IDS.join(',')}]
+               [--games <n>] [--seed <n>] [--sessions <n>] [--bankroll <bets>] [--out <dir>] [--open]
+               defaults: the production table, every tier and bot, games ${STATS_DEFAULTS.games}, seed ${STATS_DEFAULTS.seed}, sessions ${STATS_DEFAULTS.sessions}, bankroll ${STATS_DEFAULTS.bankroll}, out .data/sim-stats/<run>/
   common:      --profile production|smoke  --workers <n>  --rng fast|seed  --slice-minutes <m>  --reports <dir>
 exit codes:    0 passed, 1 a gate failed or the command could not run, 2 not finished (call again), 3 BLOCKED`;
 
 class UsageError extends Error {}
 
-const FLAGS = new Set(['check', 'screen-last']);
+const FLAGS = new Set(['check', 'screen-last', 'open']);
 
 function parseArguments(argv: string[]): { command: string; options: Map<string, string> } {
   const [command, ...rest] = argv;
@@ -353,6 +363,42 @@ function commandSensitivity(context: Context): number {
   return EXIT_OK;
 }
 
+function statsArguments(options: Map<string, string>, argv: string[]): StatsArguments {
+  const files = [options.get('table') ?? productionTablePath(), ...(options.has('compare') ? [options.get('compare')!] : [])].map((file) => resolve(file));
+  for (const file of files) if (!existsSync(file)) throw new UsageError(`table file not found: ${file}`);
+  const tier = options.get('tier') ?? 'all';
+  const tiers = tier === 'all' ? null : integerList(tier, '--tier');
+  if (tiers !== null) {
+    const smallest = Math.min(...files.map((file) => readTableFile(file).tiers.length));
+    if (new Set(tiers).size !== tiers.length || tiers.some((index) => index < 0 || index >= smallest)) {
+      throw new UsageError('--tier must be "all" or distinct tier indexes that every given table has');
+    }
+  }
+  const bots = options.get('bots') ?? 'all';
+  const names = bots === 'all' ? [...PLAYER_IDS] : bots.split(',');
+  if (names.some((name) => !(PLAYER_IDS as readonly string[]).includes(name))) {
+    throw new UsageError(`--bots must be "all" or a comma-separated list of ${PLAYER_IDS.join(', ')}`);
+  }
+  const whole = (name: keyof typeof STATS_DEFAULTS): number => {
+    const value = options.has(name) ? Number(options.get(name)) : STATS_DEFAULTS[name];
+    const [min, max] = STATS_LIMITS[name];
+    if (!Number.isInteger(value) || value < min || value > max) throw new UsageError(`--${name} must be an integer in ${min} .. ${max}`);
+    return value;
+  };
+  return {
+    tables: files.map((file, i) => ({ role: i === 0 ? 'main' : 'compare', file, label: repositoryPath(file) })),
+    tiers,
+    players: PLAYER_IDS.filter((id) => names.includes(id)),
+    games: whole('games'),
+    seed: whole('seed'),
+    sessions: whole('sessions'),
+    bankroll: whole('bankroll'),
+    out: options.has('out') ? resolve(options.get('out')!) : null,
+    open: options.has('open'),
+    command: ['pnpm sim:stats', ...argv.slice(1)].join(' '),
+  };
+}
+
 /**
  * The code hash is computed from the sources, but what runs is the bundle. A bundle older than
  * a hashed source file would compute with old code under the new hash, so it is refused. The
@@ -390,6 +436,13 @@ async function main(argv: string[]): Promise<number> {
     if (command === 'sensitivity') {
       const runner = new Runner({ executor: new InlineExecutor(), store: new CacheStore(paths.cache), profile, codeHash: simCodeHash(), rngMode, deadline: 0, readOnly: true });
       return commandSensitivity({ options, profile, paths, runner, log });
+    }
+    if (command === 'stats') {
+      const request = statsArguments(options, argv);
+      assertFreshBuild();
+      const { json, html } = await runStats(request, { profile, paths, workers, rngMode, log });
+      console.log(`sim:stats RESULT exit=${EXIT_OK} json=${json} html=${html}`);
+      return EXIT_OK;
     }
     const commands: Record<string, (context: Context) => Promise<number>> = {
       bench: commandBench,

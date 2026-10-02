@@ -15,6 +15,12 @@ contract MazeBetTest is MazeBetBase {
 
     // Cross-language vectors. Produced with viem 2.57.2 (`signTypedData`, `encodeAbiParameters`) and node's sha256,
     // using `EIP712_TYPES` and `mazeBetDomain` from packages/shared/src/eip712.ts, for the table of `_tinyTable()`.
+    // packages/shared/test/contract-vectors.test.ts reads these constants and `_tinyTable()` from this file and
+    // reproduces the commitment, both digests and the table hash in TypeScript, so both sides pin the same vectors.
+    uint256 internal constant GOLDEN_CHAIN_ID = 31337;
+    uint8 internal constant GOLDEN_TIER = 0;
+    uint8 internal constant GOLDEN_OUTCOME = 1; // CashOut
+    uint16 internal constant GOLDEN_STEPS = 1;
     address internal constant GOLDEN_CONTRACT = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
     address internal constant GOLDEN_SIGNER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address internal constant GOLDEN_PLAYER = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
@@ -305,7 +311,7 @@ contract MazeBetTest is MazeBetBase {
     /// contract deployed at the address and chain id they were signed for. This pins the domain separator, both
     /// type hashes and the commitment byte format to the TypeScript side.
     function test_AC_C4_AC_M4_ticketAndSettlementSignedByViemAreAccepted() public {
-        vm.chainId(31337);
+        vm.chainId(GOLDEN_CHAIN_ID);
         Table memory t = _tinyTable();
         deployCodeTo(
             "MazeBet.sol:MazeBet",
@@ -316,16 +322,23 @@ contract MazeBetTest is MazeBetBase {
         assertEq(golden.tableHash(), GOLDEN_TABLE_HASH);
 
         // The helpers the other tests sign with produce the same bytes as viem.
-        bytes32 domain = SigUtils.domainSeparator(31337, GOLDEN_CONTRACT);
-        assertEq(SigUtils.commitmentOf(1, 2, GOLDEN_SERVER_SEED), GOLDEN_COMMITMENT, "commitment");
+        assertEq(GOLDEN_OUTCOME, CASH_OUT);
+        bytes32 domain = SigUtils.domainSeparator(GOLDEN_CHAIN_ID, GOLDEN_CONTRACT);
         assertEq(
-            SigUtils.ticketDigest(domain, GOLDEN_GAME_ID, GOLDEN_PLAYER, 0, GOLDEN_COMMITMENT, GOLDEN_EXPIRY),
+            SigUtils.commitmentOf(t.mazeVersion, t.tiers[GOLDEN_TIER].n, GOLDEN_SERVER_SEED),
+            GOLDEN_COMMITMENT,
+            "commitment"
+        );
+        assertEq(
+            SigUtils.ticketDigest(
+                domain, GOLDEN_GAME_ID, GOLDEN_PLAYER, GOLDEN_TIER, GOLDEN_COMMITMENT, GOLDEN_EXPIRY
+            ),
             GOLDEN_TICKET_DIGEST,
             "ticket digest"
         );
         assertEq(
             SigUtils.settlementDigest(
-                domain, GOLDEN_GAME_ID, GOLDEN_PLAYER, CASH_OUT, 1, GOLDEN_PAYOUT, GOLDEN_SERVER_SEED
+                domain, GOLDEN_GAME_ID, GOLDEN_PLAYER, GOLDEN_OUTCOME, GOLDEN_STEPS, GOLDEN_PAYOUT, GOLDEN_SERVER_SEED
             ),
             GOLDEN_SETTLEMENT_DIGEST,
             "settlement digest"
@@ -335,9 +348,11 @@ contract MazeBetTest is MazeBetBase {
         vm.deal(GOLDEN_PLAYER, WAGER);
         vm.prank(GOLDEN_PLAYER);
         golden.createGame{value: WAGER}(
-            GOLDEN_GAME_ID, 0, GOLDEN_COMMITMENT, GOLDEN_EXPIRY, keccak256("client"), GOLDEN_TICKET_SIG
+            GOLDEN_GAME_ID, GOLDEN_TIER, GOLDEN_COMMITMENT, GOLDEN_EXPIRY, keccak256("client"), GOLDEN_TICKET_SIG
         );
-        golden.settle(GOLDEN_GAME_ID, CASH_OUT, 1, GOLDEN_PAYOUT, GOLDEN_SERVER_SEED, GOLDEN_SETTLEMENT_SIG);
+        golden.settle(
+            GOLDEN_GAME_ID, GOLDEN_OUTCOME, GOLDEN_STEPS, GOLDEN_PAYOUT, GOLDEN_SERVER_SEED, GOLDEN_SETTLEMENT_SIG
+        );
 
         assertEq(GOLDEN_PLAYER.balance, GOLDEN_PAYOUT, "70% of the bet after one move");
         assertEq(uint8(golden.getGame(GOLDEN_GAME_ID).status), uint8(MazeBet.Status.Settled));
@@ -365,7 +380,65 @@ contract MazeBetTest is MazeBetBase {
     function test_AC_R2_quoteExitPayoutIsBetTimesMultiplier() public view {
         for (uint8 tier = 0; tier < table.tiers.length; ++tier) {
             assertEq(bet.quoteExitPayout(tier, WAGER), WAGER * table.tiers[tier].multiplierBps / BPS);
-            assertEq(bet.quoteExitPayout(tier, 3), 3 * uint256(table.tiers[tier].multiplierBps) / BPS, "rounds down");
+        }
+    }
+
+    /// @dev The fixture multipliers are multiples of 10000, so no bet leaves a remainder and the tests on the
+    /// fixture cannot tell rounding down from rounding up. The direction is pinned here with the multipliers of
+    /// the certified base table: 12345678901234567 x 26088 / 66112 / 184695 leaves 3896 / 3504 / 2065 when divided
+    /// by 10000. packages/shared/test/economics.test.ts pins the same literals for `exitPayoutWei`.
+    function test_AC_R2_AC_C3_exitPayoutDropsTheRemainder() public {
+        uint256 wager = 12_345_678_901_234_567;
+        uint32[3] memory multipliers = [uint32(26_088), 66_112, 184_695];
+        uint256[3] memory floors =
+            [uint256(32_207_407_117_540_738), 81_619_752_351_841_969, 228_018_516_466_351_835];
+        uint256[3] memory remainders = [uint256(3896), 3504, 2065];
+
+        Table memory t = _fixture();
+        assertEq(t.tiers.length, 3);
+        for (uint8 tier = 0; tier < 3; ++tier) {
+            t.tiers[tier].multiplierBps = multipliers[tier];
+        }
+        MazeBet c = _deploy(t);
+        c.fund{value: 10 ether}();
+
+        for (uint8 tier = 0; tier < 3; ++tier) {
+            assertEq(wager * multipliers[tier] - floors[tier] * BPS, remainders[tier], "the literal is the floor");
+            assertEq(c.quoteExitPayout(tier, wager), floors[tier], "quoteExitPayout rounds down");
+
+            Ticket memory tk = _ticketFor(c, alice, tier, t.tiers[tier].n, t.mazeVersion);
+            _createOn(c, tk, wager);
+            assertEq(c.getGame(tk.gameId).maxPayout, floors[tier], "maxPayout rounds down");
+            assertEq(c.getGame(tk.gameId).reserved, floors[tier], "the reserve is the floor");
+
+            uint16 steps = 2 * (uint16(t.tiers[tier].n) - 1);
+            _expectSettleRevertOn(c, MazeBet.PayoutMismatch.selector, tk, EXIT, steps, floors[tier] + 1);
+
+            uint256 before = alice.balance;
+            _settleOn(c, tk, EXIT, steps, floors[tier]);
+            assertEq(alice.balance - before, floors[tier], "the exit pays the floor");
+        }
+    }
+
+    /// @dev The same bet against refunds that leave a remainder (fixture tier 0 has the curve of the base table's
+    /// 5x5 tier): 9500 / 7300 / 6694 / 1085 bps leave 6500 / 9100 / 1498 / 5195.
+    function test_AC_R3_AC_C3_cashOutRefundDropsTheRemainder() public {
+        uint256 wager = 12_345_678_901_234_567;
+        uint16[4] memory steps = [uint16(0), 1, 2, 23];
+        uint16[4] memory bps = [uint16(9500), 7300, 6694, 1085];
+        uint256[4] memory floors =
+            [uint256(11_728_394_956_172_838), 9_012_345_597_901_233, 8_264_197_456_486_419, 1_339_506_160_783_950];
+        uint256[4] memory remainders = [uint256(6500), 9100, 1498, 5195];
+
+        for (uint256 i = 0; i < steps.length; ++i) {
+            assertEq(bet.refundBps(0, steps[i]), bps[i], "refundBps of the fixture");
+            assertEq(wager * bps[i] - floors[i] * BPS, remainders[i], "the literal is the floor");
+
+            Ticket memory tk = _open(alice, 0, wager);
+            _expectSettleRevert(MazeBet.PayoutMismatch.selector, tk, CASH_OUT, steps[i], floors[i] + 1);
+            uint256 before = alice.balance;
+            _settle(tk, CASH_OUT, steps[i], floors[i]);
+            assertEq(alice.balance - before, floors[i], "the cash-out pays the floor");
         }
     }
 
@@ -782,6 +855,38 @@ contract MazeBetTest is MazeBetBase {
             tk = _open(alice, tier, WAGER);
             _settle(tk, LOSS, type(uint16).max, 0);
         }
+    }
+
+    /// @dev The same bounds with explicit numbers for a 9x9 tier (81 cells, shortest path 16), the large size of
+    /// the certified base table. The tier is fixture tier 2 cut to 81 refunds.
+    function test_AC_C3_settleStepBounds_nineByNine() public {
+        Table memory t = _fixture();
+        t.tiers[2].n = 9;
+        t.tiers[2].refundBps = _withLength(t.tiers[2].refundBps, 81);
+        MazeBet c = _deploy(t);
+        c.fund{value: 10 ether}();
+        uint256 exit = WAGER * t.tiers[2].multiplierBps / BPS;
+        bytes4 invalid = MazeBet.InvalidSteps.selector;
+
+        // CashOut: n*n - 1 = 80 is refused, n*n - 2 = 79 is allowed.
+        Ticket memory tk = _ticketFor(c, alice, 2, 9, t.mazeVersion);
+        _createOn(c, tk, WAGER);
+        _expectSettleRevertOn(c, invalid, tk, CASH_OUT, 80, WAGER * t.tiers[2].refundBps[80] / BPS);
+        _settleOn(c, tk, CASH_OUT, 79, WAGER * t.tiers[2].refundBps[79] / BPS);
+
+        // Exit: 2(n - 1) - 1 = 15 is refused, 16 is allowed.
+        tk = _ticketFor(c, alice, 2, 9, t.mazeVersion);
+        _createOn(c, tk, WAGER);
+        _expectSettleRevertOn(c, invalid, tk, EXIT, 15, exit);
+        _settleOn(c, tk, EXIT, 16, exit);
+
+        // Exit: n*n = 81 is refused, n*n - 1 = 80 is allowed.
+        tk = _ticketFor(c, alice, 2, 9, t.mazeVersion);
+        _createOn(c, tk, WAGER);
+        _expectSettleRevertOn(c, invalid, tk, EXIT, 81, exit);
+        _settleOn(c, tk, EXIT, 80, exit);
+
+        assertEq(c.totalReserved(), 0);
     }
 
     function test_settleRejectsUnknownOutcome() public {

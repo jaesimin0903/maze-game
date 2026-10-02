@@ -98,9 +98,21 @@ chat, documents, passwords) and to `chrome.tabs`. The suite calls none of them.
 
 ## Scenarios
 
-Each scenario starts its own stack through `scripts/dev-up.sh`: Anvil on `8550 + i`
-(`--block-time 1`), a new deployment, a new data directory, the app on `3050 + i`. Hook flags
-are passed on the command line only.
+Each scenario starts its own stack through `scripts/dev-up.sh --allow-test-hooks`: Anvil on
+`8550 + i` (`--block-time 1`), a new deployment, a new data directory, the app on `3050 + i`.
+Hook flags are passed on the command line only, and `dev-up.sh` refuses them without that
+switch. The command is built in one place, `dev_up` in `lib.sh`.
+
+The secret of the seed hook (`MAZE_TEST_SEED_SECRET`) is not a constant of the repository: the
+runner draws 32 random bytes per run and gives the same value to every scenario, which hands it
+to the server and to the offline route planner. Each scenario logs it (`run.log` under the
+git-ignored `.data/e2e-aside/`); to repeat a run, set `MAZE_TEST_SEED_SECRET` to that value.
+
+`dev-up.sh` runs the app under a supervisor that restarts it when it exits. Scenarios 05, 10
+and 11 need the app to stay down, so `app_stop` stops the supervisor first and then the app,
+and fails if the port is taken again two seconds later. Every other scenario runs under the
+supervisor, as a stack started by hand does. No scenario yet kills the app in the middle of a
+game and waits for the supervisor to bring it back.
 
 | # | Script | Proves | Chain | HTTP | DOM |
 |---|---|---|---|---|---|

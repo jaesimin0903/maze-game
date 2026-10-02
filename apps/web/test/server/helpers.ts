@@ -10,6 +10,7 @@ import {
   openDirs,
   parseTuning,
   tableHash,
+  ticketRequestMessage,
   type Dir,
   type Hex,
   type Maze,
@@ -24,6 +25,7 @@ import { GET as gameGet } from '../../app/api/games/[id]/route';
 import { POST as cashoutPost } from '../../app/api/games/[id]/cashout/route';
 import { POST as movePost } from '../../app/api/games/[id]/move/route';
 import { GET as revealGet } from '../../app/api/games/[id]/reveal/route';
+import { GET as healthGet } from '../../app/api/health/route';
 import { POST as startPost } from '../../app/api/games/[id]/start/route';
 import { GET as snapshotGet, POST as snapshotPost } from '../../app/api/test/ui-snapshot/route';
 import type {
@@ -54,17 +56,20 @@ export const SIGNER_KEY: Hex = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a
 export const SIGNER_ADDRESS: Hex = privateKeyToAccount(SIGNER_KEY).address;
 export const CONTRACT: Hex = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
-/** Anvil accounts #2 .. #9. */
-export const PLAYERS: readonly Hex[] = [
-  '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-  '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-  '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-  '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
-  '0x976EA74026E726554dB657fA54763abd0C3a0aa9',
-  '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955',
-  '0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f',
-  '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720',
+/** Private keys of Anvil accounts #2 .. #9. Public, well-known test keys. */
+export const PLAYER_KEYS: readonly Hex[] = [
+  '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
+  '0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6',
+  '0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a',
+  '0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba',
+  '0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e',
+  '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356',
+  '0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97',
+  '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6',
 ];
+
+/** Anvil accounts #2 .. #9. */
+export const PLAYERS: readonly Hex[] = PLAYER_KEYS.map((key) => privateKeyToAccount(key).address);
 
 export const T0 = 1_700_000_000;
 export const BET = 10_000_000_000_000_000n;
@@ -88,6 +93,8 @@ export class FakeChain implements ChainPort {
   time = T0;
   /** True: every read fails as `CHAIN_UNAVAILABLE`. */
   offline = false;
+  /** True: reading the contract's events fails, every other read works. */
+  failEvents = false;
   /** `accept`: sends enter the pool. `drop`: sends return a hash and vanish. `fail`: sends throw. */
   sendMode: 'accept' | 'drop' | 'fail' = 'accept';
   /** Sends for these games throw, whatever `sendMode` says. */
@@ -233,6 +240,7 @@ export class FakeChain implements ChainPort {
 
   async events(fromBlock: bigint, toBlock: bigint): Promise<ChainEvent[]> {
     this.guard();
+    if (this.failEvents) throw new ApiError('CHAIN_UNAVAILABLE');
     const events: ChainEvent[] = [];
     for (let number = fromBlock; number <= toBlock; number++) {
       events.push(...(this.eventsByBlock.get(number) ?? []));
@@ -268,6 +276,16 @@ export class FakeChain implements ChainPort {
     return this.signerValue;
   }
 
+  async totalReserved(): Promise<bigint> {
+    this.guard();
+    let total = 0n;
+    for (const game of this.games.values()) {
+      if (game.status !== ONCHAIN.Active) continue;
+      total += game.betWei > game.maxPayoutWei ? game.betWei : game.maxPayoutWei;
+    }
+    return total;
+  }
+
   async pendingNonce(): Promise<number> {
     this.guard();
     let nonce = this.nextNonce;
@@ -293,7 +311,7 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
     contract: CONTRACT,
     signerKey: SIGNER_KEY,
     relayerKey: SIGNER_KEY,
-    dataDir: '.data-test',
+    dataDir: '/nonexistent/maze-data-test',
     idleTimeoutSec: null,
     maxGameSec: null,
     testHooks: true,
@@ -313,6 +331,10 @@ export interface TestEnv {
   logs: Record<string, unknown>[];
   /** How many times the server signed each kind of message. */
   signs: { ticket: number; settlement: number };
+  /** Every failure of the event log the server reported instead of ending the process. */
+  storeFailures: Error[];
+  /** Games whose settlement the signer refuses to sign, for as long as they are listed. */
+  unsignable: Set<Hex>;
   /** Moves chain time forward and mines a block at the new time. */
   advance(sec: number): void;
   /** One worker pass. */
@@ -329,6 +351,11 @@ export interface EnvOptions {
   watcher?: boolean;
   /** False: the container is not made the process-wide instance. Default true. */
   install?: boolean;
+  /**
+   * True: a failed append ends the process, as it does in a real server. By default the test
+   * process records the failure in `storeFailures` instead.
+   */
+  exitOnStoreFailure?: boolean;
 }
 
 /**
@@ -342,6 +369,8 @@ export async function makeEnv(options: EnvOptions = {}): Promise<TestEnv> {
   const config = testConfig(options.config);
   const logs: Record<string, unknown>[] = [];
   const signs = { ticket: 0, settlement: 0 };
+  const storeFailures: Error[] = [];
+  const unsignable = new Set<Hex>();
 
   const inner = createSigner(config.signerKey, mazeBetDomain(config.chainId, config.contract));
   const signer: Signer = {
@@ -351,6 +380,7 @@ export async function makeEnv(options: EnvOptions = {}): Promise<TestEnv> {
       return inner.signTicket(message);
     },
     signSettlement(message) {
+      if (unsignable.has(message.gameId)) return Promise.reject(new Error('the signer is unavailable'));
       signs.settlement += 1;
       return inner.signSettlement(message);
     },
@@ -374,6 +404,9 @@ export async function makeEnv(options: EnvOptions = {}): Promise<TestEnv> {
     mazePadMs: 0,
     watcher: options.watcher,
     background: false,
+    // A server process ends itself here; a test process records the call instead.
+    onStoreFailure:
+      options.exitOnStoreFailure === true ? undefined : (error) => storeFailures.push(error),
   });
   if (options.install ?? true) installContainer(container);
 
@@ -384,6 +417,8 @@ export async function makeEnv(options: EnvOptions = {}): Promise<TestEnv> {
     table,
     logs,
     signs,
+    storeFailures,
+    unsignable,
     advance(sec) {
       chain.time += sec;
       chain.mine();
@@ -423,6 +458,7 @@ async function call<T>(
 }
 
 export const api = {
+  health: <T = unknown>() => call<T>(healthGet, { method: 'GET', path: '/api/health' }),
   config: <T = unknown>() => call<T>(configGet, { method: 'GET', path: '/api/config' }),
   ticket: <T = unknown>(body: unknown) =>
     call<T>(ticketPost, { method: 'POST', path: '/api/games', body }),
@@ -465,16 +501,59 @@ export interface OpenedGame {
   maze: Maze;
 }
 
+export interface TicketBody {
+  player: Hex;
+  tier: number;
+  sessionTokenHash: Hex;
+  signature: Hex;
+}
+
+/**
+ * The body of `POST /api/games`, signed with `key` the way a wallet's `personal_sign` signs it.
+ * The message names the chain and contract of `testConfig()` unless `domain` says otherwise.
+ */
+export async function signTicketBody(
+  key: Hex,
+  p: { player?: Hex; tier?: number; sessionTokenHash?: Hex } = {},
+  domain: { chainId: number; contract: Hex } = { chainId: 31337, contract: CONTRACT },
+): Promise<TicketBody> {
+  const account = privateKeyToAccount(key);
+  const player = p.player ?? account.address;
+  const tier = p.tier ?? 0;
+  const sessionTokenHash = p.sessionTokenHash ?? newToken().sessionTokenHash;
+  const signature = await account.signMessage({
+    message: ticketRequestMessage({
+      chainId: domain.chainId,
+      mazeBetAddress: domain.contract,
+      player,
+      tier,
+      sessionTokenHash,
+    }),
+  });
+  return { player, tier, sessionTokenHash, signature };
+}
+
+/** The key of one of `PLAYERS`, whatever the letter case of the address. */
+export function keyOf(player: Hex): Hex {
+  const index = PLAYERS.findIndex((address) => address.toLowerCase() === player.toLowerCase());
+  if (index === -1) throw new Error(`${player} is not one of PLAYERS`);
+  return PLAYER_KEYS[index];
+}
+
+/** A signed ticket request of one of `PLAYERS` (the first by default) with a fresh session token. */
+export function ticketBody(player: Hex = PLAYERS[0], tier = 0): Promise<TicketBody> {
+  return signTicketBody(keyOf(player), { player, tier });
+}
+
 /** Requests a ticket through the route, without creating the game on chain. */
 export async function requestTicket(
   p: { player?: Hex; tier?: number } = {},
 ): Promise<{ ticket: TicketResponse; token: string }> {
   const { token, sessionTokenHash } = newToken();
-  const reply = await api.ticket<TicketResponse>({
-    player: p.player ?? PLAYERS[0],
-    tier: p.tier ?? 0,
-    sessionTokenHash,
-  });
+  const player = p.player ?? PLAYERS[0];
+  const reply = await api.ticket<TicketResponse>(
+    await signTicketBody(keyOf(player), { player, tier: p.tier ?? 0, sessionTokenHash }),
+  );
   if (reply.status !== 201) throw new Error(`ticket refused: ${reply.text}`);
   return { ticket: reply.body, token };
 }

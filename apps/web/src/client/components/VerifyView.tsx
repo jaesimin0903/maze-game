@@ -323,11 +323,12 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
               </Check>
               <Check
                 testId="verify-cells-match"
-                ok={verdict.report.cells.every((cell) => cell.match)}
+                ok={verdict.report.cellsOk}
                 label="서버가 보여 준 벽이 실제 미로와 같은가"
               >
-                {verdict.report.cells.filter((cell) => cell.match).length} /{' '}
-                {verdict.report.cells.length}칸 일치
+                {verdict.report.cellsOk === null
+                  ? '이 기록에는 서버가 보여 준 칸이 하나도 없어 아무것도 비교하지 않았습니다'
+                  : `${verdict.report.cells.filter((cell) => cell.match).length} / ${verdict.report.cells.length}칸 일치`}
               </Check>
               <Check
                 testId="verify-outcome-ok"

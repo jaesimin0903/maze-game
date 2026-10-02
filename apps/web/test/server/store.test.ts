@@ -1,7 +1,7 @@
 // The event log (plan §7.8) and recovery from it (AC-S6, AC-S9 at unit level).
 
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { appendFile, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { GameView, Hex } from '@maze/shared';
@@ -147,6 +147,174 @@ describe('file store', () => {
     await store.close();
     await expect(store.append(MOVE_1)).rejects.toThrow(/closed/);
   });
+
+  it('reads the log as a stream: lines that span read boundaries, and a torn tail, are handled', async () => {
+    // 6 MB of lines, so that the 1 MiB reads cut through lines, with a multi-byte character in
+    // each line and an unterminated tail.
+    const events: StoreEvent[] = Array.from({ length: 30_000 }, (_, i) => ({
+      type: 'settle-sent',
+      gameId: ID,
+      txHash: `0x${i.toString(16).padStart(64, '0')}`,
+      nonce: i,
+      atSec: i,
+    }));
+    const lines = events.map((event, i) => JSON.stringify({ ...event, note: `블록 ${i} ✓ ${'x'.repeat(60)}` }));
+    await writeFile(file, `${lines.join('\n')}\n{"type":"settle-sent","gameId":"0xto`);
+    const before = (await stat(file)).size;
+    expect(before).toBeGreaterThan(5 * 1024 * 1024);
+
+    const store = await openFileStore(dir);
+    const loaded = await store.load();
+    expect(loaded).toHaveLength(events.length);
+    expect(loaded[0]).toMatchObject({ type: 'settle-sent', nonce: 0, note: `블록 0 ✓ ${'x'.repeat(60)}` });
+    expect(loaded[29_999]).toMatchObject({ nonce: 29_999, note: `블록 29999 ✓ ${'x'.repeat(60)}` });
+    expect(loaded.map((event) => (event as { nonce: number }).nonce)).toEqual(events.map((_, i) => i));
+    // The torn tail is gone and the next append starts on a clean line.
+    expect((await stat(file)).size).toBe(before - '{"type":"settle-sent","gameId":"0xto'.length);
+    await store.append(MOVE_1);
+    expect((await store.load()).at(-1)).toEqual(MOVE_1);
+    await store.close();
+  });
+
+  it('load() reads the file back: what was appended is not kept in memory by the store', async () => {
+    const store = await openFileStore(dir);
+    await store.append(MOVE_1);
+    // Whatever is in the file is what load() returns, so there is no second copy to grow.
+    await appendFile(file, `${JSON.stringify(MOVE_2)}\n`);
+    expect(await store.load()).toEqual([MOVE_1, MOVE_2]);
+    await store.close();
+  });
+});
+
+describe('file store: tickets that never became a game are compacted out at open', () => {
+  const RETENTION = 3600;
+  const T = 1_700_000_000;
+  let dir: string;
+  let file: string;
+
+  beforeEach(async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'maze-compact-'));
+    file = path.join(dir, 'events.jsonl');
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  const id = (byte: string): Hex => `0x${byte.repeat(32)}`;
+  function ticket(gameId: Hex, expirySec: number): StoreEvent {
+    return {
+      type: 'ticket-issued',
+      gameId,
+      player: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+      tier: 0,
+      n: 5,
+      serverSeed: id('5e'),
+      commitment: id('c0'),
+      sessionTokenHash: id('70'),
+      expirySec,
+      signature: `0x${'ab'.repeat(65)}`,
+      atSec: expirySec - 120,
+    };
+  }
+  const rebound = (gameId: Hex, expirySec: number): StoreEvent => ({
+    type: 'ticket-rebound',
+    gameId,
+    sessionTokenHash: id('71'),
+    expirySec,
+    atSec: expirySec - 60,
+  });
+  const created = (gameId: Hex, atSec: number): StoreEvent => ({
+    type: 'chain-created',
+    gameId,
+    clientSeed: id('c1'),
+    betWei: '10',
+    maxPayoutWei: '20',
+    createdAtSec: atSec,
+    settleDeadlineSec: atSec + 1800,
+    blockNumber: '7',
+    startOpen: 2,
+    atSec,
+  });
+  const marker = (blockNumber: number, timestampSec?: number): StoreEvent => ({
+    type: 'block-scanned',
+    blockNumber: String(blockNumber),
+    blockHash: id('b1'),
+    ...(timestampSec === undefined ? {} : { timestampSec }),
+  });
+  const META: StoreEvent = { type: 'meta', chainId: 31337, contract: '0x5FbDB2315678afecb367f032d93F642f64180aa3' };
+
+  const DEAD = id('d1'); // expired at T, never created
+  const PLAYED = id('d2'); // as old, but its game was created
+  const YOUNG = id('d3'); // expired at T + 600: inside the retention window of the last marker
+  const BORDER = id('d4'); // expiry + retention is exactly the marker's timestamp
+
+  /** The last marker is at T + 3601: only tickets with expiry < T + 1 are past the window. */
+  const LOG: StoreEvent[] = [
+    META,
+    ticket(DEAD, T),
+    rebound(DEAD, T),
+    ticket(PLAYED, T),
+    created(PLAYED, T - 30),
+    { ...MOVE_1, gameId: PLAYED },
+    marker(10, T + 5),
+    ticket(BORDER, T + 1),
+    ticket(YOUNG, T + 600),
+    rebound(YOUNG, T + 600),
+    marker(900, T + RETENTION + 1),
+  ];
+  const KEPT = LOG.filter((event) => !('gameId' in event) || event.gameId !== DEAD);
+
+  async function write(events: readonly StoreEvent[]): Promise<void> {
+    await writeFile(file, events.map((event) => `${JSON.stringify(event)}\n`).join(''));
+  }
+
+  async function open(retention?: number): Promise<StoreEvent[]> {
+    const store = await openFileStore(dir, retention === undefined ? {} : { ticketRetentionSec: retention });
+    try {
+      return await store.load();
+    } finally {
+      await store.close();
+    }
+  }
+
+  it('drops a ticket and its re-bindings once a scan marker is past expiry + retention, and nothing else', async () => {
+    await write(LOG);
+    expect(await open(RETENTION)).toEqual(KEPT);
+    // The file itself was rewritten, in the same order, and opening it again changes nothing.
+    expect(await readFile(file, 'utf8')).toBe(KEPT.map((event) => `${JSON.stringify(event)}\n`).join(''));
+    expect(await open(RETENTION)).toEqual(KEPT);
+    expect(await readdir(dir)).toEqual(['events.jsonl']);
+  });
+
+  it('keeps everything without the option, without a timestamped marker, or before the window has passed', async () => {
+    await write(LOG);
+    expect(await open()).toEqual(LOG);
+
+    // A log written before markers carried a timestamp proves nothing about the chain's time.
+    const untimed = LOG.map((event) => (event.type === 'block-scanned' ? marker(Number(event.blockNumber)) : event));
+    await write(untimed);
+    expect(await open(RETENTION)).toEqual(untimed);
+
+    // One second earlier the dead ticket is still inside its retention window.
+    const early = [...LOG.slice(0, -1), marker(900, T + RETENTION)];
+    await write(early);
+    expect(await open(RETENTION)).toEqual(early);
+  });
+
+  it('a ticket whose game exists is kept however old, also when the creation is the last line', async () => {
+    const log = [META, ticket(PLAYED, T), marker(900, T + 10 * RETENTION), created(PLAYED, T - 5)];
+    await write(log);
+    expect(await open(RETENTION)).toEqual(log);
+  });
+
+  it('a compaction that was interrupted leaves the log whole', async () => {
+    await write(LOG);
+    // What a process that died while compacting leaves behind: a partial copy next to the log.
+    await writeFile(`${file}.compact`, `${JSON.stringify(META)}\n{"type":"ticket-is`);
+    expect(await open()).toEqual(LOG);
+    expect(await readdir(dir)).toEqual(['events.jsonl']);
+  });
 });
 
 describe('recovery from the log', () => {
@@ -250,6 +418,8 @@ describe('recovery from the log', () => {
     expect(refused.status).toBe(500);
     expect(refused.body).toEqual({ error: { code: 'INTERNAL', message: 'Internal error.' } });
     expect((await api.game<GameView>(game.gameId, game.token)).body.step).toBe(0);
+    // A real server process has ended here (fail-stop.test.ts); this one only recorded the call.
+    expect(booted.storeFailures).toHaveLength(1);
 
     // The same for a move that would have ended the game: its signature never leaves.
     failing = false;

@@ -86,6 +86,8 @@ export interface ChainPort {
   game(gameId: Hex, blockNumber?: bigint): Promise<OnchainGame>;
   tableHash(): Promise<Hex>;
   serverSigner(): Promise<Hex>;
+  /** `totalReserved()`: wei held for the games that are `Active`. Zero when there is none. */
+  totalReserved(): Promise<bigint>;
   /** The relayer's next nonce, counting transactions still in the node's pool. */
   pendingNonce(): Promise<number>;
   /** Signs and broadcasts `settle` with the fixed gas limit. Resolves to the transaction hash. */
@@ -200,6 +202,8 @@ export function createViemChain(p: {
     tableHash: () => read(() => publicClient.readContract({ ...contract, functionName: 'tableHash' })),
     serverSigner: () =>
       read(() => publicClient.readContract({ ...contract, functionName: 'serverSigner' })),
+    totalReserved: () =>
+      read(() => publicClient.readContract({ ...contract, functionName: 'totalReserved' })),
     pendingNonce: () =>
       read(() =>
         publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
@@ -248,6 +252,7 @@ export class Watcher {
   /** Highest block whose events have been delivered. */
   private scannedTo: bigint;
   private markedAt: bigint;
+  private scannedSec: number | null = null;
 
   constructor(
     private readonly deps: {
@@ -276,23 +281,46 @@ export class Watcher {
     return hash !== null && hash.toLowerCase() === this.marker.blockHash.toLowerCase();
   }
 
-  /** Delivers every event up to the latest block. Calls are serialized. */
+  /**
+   * Timestamp of the latest block up to which every event has been delivered, or `null` before
+   * the first complete scan. A ticket that expired before this time and whose `GameCreated` was
+   * not among those events can never create a game.
+   */
+  get scannedTimeSec(): number | null {
+    return this.scannedSec;
+  }
+
+  /**
+   * Delivers every event up to the latest block. Calls are serialized. When the handling of an
+   * event fails, the other events of the range are still delivered, so that one game cannot keep
+   * the server from learning about the others; the call then fails and the range is read again
+   * by the next one.
+   */
   sync(): Promise<void> {
     if (!this.deps.enabled) return Promise.resolve();
     return this.mutex.run(async () => {
       const { chain, store, clock } = this.deps;
       const head = await chain.head();
       clock.observe?.(head.timestamp);
-      if (head.number <= this.scannedTo) return;
+      if (head.number <= this.scannedTo) {
+        this.scannedSec = head.timestamp;
+        return;
+      }
 
       let delivered = false;
       while (this.scannedTo < head.number) {
         const from = this.scannedTo + 1n;
         const to = from + LOG_CHUNK_BLOCKS - 1n < head.number ? from + LOG_CHUNK_BLOCKS - 1n : head.number;
+        let failure: { error: unknown } | null = null;
         for (const event of await chain.events(from, to)) {
-          await this.deps.onEvent(event);
-          delivered = true;
+          try {
+            await this.deps.onEvent(event);
+            delivered = true;
+          } catch (error) {
+            failure ??= { error };
+          }
         }
+        if (failure !== null) throw failure.error;
         this.scannedTo = to;
       }
       if (delivered || head.number - this.markedAt >= MARK_EVERY_BLOCKS) {
@@ -300,9 +328,11 @@ export class Watcher {
           type: 'block-scanned',
           blockNumber: head.number.toString(),
           blockHash: head.hash,
+          timestampSec: head.timestamp,
         });
         this.markedAt = head.number;
       }
+      this.scannedSec = head.timestamp;
     });
   }
 }

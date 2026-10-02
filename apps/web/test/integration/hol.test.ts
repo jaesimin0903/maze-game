@@ -1,15 +1,20 @@
-// AC-X9 and the contract-player case of AC-X4: a player contract whose `receive` burns all the
-// gas it is given cannot make its own settlement fail, and its settlement being in flight does
-// not delay the settlement of another player's loss.
+// AC-X9 and the contract-player case of AC-X4: a player whose `receive` burns all the gas it is
+// given cannot make its own settlement fail, and its settlement being in flight does not delay
+// the settlement of another player's loss.
+//
+// A ticket request is signed with the player's key, so the hostile player here is an account
+// that has both a key and code: what EIP-7702 gives an externally owned account. The gas-burning
+// code is installed on the account after it has created its game.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { mazeBetAbi, refundWei, type GameView, type Hex } from '@maze/shared';
-import { createWalletClient, http, parseEther, type Abi } from 'viem';
+import { type Abi } from 'viem';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { api, deadEndRoute } from '../server/helpers';
 import {
   BET,
+  createOnChain,
   onchainGame,
   openGame,
   playerOf,
@@ -40,8 +45,8 @@ afterAll(async () => {
   await h?.stop();
 });
 
-/** Deploys the gas-burning player contract and lets the tests send transactions as it. */
-async function deployBurner(): Promise<Hex> {
+/** Gives `account` the code and storage of a deployed `GasBurnPlayer`: its `receive` now burns gas. */
+async function becomeBurner(account: Hex): Promise<void> {
   const artifact = JSON.parse(readFileSync(ARTIFACT, 'utf8')) as {
     abi: Abi;
     bytecode: { object: Hex };
@@ -52,40 +57,24 @@ async function deployBurner(): Promise<Hex> {
     bytecode: artifact.bytecode.object,
   });
   const receipt = await h.publicClient.waitForTransactionReceipt({ hash });
-  const address = receipt.contractAddress;
-  if (!address) throw new Error('GasBurnPlayer was not deployed');
-  await h.testClient.setBalance({ address, value: parseEther('1') });
-  await h.testClient.impersonateAccount({ address });
-  return address;
+  const deployed = receipt.contractAddress;
+  if (!deployed) throw new Error('GasBurnPlayer was not deployed');
+  const bytecode = await h.publicClient.getCode({ address: deployed });
+  if (bytecode === undefined) throw new Error('GasBurnPlayer has no code');
+  await h.testClient.setCode({ address: account, bytecode });
+  // Slot 0 is `burning`, which the constructor sets to true.
+  await h.testClient.setStorageAt({ address: account, index: 0, value: `0x${'00'.repeat(31)}01` });
 }
 
 describe('AC-X9: no head-of-line blocking', () => {
   it("a gas-burning player's cash-out does not delay another game's loss settlement", async () => {
-    const burner = await deployBurner();
-    const burnerWallet = createWalletClient({
-      chain: h.chain,
-      transport: http(h.rpcUrl),
-      account: burner,
-    });
-
-    // The contract is the player of its own game.
-    const { ticket, token } = await requestTicket(burner);
-    const createHash = await burnerWallet.writeContract({
-      address: h.contract,
-      abi: mazeBetAbi,
-      functionName: 'createGame',
-      args: [
-        ticket.gameId,
-        ticket.tier,
-        ticket.commitment,
-        BigInt(ticket.expirySec),
-        `0x${'b0'.repeat(32)}`,
-        ticket.signature,
-      ],
-      value: BET,
-    });
-    const created = await h.publicClient.waitForTransactionReceipt({ hash: createHash });
-    expect(created.status).toBe('success');
+    // The account signs its ticket request and creates its game, then turns into the burner.
+    const hostile = playerOf(h, 6);
+    const burner = hostile.address;
+    const { ticket, token } = await requestTicket(hostile);
+    await createOnChain(h, hostile, ticket, BET, `0x${'b0'.repeat(32)}`);
+    await becomeBurner(burner);
+    const balanceAfterBet = await h.publicClient.getBalance({ address: burner });
     expect((await api.start(ticket.gameId, token)).status).toBe(200);
     expect((await onchainGame(h, ticket.gameId)).player.toLowerCase()).toBe(burner.toLowerCase());
 
@@ -135,6 +124,7 @@ describe('AC-X9: no head-of-line blocking', () => {
     // AC-X4: so the contract player did not turn a 95% refund into a full reclaim.
     expect((await onchainGame(h, ticket.gameId)).status).toBe(2);
     expect(await reclaimRevert(h, ticket.gameId, burner)).toBe('GameNotActive');
-    expect(await h.publicClient.getBalance({ address: burner })).toBeLessThan(parseEther('1') - BET + refund);
+    // Nothing reached the account: the refund waits in `pendingWithdrawals`.
+    expect(await h.publicClient.getBalance({ address: burner })).toBe(balanceAfterBet);
   });
 });

@@ -2,7 +2,7 @@
   "schema": 1,
   "profile": "production",
   "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
-  "generatedAt": "2026-10-02T11:13:44.624Z",
+  "generatedAt": "2026-10-02T13:21:24.294Z",
   "assumptions": {
     "population": {
       "naive-greedy": 0.35,

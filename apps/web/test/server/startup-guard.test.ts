@@ -2,12 +2,12 @@
 // table is accepted with test hooks only, and a refused boot turns every game route into 503.
 
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseTuning, type TuningTable } from '@maze/shared';
 import fixtureJson from '@maze/shared/fixtures/tuning.fixture.json';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GET as healthGet } from '../../app/api/health/route';
 import {
   assertTablePolicy,
   effectiveTiming,
@@ -17,7 +17,18 @@ import {
 } from '../../src/server/config';
 import { bootFromEnv, uninstallContainer } from '../../src/server/container';
 import { BootError } from '../../src/server/errors';
-import { api, CONTRACT, FakeChain, fixtureTable, makeEnv, SIGNER_KEY, type EnvOptions } from './helpers';
+import { createMemoryStore } from '../../src/server/store';
+import {
+  api,
+  CONTRACT,
+  FakeChain,
+  fixtureTable,
+  makeEnv,
+  openGame,
+  PLAYERS,
+  SIGNER_KEY,
+  type EnvOptions,
+} from './helpers';
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 const FIXTURE_PATH = path.join(ROOT, 'packages/shared/test/fixtures/tuning.fixture.json');
@@ -49,6 +60,7 @@ const ENV: Env = {
   MAZEBET_ADDRESS: CONTRACT,
   SERVER_SIGNER_PRIVATE_KEY: SIGNER_KEY,
   RELAYER_PRIVATE_KEY: SIGNER_KEY,
+  MAZE_DATA_DIR: '/tmp/x',
 };
 
 afterEach(async () => {
@@ -135,9 +147,89 @@ describe('AC-S8: contract checks', () => {
   });
 });
 
+describe('boot guard: an empty event log next to games that are Active on chain', () => {
+  it('is refused, because that server could settle none of them; the right log boots', async () => {
+    const first = await makeEnv();
+    const game = await openGame(first);
+    const log = await first.store.load();
+    const { chain } = first;
+    await first.close();
+    expect(await chain.totalReserved()).toBeGreaterThan(0n);
+
+    // The server is started on another, empty data directory (for example from another cwd).
+    await expect(makeEnv({ chain, install: false })).rejects.toMatchObject({
+      code: 'CHAIN_UNAVAILABLE',
+      message: expect.stringMatching(/event log in \S+ is empty, but the contract holds \d+ wei for games that are Active/),
+    });
+    // Refused, not half-booted: nothing was written to that log and no worker runs.
+    const empty = createMemoryStore();
+    await expect(makeEnv({ chain, store: empty, install: false })).rejects.toBeInstanceOf(BootError);
+    expect(await empty.load()).toEqual([]);
+
+    // On the log that holds the game's ticket the server boots and knows the game.
+    const second = await makeEnv({ chain, store: createMemoryStore(log), install: false });
+    expect(second.container.service.get(game.gameId)!.chain).not.toBeNull();
+    await second.close();
+
+    // A log of this deployment that lacks one of two Active games boots, because the game it
+    // does know must still be settled, and raises an alert about the other.
+    const withBoth = await makeEnv({ chain, store: createMemoryStore(log) });
+    const other = await openGame(withBoth, { player: PLAYERS[1] });
+    await withBoth.close();
+    const partial = await makeEnv({ chain, store: createMemoryStore(log), install: false });
+    expect(partial.container.service.get(other.gameId)).toBeUndefined();
+    expect(partial.logs.filter((line) => line.event === 'unknown-active-games')).toEqual([
+      expect.objectContaining({
+        level: 'alert',
+        detail: expect.objectContaining({
+          unknownReservedWei: ((other.betWei * BigInt(fixtureTable.tiers[0].multiplierBps)) / 10_000n).toString(),
+        }),
+      }),
+    ]);
+    expect(second.logs.some((line) => line.event === 'unknown-active-games')).toBe(false);
+    await partial.close();
+
+    // Once nothing is Active any more, a fresh log is a fresh start again.
+    chain.time = chain.games.get(other.gameId)!.settleDeadlineSec + 1;
+    chain.mine();
+    chain.reclaim(other.gameId);
+    chain.reclaim(game.gameId);
+    expect(await chain.totalReserved()).toBe(0n);
+    expect(await bootCode({ chain })).toBe('ok');
+  });
+});
+
+describe('X24: a server with test hooks says so', () => {
+  it('logs an alert at boot when test hooks are on, and nothing of the kind when they are off', async () => {
+    const hooked = await makeEnv({ install: false, config: { testSeedSecret: 's' } });
+    expect(hooked.logs.filter((line) => line.event === 'test-hooks-enabled')).toEqual([
+      expect.objectContaining({
+        level: 'alert',
+        detail: expect.objectContaining({
+          warning: expect.stringContaining('TEST HOOKS ARE ON'),
+          seedHook: true,
+          fixtureTable: true,
+        }),
+      }),
+    ]);
+    await hooked.close();
+
+    const calibrated = table({ fixture: false, calibrated: true });
+    const plain = await makeEnv({
+      table: calibrated,
+      chain: new FakeChain(calibrated),
+      config: { testHooks: false },
+      install: false,
+    });
+    expect(plain.logs.some((line) => line.event === 'test-hooks-enabled')).toBe(false);
+    expect(plain.logs.some((line) => line.level === 'alert')).toBe(false);
+    await plain.close();
+  });
+});
+
 describe('AC-S8: environment', () => {
   it('reads a complete environment', () => {
-    expect(loadConfig({ ...ENV, MAZE_DATA_DIR: '/tmp/x', MAZE_IDLE_TIMEOUT_SEC: '6' })).toEqual({
+    expect(loadConfig({ ...ENV, MAZE_IDLE_TIMEOUT_SEC: '6' })).toEqual({
       rpcUrl: 'http://127.0.0.1:8546',
       chainId: 31337,
       contract: CONTRACT,
@@ -182,6 +274,16 @@ describe('AC-S8: environment', () => {
     expect(() => loadConfig({ ...ENV, RELAYER_PRIVATE_KEY: '0x12' })).toThrow(BootError);
     expect(() => loadConfig({ ...ENV, MAZE_MAX_GAME_SEC: '0' })).toThrow(BootError);
   });
+
+  it('the data directory has no default and must be absolute, wherever the server is started', () => {
+    expect(() => loadConfig({ ...ENV, MAZE_DATA_DIR: undefined })).toThrow(/MAZE_DATA_DIR is not set/);
+    for (const relative of ['.data', 'data/events', './x', '../maze/.data']) {
+      expect(() => loadConfig({ ...ENV, MAZE_DATA_DIR: relative }), relative).toThrow(
+        /MAZE_DATA_DIR must be an absolute path/,
+      );
+    }
+    expect(loadConfig({ ...ENV, MAZE_DATA_DIR: '/var/lib/maze' }).dataDir).toBe('/var/lib/maze');
+  });
 });
 
 describe('AC-S8: a refused boot', () => {
@@ -214,8 +316,10 @@ describe('AC-S8: a refused boot', () => {
       expect(reply.status).toBe(503);
       expect(reply.body).toEqual({ error: { code, message: expect.any(String) } });
     }
-    // Health is not a game route.
-    expect(healthGet().status).toBe(200);
+    // A server that refused to boot is not healthy either.
+    const health = await api.health();
+    expect(health.status).toBe(503);
+    expect(health.body).toEqual({ error: { code, message: expect.any(String) } });
   }
 
   it('turns every game route into 503 NOT_CALIBRATED', async () => {
@@ -224,6 +328,10 @@ describe('AC-S8: a refused boot', () => {
 
   it('turns every game route into 503 CHAIN_UNAVAILABLE', async () => {
     await refusedBoot({ ...ENV, RPC_URL: undefined }, 'CHAIN_UNAVAILABLE');
+  });
+
+  it('a start without an absolute data directory is refused as CHAIN_UNAVAILABLE', async () => {
+    await refusedBoot({ ...ENV, MAZE_DATA_DIR: '.data' }, 'CHAIN_UNAVAILABLE');
   });
 });
 
@@ -274,6 +382,53 @@ describe('AC-S8: the instrumentation hook', () => {
     expect(exits).toEqual([1]);
     expect(lines).toHaveLength(1);
     expect(JSON.parse(lines[0])).toMatchObject({ level: 'error', event: 'boot-failed' });
+  });
+});
+
+describe('X24: pnpm dev:up', () => {
+  const FLAGS = ['MAZE_ALLOW_TEST_HOOKS', 'MAZE_TEST_SEED_SECRET', 'MAZE_TUNING_FIXTURE'];
+  // Ports nothing uses: the script must stop before it looks at them.
+  const PORTS = { MAZE_ANVIL_PORT: '39547', MAZE_NEXT_PORT: '39047' };
+  const STATE_DIR = path.join(ROOT, '.data/dev-up-39047');
+
+  function devUp(extraEnv: Record<string, string>, args: string[] = []) {
+    const clean = { ...process.env };
+    for (const flag of FLAGS) delete clean[flag];
+    return spawnSync('bash', [path.join(ROOT, 'scripts/dev-up.sh'), ...args], {
+      cwd: ROOT,
+      env: { ...clean, ...PORTS, ...extraEnv },
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+  }
+
+  it('refuses to start while any hook flag is set, and starts nothing', () => {
+    for (const flag of FLAGS) {
+      const run = devUp({ [flag]: '1' });
+      expect(run.status, flag).toBe(2);
+      expect(run.stderr, flag).toContain('refusing to start');
+      expect(run.stderr, flag).toContain(flag);
+      expect(run.stderr, flag).toContain('--allow-test-hooks');
+      expect(run.stdout, flag).toBe('');
+    }
+    expect(existsSync(STATE_DIR)).toBe(false);
+  });
+
+  it('with --allow-test-hooks the flags pass, under a warning; the switch has no environment form', () => {
+    // An invalid port stops the script right after the hook check, before anything is started.
+    const allowed = devUp({ MAZE_ALLOW_TEST_HOOKS: '1', MAZE_ANVIL_PORT: 'not-a-port' }, ['--allow-test-hooks']);
+    expect(allowed.status).toBe(2);
+    expect(allowed.stderr).not.toContain('refusing to start');
+    expect(allowed.stderr).toContain('WARNING: TEST HOOKS ARE ON (MAZE_ALLOW_TEST_HOOKS)');
+    expect(allowed.stderr).toContain('ports must be numbers');
+
+    for (const name of ['MAZE_DEV_ALLOW_TEST_HOOKS', 'ALLOW_TEST_HOOKS', 'MAZE_ALLOW_TEST_HOOKS_OK']) {
+      const run = devUp({ MAZE_ALLOW_TEST_HOOKS: '1', [name]: '1' });
+      expect(run.status, name).toBe(2);
+      expect(run.stderr, name).toContain('refusing to start');
+    }
+    expect(devUp({}, ['--allow-hooks']).stderr).toContain('unknown argument');
+    expect(existsSync(STATE_DIR)).toBe(false);
   });
 });
 

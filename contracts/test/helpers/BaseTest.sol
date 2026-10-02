@@ -242,14 +242,25 @@ abstract contract MazeBetBase is Test {
         _settleOn(bet, tk, outcome, steps, payout);
     }
 
-    /// @dev A correctly signed result that the contract must nevertheless reject with `selector`.
+    /// @dev A correctly signed result that contract `c` must nevertheless reject with `selector`.
+    function _expectSettleRevertOn(
+        MazeBet c,
+        bytes4 selector,
+        Ticket memory tk,
+        uint8 outcome,
+        uint16 steps,
+        uint256 payout
+    ) internal {
+        bytes memory sig = _settlementSig(c, tk, outcome, steps, payout);
+        vm.expectRevert(selector);
+        vm.prank(relayer);
+        c.settle(tk.gameId, outcome, steps, payout, tk.serverSeed, sig);
+    }
+
     function _expectSettleRevert(bytes4 selector, Ticket memory tk, uint8 outcome, uint16 steps, uint256 payout)
         internal
     {
-        bytes memory sig = _settlementSig(bet, tk, outcome, steps, payout);
-        vm.expectRevert(selector);
-        vm.prank(relayer);
-        bet.settle(tk.gameId, outcome, steps, payout, tk.serverSeed, sig);
+        _expectSettleRevertOn(bet, selector, tk, outcome, steps, payout);
     }
 
     function _status(bytes32 gameId) internal view returns (MazeBet.Status) {

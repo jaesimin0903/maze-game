@@ -1,11 +1,12 @@
-// A separate server process that kills itself at a chosen point of one move request.
+// A separate server process that kills itself at a chosen point of one request.
 // Spawned by crash.test.ts with `tsx`; not a test file itself.
 //
-// The process boots a real server over the given data directory, sends itself one
-// `POST /api/games/:id/move` through the route handler, and, depending on `crash`:
+// The process boots a real server over the given data directory, sends itself one request
+// through the route handler (a move, a cash-out or a ticket request) and, depending on `crash`,
+// dies around the write of the first event of type `killOn` (`move`, `ended` or `ticket-issued`):
 //
-//   after-persist   SIGKILLs itself once the move is durable, before the handler can answer
-//   before-persist  SIGKILLs itself when the move is about to be written
+//   after-persist   SIGKILLs itself once the event is durable, before the handler can answer
+//   before-persist  SIGKILLs itself when the event is about to be written
 //   never           answers normally (control run)
 //
 // It reports on stdout with synchronous writes: READY, BEFORE-PERSIST, PERSISTED,
@@ -14,17 +15,23 @@
 import { writeSync } from 'node:fs';
 import { parseTuning } from '@maze/shared';
 import fixtureJson from '@maze/shared/fixtures/tuning.fixture.json';
+import { POST as ticketPost } from '../../app/api/games/route';
+import { POST as cashoutPost } from '../../app/api/games/[id]/cashout/route';
 import { POST as movePost } from '../../app/api/games/[id]/move/route';
 import { createViemChain } from '../../src/server/chain';
 import type { ServerConfig } from '../../src/server/config';
 import { createContainer, installContainer } from '../../src/server/container';
 import { openFileStore, type EventStore, type StoreEvent } from '../../src/server/store';
 
+export type CrashChildRequest =
+  | { kind: 'move' | 'cashout'; gameId: string; token: string; body: unknown }
+  | { kind: 'ticket'; body: unknown };
+
 export interface CrashChildArgs {
   config: ServerConfig;
-  gameId: string;
-  token: string;
-  body: unknown;
+  request: CrashChildRequest;
+  /** The process dies around the write of the first event of this type. */
+  killOn: 'move' | 'ended' | 'ticket-issued';
   crash: 'after-persist' | 'before-persist' | 'never';
 }
 
@@ -52,10 +59,10 @@ async function main(): Promise<void> {
     close: () => inner.close(),
     async append(events) {
       const list: readonly StoreEvent[] = Array.isArray(events) ? events : [events as StoreEvent];
-      const isMove = list.some((event) => event.type === 'move');
-      if (isMove && args.crash === 'before-persist') die('BEFORE-PERSIST');
+      const hit = list.some((event) => event.type === args.killOn);
+      if (hit && args.crash === 'before-persist') die('BEFORE-PERSIST');
       await inner.append(events);
-      if (isMove && args.crash === 'after-persist') die('PERSISTED');
+      if (hit && args.crash === 'after-persist') die('PERSISTED');
     },
   };
 
@@ -70,14 +77,25 @@ async function main(): Promise<void> {
   installContainer(container);
   report('READY');
 
-  const response = await movePost(
-    new Request(`http://localhost/api/games/${args.gameId}/move`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${args.token}`, 'content-type': 'application/json' },
-      body: JSON.stringify(args.body),
-    }),
-    { params: Promise.resolve({ id: args.gameId }) },
-  );
+  const { request } = args;
+  const response =
+    request.kind === 'ticket'
+      ? await ticketPost(
+          new Request('http://localhost/api/games', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(request.body),
+          }),
+          { params: Promise.resolve({}) },
+        )
+      : await (request.kind === 'move' ? movePost : cashoutPost)(
+          new Request(`http://localhost/api/games/${request.gameId}/${request.kind}`, {
+            method: 'POST',
+            headers: { authorization: `Bearer ${request.token}`, 'content-type': 'application/json' },
+            body: JSON.stringify(request.body),
+          }),
+          { params: Promise.resolve({ id: request.gameId }) },
+        );
   report(`RESPONDED ${response.status} ${await response.text()}`);
   await container.close();
 }

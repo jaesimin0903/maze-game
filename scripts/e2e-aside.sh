@@ -19,6 +19,10 @@
 # This suite drives the user's real Aside browser. It opens its own tabs on 127.0.0.1 only and
 # closes them; see e2e/aside/README.md.
 #
+# The stacks run with test hooks (scripts/dev-up.sh --allow-test-hooks, built in one place:
+# dev_up in e2e/aside/lib.sh). The seed-hook secret is random and new for every run; set
+# MAZE_TEST_SEED_SECRET to repeat a run with the secret its log shows.
+#
 # Scenarios run one at a time, in this order: 01 02 03 04 06 07 08 09 11, then the two that move
 # the chain clock, 10 and 05 (05 last). By default one build (apps/web/.next-f-0) serves all of
 # them: the app reads its chain settings from /api/config at run time.
@@ -54,6 +58,9 @@ PROBE=0
 BUILD=once
 WITH_EXEC="${MAZE_E2E_EXEC:-0}"
 READ_PATH="${MAZE_E2E_READ_PATH:-}"
+# One seed-hook secret for the whole run, handed to every scenario (lib.sh gives it to the
+# server and to the offline route planner). Random unless the caller repeats an earlier run.
+SEED_SECRET="${MAZE_TEST_SEED_SECRET:-$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')}"
 
 say() { echo "e2e:aside: $*"; }
 usage() {
@@ -82,6 +89,7 @@ case "$READ_PATH" in "" | repl | beacon) ;; *) echo "e2e:aside: --read-path must
 for tool in jq curl cast anvil node pnpm bc perl; do
   command -v "$tool" >/dev/null 2>&1 || { say "$tool is not installed"; exit 2; }
 done
+[ "${#SEED_SECRET}" -ge 16 ] || { say "could not draw a seed secret from /dev/urandom (set MAZE_TEST_SEED_SECRET)"; exit 2; }
 
 # ----- which scenarios -----
 
@@ -178,7 +186,7 @@ for num in $SELECTED; do
   mkdir -p "$WORK_DIR/$num"
   CODE=0
   env MAZE_E2E_TABLE="$TABLE" MAZE_E2E_RUN_ID="$RUN_ID" MAZE_E2E_EXEC="$WITH_EXEC" MAZE_E2E_READ_PATH="$READ_PATH" \
-    MAZE_E2E_OUT_DIR="$OUT_DIR" bash "$script" 2>&1 | tee "$WORK_DIR/$num/run.log"
+    MAZE_E2E_OUT_DIR="$OUT_DIR" MAZE_TEST_SEED_SECRET="$SEED_SECRET" bash "$script" 2>&1 | tee "$WORK_DIR/$num/run.log"
   CODE="${PIPESTATUS[0]}"
   if [ -f "$result_file" ] && [ "$(jq -r '.runId' "$result_file" 2>/dev/null)" = "$RUN_ID" ]; then
     jq -c '.' "$result_file" >>"$RESULTS"

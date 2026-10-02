@@ -3,8 +3,10 @@
 // The game flow as one hook: bet, play, poll, end, and the two ways a player settles alone
 // (submitting the server-signed settlement, reclaiming after the deadline).
 //
-// Server calls and contract calls, in order, for one game:
-//   POST /api/games                      ticket (commitment fixed before the client seed is sent)
+// Wallet, server and contract calls, in order, for one game:
+//   signMessage(ticketRequestMessage)    the wallet proves it asks for its own ticket
+//   POST /api/games                      ticket (commitment fixed before the client seed is sent);
+//                                        an unused ticket of this wallet comes back as it was
 //   createGame(...) + receipt            the bet, with the client seed, on chain
 //   POST /api/games/:id/start            first cell
 //   POST /api/games/:id/move | cashout   play
@@ -16,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ONCHAIN_STATUS,
+  ticketRequestMessage,
   type ConfigResponse,
   type Dir,
   type ErrorCode,
@@ -26,6 +29,7 @@ import { ApiError, ServerUnreachableError, apiMessage } from './api';
 import { legalMoves } from './board-view';
 import type { ChainApi, OnchainGame } from './chain';
 import type { ClientDeps } from './deps';
+import { formatClock } from './format';
 import { useInterval, type ChainClock } from './poll';
 import {
   activeGameId,
@@ -36,10 +40,10 @@ import {
   type PlayRecord,
 } from './record';
 import { hashSessionToken, newSessionToken } from './seed';
-import { describeTxError, type WalletApi } from './wallet';
+import { describeTxError, isUserRejection, type WalletApi } from './wallet';
 
 export type Phase = 'lobby' | 'betting' | 'playing' | 'ended';
-export type BetStep = 'ticket' | 'tx' | 'confirm';
+export type BetStep = 'sign' | 'ticket' | 'tx' | 'confirm';
 export type Busy = 'move' | 'cashout' | 'reclaim' | 'settle';
 export type ResultOutcome = 'exit' | 'loss' | 'cashout' | 'auto-cashout' | 'reclaimed';
 
@@ -201,6 +205,11 @@ export function useGame(p: {
   const failedSyncs = useRef(0);
   const noneReads = useRef(0);
   const pollTicks = useRef(0);
+  /** The chain second of the latest render, for flows that outlive the render they started in. */
+  const chainNow = useRef(now);
+  useEffect(() => {
+    chainNow.current = now;
+  });
 
   const fail = useCallback(
     (error: unknown): void => {
@@ -312,19 +321,44 @@ export function useGame(p: {
     async (bet: { tier: number; betWei: bigint; clientSeed: Hex }): Promise<void> => {
       if (!wallet || store.current.phase !== 'lobby') return;
       const { tier, betWei, clientSeed } = bet;
-      update({ ...INITIAL, phase: 'betting', betStep: 'ticket' });
+      update({ ...INITIAL, phase: 'betting', betStep: 'sign' });
 
       let hash: Hex;
       let record: PlayRecord;
       try {
         const token = newSessionToken();
+        const sessionTokenHash = hashSessionToken(token);
+        const signature = await wallet.signMessage(
+          ticketRequestMessage({
+            chainId: config.chainId,
+            mazeBetAddress: config.contract,
+            player: wallet.address,
+            tier,
+            sessionTokenHash,
+          }),
+        );
+        update({ betStep: 'ticket' });
         const ticket = await api.createTicket({
           player: wallet.address,
           tier,
-          sessionTokenHash: hashSessionToken(token),
+          sessionTokenHash,
+          signature,
         });
-        if (ticket.player.toLowerCase() !== wallet.address.toLowerCase() || ticket.tier !== tier) {
-          throw new Error('서버가 다른 지갑 또는 다른 크기의 티켓을 보냈습니다');
+        if (ticket.player.toLowerCase() !== wallet.address.toLowerCase()) {
+          throw new Error('서버가 다른 지갑의 티켓을 보냈습니다');
+        }
+        if (ticket.tier !== tier) {
+          // The server handed back this wallet's unused ticket, which fixed another size. Its
+          // commitment is for that size, so it is not spent on a bet the player did not choose.
+          const size = (index: number): string => {
+            const n = config.tiers[index]?.n;
+            return n === undefined ? `${index}번 크기` : `${n}×${n}`;
+          };
+          throw new Error(
+            `이 지갑에는 아직 쓰지 않은 ${size(ticket.tier)} 티켓이 남아 있어 ${size(tier)} 티켓을 새로 받을 수 없습니다. ` +
+              `베팅 트랜잭션은 보내지 않았습니다. ${size(ticket.tier)}로 베팅하거나, 그 티켓이 만료된 뒤` +
+              `(약 ${formatClock(ticket.expirySec - chainNow.current)} 뒤)에 ${size(tier)}로 다시 베팅하세요`,
+          );
         }
         record = {
           gameId: ticket.gameId,
@@ -343,8 +377,23 @@ export function useGame(p: {
         update({ betStep: 'tx', record });
         hash = await wallet.createGame({ ticket, clientSeed, betWei });
       } catch (error) {
+        // Back to the lobby whatever failed: nothing was sent to the chain, and a ticket already
+        // issued is handed out again when the same wallet asks for one.
+        const failedAt = store.current.betStep;
         update({ ...INITIAL });
-        fail(error);
+        if (isUserRejection(error)) {
+          update({
+            error:
+              failedAt === 'sign'
+                ? '지갑에서 티켓 요청 서명을 거절했습니다. 베팅은 시작되지 않았습니다. 다시 베팅을 누르면 처음부터 진행합니다'
+                : '지갑에서 베팅 트랜잭션을 거절했습니다. 베팅액은 빠져나가지 않았습니다. 다시 베팅을 누르면 이어서 진행합니다',
+          });
+        } else if (error instanceof ApiError && error.code === 'UNAUTHORIZED') {
+          update({
+            error:
+              '서버가 티켓 요청의 지갑 서명을 확인하지 못했습니다. 지갑의 계정과 네트워크를 확인하고 다시 베팅하세요',
+          });
+        } else fail(error);
         return;
       }
 
@@ -538,14 +587,16 @@ export function useGame(p: {
   const active = phase === 'playing' && view?.status === 'active' && record !== null;
   const legal = active && state.busy === null ? legalMoves(record.n, record.observations) : [];
 
+  // The player holds the signed settlement, so while the chain still shows the game Active and
+  // the settle deadline has not passed, the player's own `settle` is on offer. A hash the server
+  // reported counts for nothing here: it names a transaction that was sent, and one that is
+  // dropped or stuck never settles the game. The chain's status is the only thing that ends this.
+  // It is offered without a wallet too (a reloaded page has none yet); sending needs one.
   const onchain = state.onchain;
   const canSelfSettle =
     phase === 'ended' &&
-    wallet !== null &&
     !record?.reclaimed &&
     record?.terminal != null &&
-    record.terminal.settleTxHash === null &&
-    state.selfSettleTx === null &&
     onchain?.status === ONCHAIN_STATUS.Active &&
     now <= onchain.settleDeadline &&
     (state.serverUnreachable ||

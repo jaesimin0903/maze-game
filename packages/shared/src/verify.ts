@@ -29,6 +29,12 @@ export interface VerifyReport {
    * equals it and the cell is where the recorded moves put the player after `step` moves.
    */
   cells: { cell: number; observed: number; actual: number; match: boolean }[];
+  /**
+   * The verdict over `cells`: `true` when every entry matches, `false` when one does not, and
+   * `null` when there were no observations, so nothing was compared. Use this rather than
+   * `cells.every(...)`, which is also true for an empty record.
+   */
+  cellsOk: boolean | null;
   /** Replaying the recorded moves over `maze` ends with the settled outcome and step count. */
   outcomeOk: boolean;
   /** The settled payout is what the table prescribes for the settled outcome and step count. */
@@ -93,6 +99,7 @@ export function verifyGame(p: {
     maze,
     solution: solve(maze),
     cells,
+    cellsOk: cells.length === 0 ? null : cells.every((cell) => cell.match),
     outcomeOk,
     payoutOk: expectedWei !== null && payoutWei === expectedWei,
   };

@@ -40,7 +40,7 @@ function expectNotRevealable(reply: { status: number; body: unknown }): void {
   expect(reply.body).toEqual({ error: { code: 'NOT_REVEALABLE', message: expect.any(String) } });
 }
 
-describe('AC-S10: reveal with the watcher running', () => {
+describe('AC-S2 AC-S10: reveal with the watcher running', () => {
   it('a settled game is revealed with reason settled', async () => {
     server = await startServer(h);
     const game = await openGame(h, playerOf(h, 0));
@@ -61,7 +61,7 @@ describe('AC-S10: reveal with the watcher running', () => {
 
   it('an unused ticket is revealed only once a block is more than 60 s past its expiry', async () => {
     const player = playerOf(h, 1);
-    const { ticket } = await requestTicket(player.address);
+    const { ticket } = await requestTicket(player);
     expectNotRevealable(await api.reveal(ticket.gameId));
 
     // Expired, but not yet by more than 60 seconds.
@@ -100,13 +100,13 @@ describe('AC-S10: reveal with the watcher running', () => {
   });
 });
 
-describe('AC-S10: reveal with the watcher disabled', () => {
+describe('AC-S2 AC-S10: reveal with the watcher disabled', () => {
   it('a game that is Active on chain is NOT_REVEALABLE although the server has no record of it', async () => {
     await server?.stop();
     const blind = (server = await startServer(h, { watcher: false, background: false }));
 
     const player = playerOf(h, 2);
-    const { ticket, token } = await requestTicket(player.address);
+    const { ticket, token } = await requestTicket(player);
     await createOnChain(h, player, ticket, BET, `0x${'62'.repeat(32)}`);
     await blind.container.worker.tick();
 

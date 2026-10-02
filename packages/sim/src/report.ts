@@ -663,7 +663,8 @@ export function renderTuningReport(input: ReportInput): string {
         ),
       ),
     );
-    parts.push('', `전환 명령 (재튜닝은 컨트랙트 재배포를 뜻한다): \`pnpm tuning:apply ${input.houseMaxTablePath} && pnpm tuning:check && pnpm dev:down && pnpm dev:up\``);
+    // The contract is redeployed before the check: `tuning:check` compares the table with the deployed contract.
+    parts.push('', `전환 명령 (재튜닝은 컨트랙트 재배포를 뜻한다): \`pnpm tuning:apply ${input.houseMaxTablePath} && pnpm dev:down && pnpm dev:up && pnpm tuning:check\``);
     parts.push('', certificationSection(`하우스 최대 표 (b): ${b.name}`, input.houseMaxCertification));
     parts.push('', '### 하우스 최대 표의 흥미·세션 지표 (가정)', '', engagementSection(b));
   }

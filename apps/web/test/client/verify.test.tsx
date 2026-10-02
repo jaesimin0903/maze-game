@@ -237,6 +237,31 @@ describe('verify screen', () => {
     expect(match('verify-payout-ok')).toBe('unknown');
   });
 
+  it('a record without a single observed cell says that nothing was compared, not that the walls match', async () => {
+    // Reclaimed before the server showed the first cell: there is no wall to hold against the maze.
+    const record = recordOf([], undefined);
+    expect(record.observations).toEqual([]);
+    const world = worldWith(record, ONCHAIN_STATUS.Reclaimed);
+    issueTicket(world, record);
+    saveRecord(record);
+    render(<VerifyView gameId={GAME_ID} deps={world.deps()} />);
+
+    await screen.findByTestId('verify-hash-match');
+    expect(match('verify-hash-match')).toBe('true');
+    expect(match('verify-cells-match')).toBe('unknown');
+    const check = screen.getByTestId('verify-cells-match');
+    expect(check.textContent).toContain('확인 불가');
+    expect(check.textContent).toContain('비교하지 않았습니다');
+    expect(check.textContent).not.toContain('0 / 0');
+    expect(shownCells()).toEqual([]);
+
+    // The same screen still reports a real comparison for a record that has observations.
+    fireEvent.change(screen.getByTestId('verify-import'), {
+      target: { value: JSON.stringify(exitRecord()) },
+    });
+    await waitFor(() => expect(match('verify-cells-match')).toBe('true'));
+  });
+
   it('says that the seed is not public yet for a game still active on chain', async () => {
     const record = recordOf(solve(maze()).slice(0, 2), undefined);
     const world = worldWith(record, ONCHAIN_STATUS.Active);

@@ -203,6 +203,31 @@ describe('payouts', () => {
     expect(exitPayoutWei(table, 1n, 0)).toBe(2n);
   });
 
+  it('AC-R1 X23 the exit payout and the refund drop the remainder: literals for the certified multipliers', () => {
+    // The fixture multipliers are multiples of 10000 and never leave a remainder, so the check
+    // above cannot tell rounding down from rounding up. With the multipliers of the certified
+    // base table, 12345678901234567 × 26088 / 66112 / 184695 leaves 3896 / 3504 / 2065 when
+    // divided by 10000. contracts/test/MazeBet.t.sol pins the same literals for the contract.
+    const bet = 12_345_678_901_234_567n;
+    const certified = structuredClone(table);
+    [26_088, 66_112, 184_695].forEach((multiplierBps, index) => {
+      certified.tiers[index].multiplierBps = multiplierBps;
+    });
+    expect([0, 1, 2].map((tier) => exitPayoutWei(certified, bet, tier))).toEqual([
+      32_207_407_117_540_738n,
+      81_619_752_351_841_969n,
+      228_018_516_466_351_835n,
+    ]);
+    // Fixture tier 0 after 0, 1, 2 and 23 moves: 9500 / 7300 / 6694 / 1085 bps leave 6500 / 9100 / 1498 / 5195.
+    expect([0, 1, 2, 23].map((k) => refundBps(table, 0, k))).toEqual([9500, 7300, 6694, 1085]);
+    expect([0, 1, 2, 23].map((k) => refundWei(table, bet, 0, k))).toEqual([
+      11_728_394_956_172_838n,
+      9_012_345_597_901_233n,
+      8_264_197_456_486_419n,
+      1_339_506_160_783_950n,
+    ]);
+  });
+
   it('AC-R3 a cash-out after k moves pays bet × refundBps[k] / 10000, and k = 0 pays refundBps[0]', () => {
     table.tiers.forEach((tier, index) => {
       for (const bet of bets) {

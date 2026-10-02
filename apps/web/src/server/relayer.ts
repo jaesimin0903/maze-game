@@ -3,7 +3,9 @@
 // For every game that has ended in the server's log and is still `Active` on chain, `settle` is
 // sent again whenever no `settle` transaction of that game is younger than `RESEND_AFTER_SEC`
 // chain seconds, until the game is finished on chain or its deadline has passed. A transaction
-// that is dropped, stuck or reverted is therefore simply followed by another one.
+// that is dropped, stuck or reverted is therefore simply followed by another one. A send that
+// fails outright leaves no transaction behind and is tried again on the next pass, whether or
+// not the chain clock has moved in between.
 //
 // Sends use the node's pending nonce and are serialized by one mutex, which is held only while
 // a transaction is being submitted, never while one is waiting to be mined. Together with the
@@ -24,8 +26,12 @@ export const ALERT_BEFORE_DEADLINE_SEC = 300;
 
 export class Relayer {
   private readonly mutex = new Mutex();
-  /** Chain second of the last send attempt per game: at most one attempt per block time. */
-  private readonly attemptedAt = new Map<Hex, number>();
+  /**
+   * Chain second at which the node last accepted a `settle` of each game. Set the moment the
+   * node answers, before the send is recorded in the log, so that a pass which runs in between
+   * cannot send a second transaction. A send the node refused leaves no mark.
+   */
+  private readonly sentAt = new Map<Hex, number>();
   private readonly alerted = new Set<Hex>();
   private readonly abandoned = new Set<Hex>();
   private readonly inflight = new Set<Promise<void>>();
@@ -44,7 +50,7 @@ export class Relayer {
     const now = await this.deps.clock.chainNow();
     const games = this.deps.service.unsettledGames();
     const pending = new Set(games.map((game) => game.gameId));
-    for (const memo of [this.attemptedAt, this.alerted, this.abandoned]) {
+    for (const memo of [this.sentAt, this.alerted, this.abandoned]) {
       for (const gameId of memo.keys()) if (!pending.has(gameId)) memo.delete(gameId);
     }
     for (const game of games) await this.attempt(game.gameId, now);
@@ -65,9 +71,12 @@ export class Relayer {
     await Promise.all([...this.inflight]);
   }
 
+  /** True when no `settle` of the game was accepted by the node in the last `RESEND_AFTER_SEC`. */
   private due(game: Game, now: number): boolean {
-    const { lastSentSec } = game.settle;
-    return lastSentSec === null || now - lastSentSec >= RESEND_AFTER_SEC;
+    const accepted = this.sentAt.get(game.gameId);
+    const recorded = game.settle.lastSentSec;
+    const last = accepted === undefined ? recorded : Math.max(accepted, recorded ?? accepted);
+    return last === null || now - last >= RESEND_AFTER_SEC;
   }
 
   /** Never throws: a failure for one game must not stop the pass over the others. */
@@ -115,8 +124,6 @@ export class Relayer {
     // Everything is checked again: the state may have changed while waiting for the mutex.
     const at = await clock.chainNow();
     if (game.final !== null || at > deadline || !this.due(game, at)) return;
-    if (this.attemptedAt.get(gameId) === at) return;
-    this.attemptedAt.set(gameId, at);
 
     // "Still Active on chain" is read from the chain, not inferred from the log. When the game
     // is already finished there, the watcher records how.
@@ -135,6 +142,7 @@ export class Relayer {
       },
       nonce,
     );
+    this.sentAt.set(gameId, at);
     await service.recordSettleSent(gameId, txHash, nonce, at);
   }
 

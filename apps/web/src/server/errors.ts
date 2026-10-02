@@ -7,7 +7,7 @@ import { ERROR_STATUS, type ErrorCode } from '@maze/shared';
 
 const MESSAGES: Record<ErrorCode, string> = {
   BAD_REQUEST: 'The request is malformed.',
-  UNAUTHORIZED: 'The session token is missing or does not belong to this game.',
+  UNAUTHORIZED: 'The session token or the signature is missing or does not match.',
   NOT_FOUND: 'Not found.',
   TICKET_EXPIRED: 'The ticket expired before the game was created on chain.',
   NOT_ON_CHAIN: 'The server has not seen this game on chain yet.',
@@ -20,6 +20,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   DEADLINE_PASSED: 'The time limit of the game has passed.',
   NOT_REVEALABLE: 'The server seed of this game cannot be revealed yet.',
   RATE_LIMITED: 'Too many requests.',
+  INTERNAL: 'Internal error.',
   NOT_CALIBRATED: 'The tuning table is not certified for play.',
   TABLE_MISMATCH: 'The tuning table does not match the deployed contract.',
   CHAIN_UNAVAILABLE: 'The chain is unavailable.',
@@ -67,16 +68,12 @@ export class BootError extends Error {
 }
 
 /**
- * The response for `code`. `INTERNAL` (500) is not part of the public error-code list: it is the
- * answer to an unexpected exception, and its body says nothing about what went wrong.
+ * The response for `code`. `INTERNAL` (500) is the answer to an unexpected exception; its body
+ * says nothing about what went wrong.
  */
-export function errorResponse(code: ErrorCode | 'INTERNAL'): Response {
-  const body =
-    code === 'INTERNAL'
-      ? { error: { code, message: 'Internal error.' } }
-      : { error: { code, message: MESSAGES[code] } };
-  return Response.json(body, {
-    status: code === 'INTERNAL' ? 500 : ERROR_STATUS[code],
-    headers: { 'cache-control': 'no-store' },
-  });
+export function errorResponse(code: ErrorCode): Response {
+  return Response.json(
+    { error: { code, message: MESSAGES[code] } },
+    { status: ERROR_STATUS[code], headers: { 'cache-control': 'no-store' } },
+  );
 }

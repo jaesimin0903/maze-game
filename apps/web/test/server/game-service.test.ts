@@ -20,13 +20,13 @@ import {
   deadEndRoute,
   exitRoute,
   makeEnv,
-  newToken,
   ONCHAIN,
   openGame,
   outDir,
   PLAYERS,
   requestTicket,
   SIGNER_ADDRESS,
+  ticketBody,
   wallDir,
   type OpenedGame,
   type TestEnv,
@@ -392,24 +392,98 @@ describe('a game the server could not end in time', () => {
     expectError(await api.cashout(game.gameId, game.token, { step: 1 }), 409, 'GAME_NOT_ACTIVE');
     expect(env.signs.settlement).toBe(0);
     // The address is free again.
-    expect((await api.ticket({ player: PLAYERS[0], tier: 0, sessionTokenHash: newToken().sessionTokenHash })).status).toBe(201);
+    expect((await api.ticket(await ticketBody())).status).toBe(201);
+  });
+
+  it('boundary: the settle deadline second itself is still in time, the cash-out is signed and settles', async () => {
+    const game = await openGame(env);
+    const deadline = env.chain.games.get(game.gameId)!.settleDeadlineSec;
+
+    // No worker pass until the last second in which the contract accepts `settle`.
+    env.advance(deadline - env.chain.time);
+    await env.tick();
+    await env.container.relayer.drain();
+    expect(env.signs.settlement).toBe(1);
+    expect(env.container.service.get(game.gameId)!.ended).toMatchObject({
+      outcome: 1,
+      steps: 0,
+      auto: true,
+      atSec: deadline,
+    });
+    expect(env.logs.filter((line) => line.event === 'settle-window-missed')).toHaveLength(0);
+    expect(env.chain.sent).toHaveLength(1);
+
+    // A block that carries the deadline's own timestamp settles it; reclaim is closed.
+    env.chain.mine();
+    expect(env.chain.games.get(game.gameId)!.status).toBe(ONCHAIN.Settled);
+    expect(() => env.chain.reclaim(game.gameId)).toThrow('GameNotActive');
+  });
+});
+
+describe('boundary: the idle deadline second', () => {
+  it('nothing is signed one second before the idle deadline; the cash-out is signed at that second', async () => {
+    const idle = env.table.timing.idleTimeoutSec;
+    const game = await openGame(env);
+    const route = exitRoute(game.maze);
+    const view = await walk(game, [route[0]]);
+    const deadline = view.idleDeadlineSec;
+    expect(deadline).toBe(env.chain.time + idle);
+
+    env.advance(deadline - 1 - env.chain.time);
+    await env.tick();
+    expect(env.signs.settlement).toBe(0);
+    expect(env.container.service.get(game.gameId)!.ended).toBeNull();
+    // One second before the deadline the player can still move.
+    const moved = await api.move<GameView>(game.gameId, game.token, { step: 1, dir: route[1] });
+    expect(moved.status).toBe(200);
+    const next = moved.body.idleDeadlineSec;
+    expect(next).toBe(env.chain.time + idle);
+
+    env.advance(next - 1 - env.chain.time);
+    await env.tick();
+    expect(env.signs.settlement).toBe(0);
+
+    // Exactly at the deadline second the game is due: the player is refused, the worker signs.
+    env.advance(1);
+    expect(env.chain.time).toBe(next);
+    expectError(await api.cashout(game.gameId, game.token, { step: 2 }), 409, 'DEADLINE_PASSED');
+    await env.tick();
+    expect(env.signs.settlement).toBe(1);
+    expect(env.container.service.get(game.gameId)!.ended).toMatchObject({
+      outcome: 1,
+      steps: 2,
+      auto: true,
+      cause: 'idle',
+      atSec: next,
+      payoutWei: refundWei(env.table, BET, 0, 2),
+    });
+    await env.container.relayer.drain();
+    expect(env.chain.sent.map((tx) => tx.args.gameId)).toEqual([game.gameId]);
   });
 });
 
 describe('ticket policy', () => {
-  it('X3: at most 10 ticket requests per address per 60 chain seconds', async () => {
-    const body = { player: PLAYERS[0], tier: 0, sessionTokenHash: newToken().sessionTokenHash };
-    // The first request issues a ticket; while it is outstanding the rest are ALREADY_ACTIVE
-    // (one live ticket per address, plan §7.3), but every request still counts toward the limit.
-    expect((await api.ticket(body)).status).toBe(201);
-    for (let i = 1; i < 10; i++) expectError(await api.ticket(body), 409, 'ALREADY_ACTIVE');
+  it('X3: at most 10 signed ticket requests per address per 60 chain seconds', async () => {
+    const body = await ticketBody();
+    // The first request issues a ticket; while it is outstanding the rest get that same ticket
+    // (one live ticket per address, plan §7.3), and every signed request counts toward the limit.
+    const first = await api.ticket<TicketResponse>(body);
+    expect(first.status).toBe(201);
+    for (let i = 1; i < 10; i++) {
+      const again = await api.ticket<TicketResponse>(body);
+      expect(again.status).toBe(201);
+      expect(again.body).toEqual(first.body);
+    }
     expectError(await api.ticket(body), 429, 'RATE_LIMITED');
+    expect(env.signs.ticket).toBe(1);
     // Another address is not affected.
-    expect((await api.ticket({ ...body, player: PLAYERS[1] })).status).toBe(201);
+    expect((await api.ticket(await ticketBody(PLAYERS[1]))).status).toBe(201);
 
-    // Once the ticket has expired and the window has passed, the address may request again.
+    // Once the ticket has expired and the window has passed, the address gets a new ticket.
     env.advance(env.table.timing.ticketExpirySec + 1);
-    expect((await api.ticket(body)).status).toBe(201);
+    const later = await api.ticket<TicketResponse>(body);
+    expect(later.status).toBe(201);
+    expect(later.body.gameId).not.toBe(first.body.gameId);
   });
 
   it('X3 / X4: tickets reveal only hashes of fresh random seeds', async () => {
@@ -430,7 +504,7 @@ describe('ticket policy', () => {
 
   it('ALREADY_ACTIVE while the address has a game that is active on chain', async () => {
     const game = await openGame(env);
-    const body = { player: PLAYERS[0], tier: 0, sessionTokenHash: newToken().sessionTokenHash };
+    const body = await ticketBody();
     expectError(await api.ticket(body), 409, 'ALREADY_ACTIVE');
     // The check is not case-sensitive in the address.
     expectError(await api.ticket({ ...body, player: PLAYERS[0].toLowerCase() }), 409, 'ALREADY_ACTIVE');
@@ -451,19 +525,21 @@ describe('ticket policy', () => {
     // The block with the settlement exists, but the worker has not made a pass since.
     env.advance(1);
     expect(env.chain.games.get(game.gameId)!.status).toBe(ONCHAIN.Settled);
-    const body = { player: PLAYERS[0], tier: 0, sessionTokenHash: newToken().sessionTokenHash };
-    expect((await api.ticket<TicketResponse>(body)).status).toBe(201);
+    expect((await api.ticket<TicketResponse>(await ticketBody())).status).toBe(201);
   });
 
   it('rejects malformed ticket requests', async () => {
-    const hash = newToken().sessionTokenHash;
+    const good = await ticketBody();
+    const { signature: _signature, ...unsigned } = good;
     for (const body of [
-      { player: 'nope', tier: 0, sessionTokenHash: hash },
-      { player: PLAYERS[0], tier: 3, sessionTokenHash: hash },
-      { player: PLAYERS[0], tier: -1, sessionTokenHash: hash },
-      { player: PLAYERS[0], tier: 0, sessionTokenHash: '0x12' },
-      { player: PLAYERS[0], tier: 0 },
-      { player: PLAYERS[0], tier: 0, sessionTokenHash: hash, bet: '1' },
+      { ...good, player: 'nope' },
+      { ...good, tier: 3 },
+      { ...good, tier: -1 },
+      { ...good, sessionTokenHash: '0x12' },
+      { player: good.player, tier: 0 },
+      { player: good.player, tier: 0, signature: good.signature },
+      { ...unsigned, bet: '1' },
+      { ...good, bet: '1' },
     ]) {
       const reply = await api.ticket<ErrorResponse>(body);
       expectError(reply, 400, 'BAD_REQUEST');

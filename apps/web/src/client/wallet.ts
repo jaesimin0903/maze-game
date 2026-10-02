@@ -1,6 +1,7 @@
 // Wallet abstraction over viem (plan §1.3 (f), §7.6). Two paths produce the same `WalletApi`:
 // a browser wallet (EIP-1193) and the dev wallet, an Anvil account signing locally. The dev
-// wallet exists only when the server's config says so.
+// wallet exists only when the server's config says so. Both sign messages as well as
+// transactions: a ticket request carries the player's signature (`ticketRequestMessage`).
 
 import {
   BaseError,
@@ -28,6 +29,11 @@ export type WalletKind = 'injected' | 'dev';
 export interface WalletApi {
   kind: WalletKind;
   address: Hex;
+  /**
+   * EIP-191 `personal_sign` of the UTF-8 bytes of `message` by `address`. The dev wallet signs
+   * locally; a browser wallet asks the player.
+   */
+  signMessage(message: string): Promise<Hex>;
   createGame(p: { ticket: TicketResponse; clientSeed: Hex; betWei: bigint }): Promise<Hex>;
   /** Submits the server-signed settlement the player received when the game ended. */
   settle(p: { gameId: Hex; terminal: GameTerminal }): Promise<Hex>;
@@ -69,6 +75,8 @@ function walletFrom(
   return {
     kind,
     address: typeof account === 'string' ? account : account.address,
+    // viem signs with a local account itself and sends `personal_sign` for an address.
+    signMessage: (message) => client.signMessage({ account, message }),
     createGame: ({ ticket, clientSeed, betWei }) =>
       client.writeContract({
         ...base,
@@ -166,13 +174,18 @@ const REVERT_MESSAGES: Record<string, string> = {
   NothingToWithdraw: '인출할 보류 금액이 없습니다',
 };
 
+/** The player dismissed the wallet's prompt (EIP-1193 error 4001) instead of approving it. */
+export function isUserRejection(error: unknown): boolean {
+  return (
+    error instanceof BaseError && error.walk((e) => e instanceof UserRejectedRequestError) !== null
+  );
+}
+
 /** A sentence for the player about a failed transaction. */
 export function describeTxError(error: unknown): string {
   const name = revertName(error);
   if (name !== null) return REVERT_MESSAGES[name] ?? `컨트랙트가 거부했습니다 (${name})`;
-  if (error instanceof BaseError) {
-    if (error.walk((e) => e instanceof UserRejectedRequestError)) return '지갑에서 요청을 거절했습니다';
-    return error.shortMessage;
-  }
+  if (isUserRejection(error)) return '지갑에서 요청을 거절했습니다';
+  if (error instanceof BaseError) return error.shortMessage;
   return error instanceof Error ? error.message : String(error);
 }

@@ -24,12 +24,25 @@
 # and the production table is calibrated, this script starts the stack with `pnpm dev:up`
 # (production table, no test hooks), checks, and stops it again with `pnpm dev:down`.
 #
-# A criterion is PASS when every suite of its row in plan §5 passed and, where one of those
-# suites is a test suite, at least one test in it is named after the criterion (plan §4.2).
-# It is BLOCKED when a suite of its row was blocked and none failed. AC-A7 is advisory: it is
-# reported but does not decide the exit code.
+# What a criterion's result means. Results are derived per suite; this script does not trace
+# which test proved which criterion. A criterion is PASS when every suite of its row in plan §5
+# exited 0 and, for EACH test suite among them, a test of that suite is named after the
+# criterion in its title (plan §4.2): the first argument of it( / test( / describe( or the name
+# of a Foundry test or invariant function. A comment or a title in another suite of the row
+# does not count. Criteria whose row holds no test suite pass on their command exiting 0 alone;
+# the output says how many those are. It is BLOCKED when a suite of its row was blocked and
+# none failed.
+#
+# AC-A7 is advisory and is neither counted nor part of the exit code. Its status is the result
+# scenario 09 recorded in the aside run of this call (e2e/aside/out/results.json): PASS, FAIL,
+# BLOCKED, or NOT-RUN when the scenario was not executed (it runs only on request).
+#
+# AC-I2 (T-own) compares the paths changed against HEAD with the owned paths. On a clean tree
+# there is nothing to compare; the suite detail and the criterion note then say so.
 #
 # Output: .data/verify-all/result.json (read by `pnpm report:check`), .data/verify-all/logs/.
+# The result records HEAD and the working-tree state it was produced for; `pnpm report:check`
+# refuses it for any other tree.
 # Exit codes: 0 = every criterion PASS, 1 = at least one FAIL, 3 = no FAIL, at least one
 # BLOCKED, 2 = bad arguments.
 
@@ -43,6 +56,8 @@ OUT="$ROOT_DIR/.data/verify-all"
 LOGS="$OUT/logs"
 SUITES_FILE="$OUT/suites.tsv"
 CRITERIA_FILE="$OUT/criteria.tsv"
+TITLES="$OUT/titles"
+ASIDE_RESULTS="${MAZE_E2E_OUT_DIR:-$ROOT_DIR/e2e/aside/out}/results.json"
 RESULT_FILE="$OUT/result.json"
 TABLE="packages/shared/src/tuning.json"
 REPORTS="packages/sim/reports"
@@ -57,8 +72,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-mkdir -p "$LOGS"
-rm -f "$LOGS"/*.log
+mkdir -p "$LOGS" "$TITLES"
+rm -f "$LOGS"/*.log "$TITLES"/*.txt
 : >"$SUITES_FILE"
 STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -75,6 +90,10 @@ record() {
 
 status_of() {
   awk -F'\t' -v suite="$1" '$1 == suite { status = $2 } END { print status }' "$SUITES_FILE"
+}
+
+detail_of() {
+  awk -F'\t' -v suite="$1" '$1 == suite { detail = $3 } END { print detail }' "$SUITES_FILE"
 }
 
 not_run() {
@@ -128,7 +147,26 @@ simple T-sim "pnpm --filter @maze/sim test"
 simple T-web "pnpm --filter @maze/web test"
 simple T-forge "forge test --root contracts"
 simple T-abi "pnpm abi:check"
-simple T-own "pnpm ownership:check"
+
+# The ownership check passes trivially when nothing differs from HEAD, so the suite records how
+# many changed paths it actually compared.
+own_suite() {
+  local code=0 changed
+  if ! wanted T-own; then record T-own FAIL "not run (--only)"; return; fi
+  echo "== T-own: pnpm ownership:check"
+  step T-own "pnpm ownership:check" || code=$?
+  changed="$(sed -n 's/^ownership:check OK: \([0-9][0-9]*\) changed paths.*/\1/p' "$LOGS/T-own.log" | tail -n 1)"
+  if [ "$code" -ne 0 ]; then
+    record T-own FAIL "exit $code"
+  elif [ -z "$changed" ]; then
+    record T-own FAIL "exit 0, but the output does not say how many changed paths were compared"
+  elif [ "$changed" -eq 0 ]; then
+    record T-own PASS "exit 0 on a clean tree: 0 changed paths, so no path was compared with the owned paths"
+  else
+    record T-own PASS "exit 0: $changed changed path(s) compared, all inside the owned paths"
+  fi
+}
+own_suite
 simple T-int "pnpm test:integration"
 
 EXACT_COMMANDS=()
@@ -300,14 +338,74 @@ test_dirs() {
   esac
 }
 
+# titles <dir>...: one test title per line. In *.test.ts(x): the first string argument of
+# it( / test( / describe(, also in the `.each(...)(` form. In *.sol: the names of the test and
+# invariant functions. Comments and other text are not titles.
+titles() {
+  node - "$@" <<'NODE'
+const { readdirSync, readFileSync, statSync } = require('node:fs');
+const { join } = require('node:path');
+const walk = (dir) =>
+  readdirSync(dir)
+    .sort()
+    .flatMap((name) => {
+      const path = join(dir, name);
+      return statSync(path).isDirectory() ? walk(path) : [path];
+    });
+const STRING = String.raw`(['"\`])((?:\\[\s\S]|(?!\1)[^\\])*)\1`;
+// `it(`, `test(` or `describe(` followed by a string, or the `)(` that closes `.each(...)`.
+const TS_TITLE = new RegExp(String.raw`(?:(?:^|[^A-Za-z0-9_$.])(?:it|test|describe)|\))\(\s*${STRING}`, 'g');
+const SOL_TITLE = /function\s+((?:test|invariant)[A-Za-z0-9_]*)\s*\(/g;
+for (const dir of process.argv.slice(2)) {
+  for (const file of walk(dir)) {
+    const text = readFileSync(file, 'utf8');
+    if (/\.sol$/.test(file)) for (const match of text.matchAll(SOL_TITLE)) console.log(match[1]);
+    else if (/\.test\.tsx?$/.test(file)) for (const match of text.matchAll(TS_TITLE)) console.log(match[2].replace(/\s+/g, ' '));
+  }
+}
+NODE
+}
+
+for suite in T-shared T-sim T-web T-int T-forge; do
+  # shellcheck disable=SC2046
+  titles $(test_dirs "$suite") >"$TITLES/$suite.txt"
+done
+
+# named_in <suite> <criterion>: a test title of the suite names the criterion.
+named_in() {
+  grep -qE "AC[-_ ]?${2#AC-}([^0-9]|\$)" "$TITLES/$1.txt"
+}
+
+# The recorded result of scenario 09 in the aside run of this call: PASS, FAIL, BLOCKED or
+# NOT-RUN. Anything else (no file, no scenario 09, a result from an earlier call) is NOT-RUN.
+scenario_09() {
+  [ "$(status_of T-aside)" != "" ] && ! not_run T-aside || { echo "NOT-RUN|T-aside was not run"; return; }
+  node - "$ASIDE_RESULTS" "$STARTED_AT" <<'NODE'
+const { readFileSync } = require('node:fs');
+const [file, startedAt] = process.argv.slice(2);
+let out = 'NOT-RUN|scenario 09 has no recorded result';
+try {
+  const results = JSON.parse(readFileSync(file, 'utf8'));
+  const scenario = (results.scenarios ?? []).find((entry) => entry.scenario === '09');
+  if (String(results.finishedAt ?? '') < startedAt) out = 'NOT-RUN|the recorded aside results are older than this run';
+  else if (scenario !== undefined && ['PASS', 'FAIL', 'BLOCKED', 'NOT-RUN'].includes(scenario.result)) {
+    const reason = String(scenario.reason ?? '').replace(/[\t\n"\\|]/g, ' ').slice(0, 160);
+    out = `${scenario.result}|scenario 09 ${scenario.result === 'NOT-RUN' ? 'was not executed' : 'recorded ' + scenario.result}${reason === '' ? '' : ': ' + reason}`;
+  }
+} catch {
+  out = 'NOT-RUN|scenario 09 has no recorded result';
+}
+console.log(out);
+NODE
+}
+
 # Writes criteria.tsv (<criterion> <status> <suites> <note>) from the suites recorded so far.
 evaluate() {
-  local criterion suites suite status note dirs id
+  local criterion suites suite status note
   : >"$CRITERIA_FILE"
   while IFS='|' read -r criterion suites; do
     status=PASS
     note=""
-    dirs=""
     for suite in $suites; do
       case "$(status_of "$suite")" in
         PASS) ;;
@@ -315,17 +413,22 @@ evaluate() {
         FAIL) status=FAIL; if not_run "$suite"; then note="$note, $suite not run"; else note="$note, $suite failed"; fi ;;
         *) status=FAIL; note="$note, $suite not run" ;;
       esac
-      dirs="$dirs $(test_dirs "$suite")"
-    done
-    # AC-C6 is "all of the above pass as Foundry tests": the suite itself is its test.
-    if [ -n "${dirs// /}" ] && [ "$criterion" != AC-C6 ]; then
-      id="${criterion#AC-}"
-      # shellcheck disable=SC2086
-      if ! grep -rqE "AC[-_ ]?$id([^0-9]|\$)" $dirs 2>/dev/null; then
+      # Each test suite of the row needs its own test named after the criterion. AC-C6 is "all
+      # of the above pass as Foundry tests": the suite itself is its test.
+      if [ -n "$(test_dirs "$suite")" ] && [ "$criterion" != AC-C6 ] && ! named_in "$suite" "$criterion"; then
         status=FAIL
-        note="$note, no test in its suites is named after it"
+        note="$note, no test title in $suite names it"
       fi
-    fi
+    done
+    case "$criterion" in
+      AC-A7)
+        # Advisory: the status is what scenario 09 itself recorded, not that of the aside suite.
+        IFS='|' read -r status note <<EOF2
+$(scenario_09)
+EOF2
+        ;;
+      AC-I2) note="$note, T-own: $(detail_of T-own)" ;;
+    esac
     printf '%s\t%s\t%s\t%s\n' "$criterion" "$status" "$suites" "${note#, }" >>"$CRITERIA_FILE"
   done <<EOF
 $CRITERIA
@@ -336,6 +439,19 @@ count() {
   awk -F'\t' -v status="$1" '$1 != "AC-A7" && $2 == status { n += 1 } END { print n + 0 }' "$CRITERIA_FILE"
 }
 
+# Criteria (AC-A7 included) whose row holds no test suite: they pass on a command exiting 0.
+command_only() {
+  local criterion suites suite n=0 tested
+  while IFS='|' read -r criterion suites; do
+    tested=0
+    for suite in $suites; do [ -n "$(test_dirs "$suite")" ] && tested=1; done
+    [ "$tested" -eq 0 ] && n=$((n + 1))
+  done <<EOF
+$CRITERIA
+EOF
+  echo "$n"
+}
+
 exit_code() {
   if [ "$(count FAIL)" -gt 0 ] || [ "$(status_of T-scan)" != PASS ]; then echo 1
   elif [ "$(count BLOCKED)" -gt 0 ]; then echo 3
@@ -344,11 +460,16 @@ exit_code() {
 }
 
 write_result() {
-  local head
-  head="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+  local head tree fingerprint
+  # HEAD and the working-tree state at the time of writing, as `pnpm report:check` recomputes them.
+  read -r head tree fingerprint <<EOF
+$(pnpm -s report:check --tree-state 2>/dev/null || echo "unknown unknown unknown")
+EOF
   {
-    printf '{\n  "schema": 1,\n  "startedAt": "%s",\n  "finishedAt": "%s",\n  "head": "%s",\n' \
-      "$STARTED_AT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head"
+    printf '{\n  "schema": 2,\n  "startedAt": "%s",\n  "finishedAt": "%s",\n  "head": "%s",\n  "tree": { "state": "%s", "fingerprint": "%s" },\n' \
+      "$STARTED_AT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$fingerprint"
+    printf '  "criteriaBasis": "per suite: a criterion is PASS when every suite of its row exited 0 and each test suite among them has a test titled after it; not an execution trace per criterion",\n'
+    printf '  "commandOnlyCriteria": %s,\n' "$(command_only)"
     printf '  "suites": {\n'
     awk -F'\t' '{ printf "%s    \"%s\": { \"status\": \"%s\", \"detail\": \"%s\" }", (NR > 1 ? ",\n" : ""), $1, $2, $3 } END { print "" }' "$SUITES_FILE"
     printf '  },\n  "acs": {\n'
@@ -387,7 +508,11 @@ fi
 
 CODE="$(exit_code)"
 echo
-echo "verify:all: $(count PASS) PASS, $(count FAIL) FAIL, $(count BLOCKED) BLOCKED of $(awk 'END { print NR - 1 }' "$CRITERIA_FILE") criteria (the advisory AC-A7 is shown but not counted)."
+echo "verify:all: $(count PASS) PASS, $(count FAIL) FAIL, $(count BLOCKED) BLOCKED of $(awk 'END { print NR - 1 }' "$CRITERIA_FILE") criteria."
+echo "verify:all: the advisory AC-A7 is not counted; its status is that of scenario 09: $(awk -F'\t' '$1 == "AC-A7" { print $2 " (" $4 ")" }' "$CRITERIA_FILE")."
+echo "verify:all: results are per suite, not an execution trace per criterion. PASS means every suite of the"
+echo "  criterion's row exited 0 and each test suite among them has a test titled after the criterion."
+echo "  $(command_only) of the $(awk 'END { print NR }' "$CRITERIA_FILE") criteria have no test suite in their row and pass on a command exiting 0 alone."
 echo "verify:all: logs in .data/verify-all/logs/, result in .data/verify-all/result.json"
 case "$CODE" in
   0) echo "verify:all PASS" ;;

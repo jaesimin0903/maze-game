@@ -2,6 +2,8 @@
 // AC-T6, AC-T11, and the final-report half of AC-X1).
 //
 //   pnpm report:check [--root <dir>]
+//   pnpm report:check --tree-state      prints "<HEAD> <clean|dirty> <fingerprint>" of this
+//                                       repository's working tree and exits (used by verify:all)
 //
 // `--root` checks another copy of the repository tree (default: this one). The documents are
 // written in Korean; the labels below are the plan's own words and are matched literally.
@@ -26,8 +28,16 @@
 //              precision the report prints (percentages with at least two decimals). When the
 //              production table is not calibrated the report must say "BLOCKED(경제)" under
 //              "BLOCKED" instead.
+//   fresh      .data/verify-all/result.json was written for the tree that is checked: the same
+//              HEAD and the same working-tree fingerprint (`git diff HEAD` plus every untracked,
+//              non-ignored file). A result of another tree is stale and is refused; run
+//              `pnpm verify:all` again (it writes the result, then runs this check itself).
 //   blocked    the AC ids named under "BLOCKED" are exactly the criteria that the last
 //              `pnpm verify:all` reported as BLOCKED (.data/verify-all/result.json).
+//   switch     the table-switch command is given in the order that works, redeploy first:
+//              `pnpm tuning:apply <file> && pnpm dev:down && pnpm dev:up && pnpm tuning:check`.
+//              The order with `tuning:check` before the redeploy stops at the check and must
+//              not appear in the final report, docs/spec-deviations.md or docs/tuning-report.md.
 //   label      under the candidate comparison, every line about a candidate that was not chosen
 //              as the baseline carries "축소 표본" (packages/sim/reports/tune-result.json says
 //              which candidates those are).
@@ -40,10 +50,56 @@
 //
 // Exit codes: 0 = both documents are complete, 1 = something is missing or wrong, 2 = bad arguments.
 
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseTuning, tableHash, type TuningTable } from '@maze/shared';
-import { acceptedRisks, parseMarkdown, rootFromArguments, type Section } from './audit-check';
+import { acceptedRisks, parseMarkdown, REPO_ROOT, rootFromArguments, type Section } from './audit-check';
+
+interface TreeState {
+  head: string;
+  state: 'clean' | 'dirty';
+  fingerprint: string;
+}
+
+/**
+ * HEAD and what the working tree holds beyond it: `git diff HEAD` (tracked files, staged or
+ * not) and every untracked, non-ignored file with its content, hashed together. Two trees
+ * with the same head and fingerprint have the same content outside the ignored paths.
+ * `null` when `directory` is not a git working tree.
+ */
+function treeState(directory: string): TreeState | null {
+  const git = (args: string[]): Buffer =>
+    execFileSync('git', args, { cwd: directory, maxBuffer: 1024 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
+  try {
+    const head = git(['rev-parse', 'HEAD']).toString().trim();
+    const diff = git(['diff', 'HEAD', '--no-ext-diff', '--binary']);
+    const untracked = git(['ls-files', '--others', '--exclude-standard', '-z']).toString().split('\0').filter((file) => file !== '');
+    const hash = createHash('sha256').update(diff);
+    for (const file of untracked) {
+      hash.update(`\0${file}\0`);
+      try {
+        hash.update(readFileSync(resolve(directory, file)));
+      } catch {
+        hash.update('unreadable');
+      }
+    }
+    return { head, state: diff.length === 0 && untracked.length === 0 ? 'clean' : 'dirty', fingerprint: hash.digest('hex') };
+  } catch {
+    return null;
+  }
+}
+
+if (process.argv.slice(2).filter((arg) => arg !== '--').join(' ') === '--tree-state') {
+  const state = treeState(REPO_ROOT);
+  if (state === null) {
+    console.error('report:check --tree-state: this is not a git working tree');
+    process.exit(1);
+  }
+  console.log(`${state.head} ${state.state} ${state.fingerprint}`);
+  process.exit(0);
+}
 
 const root = rootFromArguments('report:check');
 const DEVIATIONS = 'docs/spec-deviations.md';
@@ -53,7 +109,11 @@ const TUNE_RESULT = 'packages/sim/reports/tune-result.json';
 const HOUSE_MAX = 'packages/sim/reports/tuning.house-max.json';
 const PRODUCTION_TABLE = 'packages/shared/src/tuning.json';
 const VERIFY_RESULT = '.data/verify-all/result.json';
-const SWITCH_COMMAND = /pnpm tuning:apply \S+ && pnpm tuning:check && pnpm dev:down && pnpm dev:up/;
+const TUNING_REPORT = 'docs/tuning-report.md';
+// Redeploy first: `tuning:check` compares the table with the deployed contract.
+const SWITCH_COMMAND = /pnpm tuning:apply \S+ && pnpm dev:down && pnpm dev:up && pnpm tuning:check/;
+/** The order that stops at the check, leaving tuning.json switched and the old contract deployed. */
+const STALE_SWITCH_COMMAND = /pnpm tuning:apply \S+ && pnpm tuning:check/;
 
 let failures = 0;
 function report(name: string, problems: string[]): void {
@@ -304,15 +364,42 @@ function checkNumbers(table: TuningTable, edge: Section | undefined, blocked: Se
   report(name, problems);
 }
 
+interface VerifyResult {
+  finishedAt?: string;
+  head?: string;
+  tree?: { state?: string; fingerprint?: string };
+  acs?: Record<string, { status?: string }>;
+}
+
+/** A result written for another commit or another working tree says nothing about this one. */
+function checkFresh(result: VerifyResult): void {
+  const name = `${VERIFY_RESULT} was written for this tree`;
+  const short = (text: string | undefined): string => (text ?? 'unknown').slice(0, 12);
+  const now = treeState(root);
+  if (now === null) {
+    report(name, [`${root} is not a git working tree, so the result cannot be matched to it`]);
+  } else if (result.tree?.fingerprint === undefined || result.head === undefined) {
+    report(name, ['the result records no working-tree state (it was written by an older verify:all): run "pnpm verify:all" again']);
+  } else if (result.head !== now.head || result.tree.fingerprint !== now.fingerprint) {
+    report(name, [
+      `the result is stale: it was written at HEAD ${short(result.head)} with a ${result.tree.state ?? 'unknown'} tree (fingerprint ${short(result.tree.fingerprint)}), ` +
+        `and the tree now is HEAD ${short(now.head)}, ${now.state} (fingerprint ${short(now.fingerprint)}). Run "pnpm verify:all" again`,
+    ]);
+  } else {
+    report(name, []);
+  }
+}
+
 function checkBlocked(blocked: Section | undefined): void {
   const name = 'final report: BLOCKED list against verify:all (AC-D2)';
-  if (blocked === undefined) {
-    report(name, ['no "BLOCKED" section']);
-    return;
-  }
-  const result = readJson<{ finishedAt?: string; acs?: Record<string, { status?: string }> }>(VERIFY_RESULT);
+  const result = readJson<VerifyResult>(VERIFY_RESULT);
   if (result?.acs === undefined) {
     report(name, [`${VERIFY_RESULT} does not exist: run "pnpm verify:all" (it writes the result, then runs this check itself)`]);
+    return;
+  }
+  checkFresh(result);
+  if (blocked === undefined) {
+    report(name, ['no "BLOCKED" section']);
     return;
   }
   const expected = Object.entries(result.acs)
@@ -431,6 +518,17 @@ function checkReport(): void {
   }
   checkBlocked(blocked);
   checkCandidates(sectionWith(sections, /후보.*비교|비교.*후보/), sectionWith(sections, /튜닝 결과/), readJson<TuneResult>(TUNE_RESULT));
+
+  // Table-switch command: only the working order may be documented.
+  const stale = [REPORT, DEVIATIONS, TUNING_REPORT].filter((path) => STALE_SWITCH_COMMAND.test(readText(path) ?? ''));
+  const switchProblems = stale.map(
+    (path) => `${path} gives the switch command with tuning:check before the redeploy; that order stops at the check. Use "pnpm tuning:apply <file> && pnpm dev:down && pnpm dev:up && pnpm tuning:check"`,
+  );
+  if (!SWITCH_COMMAND.test(readText(DEVIATIONS) ?? '')) switchProblems.push(`${DEVIATIONS} does not give the switch command`);
+  if (existsSync(resolve(root, HOUSE_MAX)) && !SWITCH_COMMAND.test(readText(TUNING_REPORT) ?? '')) {
+    switchProblems.push(`${TUNING_REPORT} does not give the switch command: regenerate it with "pnpm tune --report-out ${TUNING_REPORT}"`);
+  }
+  report('table-switch command: redeploy before tuning:check (AC-T11)', switchProblems);
 
   // Sensitivity table (AC-T5).
   const sensitivity = sectionWith(sections, /민감도/);

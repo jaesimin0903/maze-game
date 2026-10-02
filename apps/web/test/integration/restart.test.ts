@@ -42,7 +42,7 @@ describe('AC-S6: restart recovery', () => {
 
     // A ticket whose game does not exist yet, a game two moves in, and a game ending right now.
     const waiting = playerOf(h, 0);
-    const pendingTicket = await requestTicket(waiting.address);
+    const pendingTicket = await requestTicket(waiting);
     const inPlay = await openGame(h, playerOf(h, 1));
     await walk(inPlay, exitRoute(inPlay.maze).slice(0, 2));
     const before = (await api.game<GameView>(inPlay.gameId, inPlay.token)).body;

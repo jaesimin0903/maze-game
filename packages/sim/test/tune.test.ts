@@ -531,7 +531,9 @@ describe('ranking, sensitivity and report', () => {
     expect(text).toContain('캐주얼 환수율 하한(E2)이 하우스 수익의 상한을 정한다');
     expect(text).toContain('가정');
     expect(text).toContain('L: 축소 표본 ±0.83%p, 고정 게이트 미판정, 적용 불가');
-    expect(text).toContain('pnpm tuning:apply packages/sim/reports/tuning.house-max.json && pnpm tuning:check && pnpm dev:down && pnpm dev:up');
+    // Redeploy first: `tuning:check` compares the table with the deployed contract and stops the chain otherwise.
+    expect(text).toContain('pnpm tuning:apply packages/sim/reports/tuning.house-max.json && pnpm dev:down && pnpm dev:up && pnpm tuning:check');
+    expect(text).not.toMatch(/tuning:apply \S+ && pnpm tuning:check/);
     expect(text).toContain('민감도 분석 (가정)');
     expect(screenedLabel(result.candidates[0].tiers[2])).toBe('L: 축소 표본 ±0.83%p, 고정 게이트 미판정, 적용 불가');
     const improved = renderTuningReport({

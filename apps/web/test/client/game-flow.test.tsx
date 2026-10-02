@@ -1,11 +1,30 @@
 import { cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { exitPayoutWei, refundWei, solve, type Dir, type Hex } from '@maze/shared';
+import {
+  ONCHAIN_STATUS,
+  exitPayoutWei,
+  refundWei,
+  solve,
+  ticketRequestMessage,
+  type Dir,
+  type Hex,
+} from '@maze/shared';
 import { GameApp } from '../../src/client/GameApp';
 import { DIRS, DIR_NAMES, legalMoves } from '../../src/client/board-view';
 import type { ClientDeps } from '../../src/client/deps';
 import { loadRecord } from '../../src/client/record';
-import { CLIENT_SEED, FakeWorld, TABLE, planDeadEnd, planExit } from './helpers';
+import { hashSessionToken } from '../../src/client/seed';
+import type { WalletApi } from '../../src/client/wallet';
+import {
+  CLIENT_SEED,
+  CONTRACT,
+  FakeWorld,
+  PLAYER,
+  TABLE,
+  anvilAccount,
+  planDeadEnd,
+  planExit,
+} from './helpers';
 
 configure({ asyncUtilTimeout: 3000 });
 
@@ -32,16 +51,34 @@ const noPoll = (world: FakeWorld): ClientDeps => ({
   timing: { pollMs: 600_000, clockMs: 15, startRetryMs: 15 },
 });
 
-async function startGame(world: FakeWorld, deps: ClientDeps = world.deps()): Promise<Hex> {
+/** Opens the page, connects the dev wallet and fills the bet form for the smallest maze. */
+async function openLobby(world: FakeWorld, deps: ClientDeps = world.deps()): Promise<void> {
   render(<GameApp deps={deps} />);
   fireEvent.click(await screen.findByTestId('wallet-dev-option'));
   await screen.findByTestId('wallet-address');
   fireEvent.click(screen.getByTestId('tier-0'));
   fireEvent.change(screen.getByTestId('bet-amount'), { target: { value: '0.01' } });
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
+}
+
+/** Presses "bet" and waits for the first cell. */
+async function bet(): Promise<Hex> {
   fireEvent.click(screen.getByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   return attr('board', 'data-game-id') as Hex;
+}
+
+async function startGame(world: FakeWorld, deps: ClientDeps = world.deps()): Promise<Hex> {
+  await openLobby(world, deps);
+  return bet();
+}
+
+/** The bet failed: the page is back in the lobby with `text` on screen and "bet" usable again. */
+async function backInLobbyWith(text: string): Promise<void> {
+  expect((await screen.findByTestId('error-message')).textContent).toContain(text);
+  expect(screen.queryByTestId('board')).toBeNull();
+  expect(button('bet-submit').disabled).toBe(false);
+  expect(attr('bet-status', 'data-step')).toBe('');
 }
 
 async function walk(dirs: Dir[]): Promise<void> {
@@ -232,6 +269,307 @@ describe('game flow', () => {
     expect(world.settledBy.has(gameId)).toBe(false);
     expect(attr('settle-tx', 'data-tx')).toBe('');
     expect(attr('settle-tx', 'data-confirmed')).toBe('false');
+  });
+
+  it('a reported settle transaction that never mines does not take the player\'s own settle away', async () => {
+    const world = new FakeWorld();
+    world.settlesToDrop = 1_000;
+    const gameId = await startGame(world);
+    await walk(planExit(world.mazeOf(gameId)));
+    await screen.findByTestId('result-outcome');
+
+    // The server has reported a hash, the chain still shows the game Active.
+    await waitFor(() => expect(loadRecord(gameId)?.terminal?.settleTxHash).toMatch(/^0xd40bbed/));
+    expect(world.onchain.get(gameId)?.status).toBe(ONCHAIN_STATUS.Active);
+    // Not offered at once: the relayer normally settles within a block or two.
+    expect(screen.queryByTestId('settle-self')).toBeNull();
+
+    world.chainNow += 11;
+    fireEvent.click(await screen.findByTestId('settle-self'));
+    await waitFor(() => expect(attr('settle-tx', 'data-tx')).toMatch(/^0x5e1f/));
+    await waitFor(() => expect(attr('settle-tx', 'data-confirmed')).toBe('true'));
+    expect(attr('result-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, 0).toString());
+    expect(screen.queryByTestId('settle-self')).toBeNull();
+    expect(world.txs).toEqual(['createGame', 'settle']);
+  });
+
+  it('after a win, with a hash reported and the server gone, the player can settle instead of only reclaiming the bet', async () => {
+    const world = new FakeWorld();
+    world.settlesToDrop = 1_000;
+    const gameId = await startGame(world);
+    await walk(planExit(world.mazeOf(gameId)));
+    await screen.findByTestId('result-outcome');
+    await waitFor(() => expect(loadRecord(gameId)?.terminal?.settleTxHash).toMatch(/^0xd40bbed/));
+
+    world.serverUp = false;
+    await screen.findByTestId('server-unreachable');
+    // The reclaim panel counts down, and the signed settlement is offered next to it.
+    await screen.findByTestId('reclaim-countdown');
+    expect(button('reclaim-button').disabled).toBe(true);
+    fireEvent.click(await screen.findByTestId('settle-self'));
+    await waitFor(() => expect(attr('settle-tx', 'data-tx')).toMatch(/^0x5e1f/));
+    expect(attr('settle-tx', 'data-confirmed')).toBe('true');
+    expect(screen.queryByTestId('reclaim-button')).toBeNull();
+    expect(world.txs).toEqual(['createGame', 'settle']);
+  });
+
+  it('a reloaded page without a wallet still shows the player\'s own settle, and sends it once a wallet is connected', async () => {
+    const world = new FakeWorld();
+    world.settlesToDrop = 1_000;
+    const gameId = await startGame(world);
+    await walk(planExit(world.mazeOf(gameId)));
+    await screen.findByTestId('result-outcome');
+    await waitFor(() => expect(loadRecord(gameId)?.terminal?.settleTxHash).toMatch(/^0xd40bbed/));
+    world.serverUp = false;
+    cleanup();
+
+    // The config is the one thing a page cannot start without; the game server stays down after it.
+    const deps = world.deps();
+    const config = world.config;
+    render(<GameApp deps={{ ...deps, api: { ...deps.api, config: async () => config } }} />);
+    expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('exit');
+    await waitFor(() => expect(button('settle-self').disabled).toBe(true));
+    expect(screen.getByTestId('settle-self').parentElement?.textContent).toContain('지갑을 연결');
+
+    fireEvent.click(screen.getByTestId('wallet-dev-option'));
+    await waitFor(() => expect(button('settle-self').disabled).toBe(false));
+    fireEvent.click(button('settle-self'));
+    await waitFor(() => expect(attr('settle-tx', 'data-tx')).toMatch(/^0x5e1f/));
+    expect(attr('settle-tx', 'data-confirmed')).toBe('true');
+    expect(world.txs).toEqual(['createGame', 'settle']);
+  });
+
+  it('the player\'s own settle is not offered once the settle deadline has passed', async () => {
+    const world = new FakeWorld();
+    world.autoSettle = false;
+    const gameId = await startGame(world);
+    await walk(planExit(world.mazeOf(gameId)));
+    await screen.findByTestId('result-outcome');
+
+    world.chainNow = (world.onchain.get(gameId)?.settleDeadline as number) + 1;
+    await waitFor(() => expect(button('reclaim-button').disabled).toBe(false));
+    expect(screen.queryByTestId('settle-self')).toBeNull();
+  });
+});
+
+describe('ticket request', () => {
+  const ticketPosts = (world: FakeWorld): number =>
+    world.requests.filter((r) => r === 'POST /api/games').length;
+
+  it('the wallet signs the ticket request message before the ticket is asked for, and the server verifies it', async () => {
+    const world = new FakeWorld();
+    const gameId = await startGame(world);
+
+    const token = loadRecord(gameId)?.token as string;
+    expect(world.signed).toEqual([
+      ticketRequestMessage({
+        chainId: 31337,
+        mazeBetAddress: CONTRACT,
+        player: PLAYER,
+        tier: 0,
+        sessionTokenHash: hashSessionToken(token),
+      }),
+    ]);
+    expect(world.signed[0]).toBe(
+      `maze-ticket:31337:${CONTRACT.toLowerCase()}:${PLAYER.toLowerCase()}:0:${hashSessionToken(token)}`,
+    );
+    // One click on "bet" does all of it: no step of the dev wallet waits for the player.
+    expect(world.timeline.filter((t) => t !== 'GET /api/games/:id')).toEqual([
+      'GET /api/config',
+      'sign',
+      'POST /api/games',
+      'tx createGame',
+      'POST /api/games/:id/start',
+    ]);
+  });
+
+  it('a signature by a key that is not the player\'s is refused, and the page says so', async () => {
+    const world = new FakeWorld();
+    world.signer = anvilAccount(3);
+    await openLobby(world);
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('지갑 서명을 확인하지 못했습니다');
+    expect(world.games.size).toBe(0);
+    expect(world.txs).toEqual([]);
+  });
+
+  it('dismissing the signature prompt returns to the lobby, and pressing bet again starts the game', async () => {
+    const world = new FakeWorld();
+    world.rejectNext = 'sign';
+    await openLobby(world);
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('서명을 거절');
+    expect(ticketPosts(world)).toBe(0);
+    expect(world.txs).toEqual([]);
+
+    const gameId = await bet();
+    expect(world.games.get(gameId)?.onChain).not.toBeNull();
+    expect(screen.queryByTestId('error-message')).toBeNull();
+    expect(world.txs).toEqual(['createGame']);
+  });
+
+  it('dismissing the transaction prompt returns to the lobby, and pressing bet again continues with the same ticket', async () => {
+    const world = new FakeWorld();
+    world.rejectNext = 'tx';
+    await openLobby(world);
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('트랜잭션을 거절');
+    expect(world.txs).toEqual([]);
+    expect(world.games.size).toBe(1);
+    const [ticketId] = [...world.games.keys()];
+
+    const gameId = await bet();
+    expect(gameId).toBe(ticketId);
+    expect(world.games.size).toBe(1);
+    expect(ticketPosts(world)).toBe(2);
+    expect(world.signed).toHaveLength(2);
+    expect(world.txs).toEqual(['createGame']);
+    // The ticket now belongs to the second session token: the game answers this page.
+    await walk(planExit(world.mazeOf(gameId)).slice(0, 1));
+    expect(world.games.get(gameId)?.moves).toHaveLength(1);
+  });
+
+  it('a reloaded page that never sent its bet gets the same ticket back', async () => {
+    const world = new FakeWorld();
+    world.rejectNext = 'tx';
+    await openLobby(world);
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('트랜잭션을 거절');
+    const [ticketId] = [...world.games.keys()];
+    cleanup();
+
+    expect(await startGame(world)).toBe(ticketId);
+    expect(world.games.size).toBe(1);
+  });
+
+  it('an unused ticket for another size is not spent: the page names both sizes and sends nothing', async () => {
+    const world = new FakeWorld();
+    world.rejectNext = 'tx';
+    await openLobby(world);
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('트랜잭션을 거절');
+
+    // The 5×5 ticket is still unused; the player now asks for 7×7.
+    fireEvent.click(screen.getByTestId('tier-1'));
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('아직 쓰지 않은 5×5 티켓');
+    const message = screen.getByTestId('error-message').textContent as string;
+    expect(message).toContain('7×7');
+    expect(message).toContain(`약 ${Math.floor(TABLE.timing.ticketExpirySec / 60)}:`);
+    expect(world.txs).toEqual([]);
+    expect(world.games.size).toBe(1);
+
+    // Betting the size of the ticket goes through.
+    fireEvent.click(screen.getByTestId('tier-0'));
+    const gameId = await bet();
+    expect(attr('board', 'data-n')).toBe('5');
+    expect(world.games.get(gameId)?.tier).toBe(0);
+    expect(world.txs).toEqual(['createGame']);
+  });
+
+  it('a browser wallet is told which of its two prompts is open; the dev wallet is not told to approve anything', async () => {
+    for (const kind of ['injected', 'dev'] as const) {
+      const world = new FakeWorld({ devWallet: kind === 'dev' });
+      const real = world.wallet();
+      let releaseSign = (): void => undefined;
+      let releaseTx = (): void => undefined;
+      const signHeld = new Promise<void>((resolve) => (releaseSign = resolve));
+      const txHeld = new Promise<void>((resolve) => (releaseTx = resolve));
+      const wallet: WalletApi = {
+        ...real,
+        kind,
+        signMessage: async (message) => {
+          await signHeld;
+          return real.signMessage(message);
+        },
+        createGame: async (p) => {
+          await txHeld;
+          return real.createGame(p);
+        },
+      };
+      const deps: ClientDeps = {
+        ...world.deps(),
+        injected: () => ({ request: async () => null }) as never,
+        connectInjected: async () => wallet,
+        connectDev: async () => wallet,
+      };
+      render(<GameApp deps={deps} />);
+      fireEvent.click(
+        await screen.findByTestId(kind === 'dev' ? 'wallet-dev-option' : 'wallet-connect'),
+      );
+      expect((await screen.findByTestId('wallet-address')).getAttribute('data-kind')).toBe(kind);
+      fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
+      fireEvent.click(screen.getByTestId('bet-submit'));
+
+      await waitFor(() => expect(attr('bet-status', 'data-step')).toBe('sign'));
+      const signText = screen.getByTestId('bet-status').textContent as string;
+      expect(button('bet-submit').disabled).toBe(true);
+      releaseSign();
+      await waitFor(() => expect(attr('bet-status', 'data-step')).toBe('tx'));
+      const txText = screen.getByTestId('bet-status').textContent as string;
+      releaseTx();
+      await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+
+      if (kind === 'injected') {
+        expect(signText).toContain('1/2');
+        expect(signText).toContain('서명');
+        expect(txText).toContain('2/2');
+        expect(txText).toContain('트랜잭션');
+      } else {
+        expect(signText).toContain('개발용 지갑');
+        expect(txText).toContain('개발용 지갑');
+        expect(signText + txText).not.toContain('승인');
+      }
+      cleanup();
+      window.localStorage.clear();
+    }
+  });
+});
+
+describe('server errors', () => {
+  const answer = (status: number, body: unknown) => (): Response =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'content-type': 'application/json' },
+    });
+
+  it('an INTERNAL answer is shown as a server error; it is not "unreachable" and does not open the reclaim panel', async () => {
+    const world = new FakeWorld();
+    const gameId = await startGame(world, noPoll(world));
+    const [first] = planExit(world.mazeOf(gameId));
+
+    world.answerNext = answer(500, { error: { code: 'INTERNAL', message: 'boom' } });
+    fireEvent.click(button(`move-${DIR_NAMES[first]}`));
+    expect((await screen.findByTestId('error-message')).textContent).toContain('서버 안에서 오류');
+    expect(screen.queryByTestId('server-unreachable')).toBeNull();
+    expect(screen.queryByTestId('reclaim-countdown')).toBeNull();
+    expect(step()).toBe(0);
+
+    // The game goes on once the server answers properly again.
+    await walk([first]);
+  });
+
+  it('a 500 without a known error code is an unreachable server, which opens the reclaim panel', async () => {
+    const world = new FakeWorld();
+    const gameId = await startGame(world, noPoll(world));
+    const [first] = planExit(world.mazeOf(gameId));
+
+    world.answerNext = answer(500, { message: 'boom' });
+    fireEvent.click(button(`move-${DIR_NAMES[first]}`));
+    await screen.findByTestId('server-unreachable');
+    await screen.findByTestId('reclaim-countdown');
+    expect(button('reclaim-button').disabled).toBe(true);
+    expect(screen.queryByTestId('error-message')).toBeNull();
+  });
+
+  it('an INTERNAL answer to the ticket request returns to the lobby with the message', async () => {
+    const world = new FakeWorld();
+    await openLobby(world);
+    world.answerNext = answer(500, { error: { code: 'INTERNAL', message: 'boom' } });
+    fireEvent.click(screen.getByTestId('bet-submit'));
+    await backInLobbyWith('서버 안에서 오류');
+    expect(screen.queryByTestId('server-unreachable')).toBeNull();
+    expect(world.txs).toEqual([]);
   });
 });
 

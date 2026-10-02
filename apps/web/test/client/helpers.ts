@@ -1,7 +1,11 @@
 // Test doubles for the client: an in-memory game server behind `fetch`, a chain and a wallet.
 // The server plays real mazes with the shared module, so the flows exercised here are the ones
-// the real server will answer; only transport, signatures and mining are faked.
+// the real server will answer; only transport, the server's signatures and mining are faked. The
+// wallet signs ticket requests with a real key and the server verifies them with the shared
+// message helper, so a client that signs other bytes gets no ticket here either.
 
+import { UserRejectedRequestError, verifyMessage } from 'viem';
+import { mnemonicToAccount } from 'viem/accounts';
 import fixture from '@maze/shared/fixtures/tuning.fixture.json';
 import {
   DIR_BIT,
@@ -19,7 +23,9 @@ import {
   refundWei,
   replayMoves,
   solve,
+  ticketRequestMessage,
   type ConfigResponse,
+  type CreateGameRequest,
   type Dir,
   type ErrorCode,
   type GameStatus,
@@ -44,6 +50,12 @@ export const CONTRACT: Hex = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 export const SERVER_SEED: Hex = `0x${'5e'.repeat(32)}`;
 export const CLIENT_SEED: Hex = `0x${'c1'.repeat(32)}`;
 const SIGNATURE: Hex = `0x${'ab'.repeat(65)}`;
+
+/** Anvil accounts of the public mnemonic. #2 is `PLAYER`. */
+export const anvilAccount = (index: number) =>
+  mnemonicToAccount('test test test test test test test test test test test junk', {
+    addressIndex: index,
+  });
 
 export function makeConfig(overrides: Partial<ConfigResponse> = {}): ConfigResponse {
   return {
@@ -141,6 +153,16 @@ export class FakeWorld {
   readonly settledBy = new Map<Hex, Hex>();
   pending = 0n;
   balance = 10n ** 19n;
+  /** The key the wallet signs messages with. The wallet's address stays `PLAYER`. */
+  signer = anvilAccount(2);
+  /** The wallet prompt the player dismisses next: the signature request or the bet transaction. */
+  rejectNext: 'sign' | 'tx' | null = null;
+  /** Messages the wallet signed, in order. */
+  signed: string[] = [];
+  /** Wallet and server steps in the order they happened: `sign`, `tx <function>`, and requests. */
+  timeline: string[] = [];
+  /** What the server answers the next request with, once, instead of handling it. */
+  answerNext: (() => Response) | null = null;
 
   /** Requests that reached the server, as `METHOD /path` with the game id replaced by `:id`. */
   requests: string[] = [];
@@ -252,6 +274,12 @@ export class FakeWorld {
     if (!this.serverUp) throw new TypeError('fetch failed');
     const method = init?.method ?? 'GET';
     this.requests.push(`${method} ${input.replace(/0x[0-9a-fA-F]{64}/, ':id')}`);
+    this.timeline.push(this.requests[this.requests.length - 1]);
+    if (this.answerNext) {
+      const answer = this.answerNext;
+      this.answerNext = null;
+      return answer();
+    }
     this.work();
 
     const json = (status: number, body: unknown): Response =>
@@ -272,11 +300,44 @@ export class FakeWorld {
     }
 
     if (input === '/api/games' && method === 'POST') {
-      const request = body as { player: Hex; tier: number; sessionTokenHash: Hex };
-      for (const game of this.games.values()) {
-        if (game.player === request.player && game.status === 'active' && game.onChain) {
-          return error('ALREADY_ACTIVE');
-        }
+      const request = body as CreateGameRequest;
+      const message = ticketRequestMessage({
+        chainId: this.config.chainId,
+        mazeBetAddress: this.config.contract,
+        player: request.player,
+        tier: request.tier,
+        sessionTokenHash: request.sessionTokenHash,
+      });
+      const signed =
+        typeof request.signature === 'string' &&
+        (await verifyMessage({
+          address: request.player,
+          message,
+          signature: request.signature,
+        }).catch(() => false));
+      if (!signed) return error('UNAUTHORIZED');
+
+      const ticketOf = (game: ServerGame): Response =>
+        json(201, {
+          gameId: game.gameId,
+          player: game.player,
+          tier: game.tier,
+          commitment: game.commitment,
+          expirySec: game.expirySec,
+          signature: SIGNATURE,
+        });
+      const mine = [...this.games.values()].filter(
+        (game) => game.player.toLowerCase() === request.player.toLowerCase(),
+      );
+      if (mine.some((game) => game.status === 'active' && game.onChain)) {
+        return error('ALREADY_ACTIVE');
+      }
+      // A ticket that never became a game and has not expired is handed out again, as it was,
+      // to the session that asks now.
+      const unused = mine.find((game) => !game.onChain && this.chainNow <= game.expirySec);
+      if (unused) {
+        unused.tokenHash = request.sessionTokenHash;
+        return ticketOf(unused);
       }
       const n = this.config.tiers[request.tier].n;
       const g: ServerGame = {
@@ -296,14 +357,7 @@ export class FakeWorld {
         terminal: null,
       };
       this.games.set(g.gameId, g);
-      return json(201, {
-        gameId: g.gameId,
-        player: g.player,
-        tier: g.tier,
-        commitment: g.commitment,
-        expirySec: g.expirySec,
-        signature: SIGNATURE,
-      });
+      return ticketOf(g);
     }
 
     const match = /^\/api\/games\/(0x[0-9a-fA-F]{64})(\/[a-z]+)?$/.exec(input);
@@ -399,8 +453,22 @@ export class FakeWorld {
     return {
       kind: 'dev',
       address,
+      signMessage: async (message) => {
+        if (this.rejectNext === 'sign') {
+          this.rejectNext = null;
+          throw new UserRejectedRequestError(new Error('User rejected the request.'));
+        }
+        this.signed.push(message);
+        this.timeline.push('sign');
+        return this.signer.signMessage({ message });
+      },
       createGame: async ({ ticket, clientSeed, betWei }) => {
+        if (this.rejectNext === 'tx') {
+          this.rejectNext = null;
+          throw new UserRejectedRequestError(new Error('User rejected the request.'));
+        }
         this.txs.push('createGame');
+        this.timeline.push('tx createGame');
         const g = this.games.get(ticket.gameId);
         if (!g) throw new Error('InvalidSignature');
         const maze = generateMaze(

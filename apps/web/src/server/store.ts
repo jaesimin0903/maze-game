@@ -12,8 +12,14 @@
 // One process at a time: `<dir>/events.lock` holds the pid of the process that has the log open.
 // Two servers appending to one log would each keep their own state and could each sign an
 // ending for the same game.
+//
+// The file is only ever read as a stream, line by line, so its size is not limited by the
+// longest string the runtime can hold, and the store keeps no copy of it in memory. Tickets that
+// expired without creating a game are cut out of the file when it is opened, once the server's
+// own chain scan has passed their expiry by the retention window (`compact`).
 
-import { mkdir, open, readFile, rm, truncate, type FileHandle } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { mkdir, open, readFile, rename, rm, truncate, type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import type { Dir, Hex } from '@maze/shared';
 
@@ -34,6 +40,15 @@ export type StoreEvent =
       sessionTokenHash: Hex;
       expirySec: number;
       signature: Hex;
+      atSec: number;
+    }
+  | {
+      /** The owner of a ticket that has not created its game yet asked for it again. */
+      type: 'ticket-rebound';
+      gameId: Hex;
+      sessionTokenHash: Hex;
+      /** The ticket's expiry, repeated so that this line can be judged on its own. */
+      expirySec: number;
       atSec: number;
     }
   | {
@@ -82,7 +97,13 @@ export type StoreEvent =
       amountWei: string;
       atSec: number;
     }
-  | { type: 'block-scanned'; blockNumber: string; blockHash: Hex };
+  | {
+      type: 'block-scanned';
+      blockNumber: string;
+      blockHash: Hex;
+      /** Timestamp of that block. Absent in logs written before the field existed. */
+      timestampSec?: number;
+    };
 
 export interface EventStore {
   /** Every event stored so far, in order. */
@@ -99,6 +120,7 @@ export interface EventStore {
 const EVENT_TYPES: ReadonlySet<string> = new Set([
   'meta',
   'ticket-issued',
+  'ticket-rebound',
   'chain-created',
   'move',
   'ended',
@@ -122,27 +144,27 @@ function encode(input: StoreEvent | readonly StoreEvent[]): string {
   return `${JSON.stringify(events.length === 1 ? events[0] : { type: 'group', events })}\n`;
 }
 
-function decode(text: string): StoreEvent[] {
-  const events: StoreEvent[] = [];
-  const lines = text.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i] === '') continue;
-    let value: unknown;
-    try {
-      value = JSON.parse(lines[i]);
-    } catch {
-      throw new Error(`event log: line ${i + 1} is not valid JSON`);
-    }
-    const group =
-      typeof value === 'object' && value !== null && (value as { type?: unknown }).type === 'group'
-        ? (value as { events?: unknown }).events
-        : [value];
-    if (!Array.isArray(group) || group.length === 0 || !group.every(isEvent)) {
-      throw new Error(`event log: line ${i + 1} is not a known event`);
-    }
-    events.push(...group);
+/** The events of line `index` (0-based) of a log. An empty line holds none. */
+function decodeLine(line: string, index: number): StoreEvent[] {
+  if (line === '') return [];
+  let value: unknown;
+  try {
+    value = JSON.parse(line);
+  } catch {
+    throw new Error(`event log: line ${index + 1} is not valid JSON`);
   }
-  return events;
+  const group =
+    typeof value === 'object' && value !== null && (value as { type?: unknown }).type === 'group'
+      ? (value as { events?: unknown }).events
+      : [value];
+  if (!Array.isArray(group) || group.length === 0 || !group.every(isEvent)) {
+    throw new Error(`event log: line ${index + 1} is not a known event`);
+  }
+  return group;
+}
+
+function decode(text: string): StoreEvent[] {
+  return text.split('\n').flatMap(decodeLine);
 }
 
 /** A store that keeps events in memory. Used by unit tests. */
@@ -205,11 +227,96 @@ async function acquireLock(lockFile: string): Promise<void> {
   throw new Error(`event log: cannot take ${lockFile}`);
 }
 
+interface Scan {
+  /** Bytes read so far. */
+  totalBytes: number;
+  /** Bytes read so far that belong to complete (newline-terminated) lines. */
+  completeBytes: number;
+}
+
+/**
+ * Yields the complete lines of `file`, in order, in batches of one read each. The file is never
+ * held in memory as a whole. An unterminated tail is not yielded; `scan` tells how long it is.
+ * A file that does not exist has no lines.
+ */
+async function* readLines(file: string, scan: Scan): AsyncGenerator<string[]> {
+  let carry: Buffer[] = [];
+  let carried = 0;
+  try {
+    const stream: AsyncIterable<Buffer> = createReadStream(file, { highWaterMark: 1 << 20 });
+    for await (const chunk of stream) {
+      const batch: string[] = [];
+      let start = 0;
+      for (let end = chunk.indexOf(0x0a); end !== -1; end = chunk.indexOf(0x0a, start)) {
+        const piece = chunk.subarray(start, end);
+        batch.push((carry.length === 0 ? piece : Buffer.concat([...carry, piece])).toString('utf8'));
+        carry = [];
+        carried = 0;
+        start = end + 1;
+      }
+      if (start < chunk.length) {
+        carry.push(chunk.subarray(start));
+        carried += chunk.length - start;
+      }
+      scan.totalBytes += chunk.length;
+      scan.completeBytes = scan.totalBytes - carried;
+      if (batch.length > 0) yield batch;
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+}
+
+/**
+ * Rewrites `file` without the single-event lines for which `droppable` is true. The new file
+ * replaces the old one in one rename, so a process that dies half way leaves the old log intact.
+ */
+async function compact(file: string, droppable: (event: StoreEvent) => boolean): Promise<void> {
+  const temp = `${file}.compact`;
+  const out = await open(temp, 'w');
+  let dropped = 0;
+  try {
+    for await (const batch of readLines(file, { totalBytes: 0, completeBytes: 0 })) {
+      const kept: string[] = [];
+      for (const line of batch) {
+        // Only ticket lines can be dropped; the rest is copied without being parsed again.
+        if (line.includes('"ticket-')) {
+          const events = decodeLine(line, 0);
+          if (events.length === 1 && droppable(events[0])) {
+            dropped += 1;
+            continue;
+          }
+        }
+        if (line !== '') kept.push(line);
+      }
+      if (kept.length > 0) await out.appendFile(`${kept.join('\n')}\n`, 'utf8');
+    }
+    await out.sync();
+  } finally {
+    await out.close();
+  }
+  if (dropped === 0) await rm(temp, { force: true });
+  else await rename(temp, file);
+}
+
+export interface FileStoreOptions {
+  /**
+   * How many chain seconds a ticket that never created a game is kept after its expiry. When
+   * set, the log is compacted as it is opened: a ticket (and its re-bindings) is removed once a
+   * `block-scanned` marker of the log carries a block timestamp later than
+   * `expirySec + ticketRetentionSec` and the log holds no `chain-created` for it. The marker
+   * proves that the server read every block up to a time past the ticket's expiry without
+   * finding its game, and `createGame` refuses a ticket after its expiry, so no game can ever
+   * exist for it. Without a timestamped marker nothing is removed.
+   */
+  ticketRetentionSec?: number;
+}
+
 /**
  * Opens (creating if needed) the event log in `dir`. An unterminated last line, left by a
  * process that died mid-write, is cut off: it was never flushed, so nothing was answered from it.
  */
-export async function openFileStore(dir: string): Promise<EventStore> {
+export async function openFileStore(dir: string, options: FileStoreOptions = {}): Promise<EventStore> {
   const key = path.resolve(dir);
   const file = path.join(dir, 'events.jsonl');
   const lockFile = path.join(dir, 'events.lock');
@@ -220,22 +327,47 @@ export async function openFileStore(dir: string): Promise<EventStore> {
   if (opened.has(key)) throw new Error(`event log: ${key} is already open in this process`);
   opened.add(key);
 
-  let loaded: StoreEvent[];
   let handle: FileHandle;
   let locked = false;
   try {
     await mkdir(dir, { recursive: true });
     await acquireLock(lockFile);
     locked = true;
-    let text = '';
-    try {
-      text = await readFile(file, 'utf8');
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    // Left behind by a process that died while compacting; the log itself is still whole.
+    await rm(`${file}.compact`, { force: true });
+
+    // One pass over the file: every line is checked, and what compaction needs is collected.
+    const created = new Set<Hex>();
+    let scannedSec: number | null = null;
+    let oldestExpirySec = Number.POSITIVE_INFINITY;
+    const scan: Scan = { totalBytes: 0, completeBytes: 0 };
+    let index = 0;
+    for await (const batch of readLines(file, scan)) {
+      for (const line of batch) {
+        for (const event of decodeLine(line, index)) {
+          if (event.type === 'chain-created') created.add(event.gameId);
+          else if (event.type === 'ticket-issued') {
+            oldestExpirySec = Math.min(oldestExpirySec, event.expirySec);
+          } else if (event.type === 'block-scanned' && event.timestampSec !== undefined) {
+            scannedSec = event.timestampSec;
+          }
+        }
+        index += 1;
+      }
     }
-    const complete = text.slice(0, text.lastIndexOf('\n') + 1);
-    if (complete.length !== text.length) await truncate(file, Buffer.byteLength(complete, 'utf8'));
-    loaded = decode(complete);
+    if (scan.completeBytes !== scan.totalBytes) await truncate(file, scan.completeBytes);
+
+    const retentionSec = options.ticketRetentionSec;
+    const markerSec: number | null = scannedSec;
+    if (retentionSec !== undefined && markerSec !== null && oldestExpirySec + retentionSec < markerSec) {
+      await compact(
+        file,
+        (event) =>
+          (event.type === 'ticket-issued' || event.type === 'ticket-rebound') &&
+          !created.has(event.gameId) &&
+          event.expirySec + retentionSec < markerSec,
+      );
+    }
 
     handle = await open(file, 'a');
     await handle.sync();
@@ -258,7 +390,19 @@ export async function openFileStore(dir: string): Promise<EventStore> {
   let closed = false;
 
   return {
-    load: () => Promise.resolve([...loaded]),
+    load() {
+      // Queued behind the appends made so far, and read back from the file itself.
+      const done = tail.then(async () => {
+        const events: StoreEvent[] = [];
+        let index = 0;
+        for await (const batch of readLines(file, { totalBytes: 0, completeBytes: 0 })) {
+          for (const line of batch) events.push(...decodeLine(line, index++));
+        }
+        return events;
+      });
+      tail = done.catch(() => undefined);
+      return done;
+    },
     append(events) {
       const line = encode(events);
       const done = tail.then(async () => {
@@ -271,7 +415,6 @@ export async function openFileStore(dir: string): Promise<EventStore> {
           failure = error instanceof Error ? error : new Error(String(error));
           throw failure;
         }
-        loaded.push(...decode(line));
       });
       tail = done.catch(() => undefined);
       return done;

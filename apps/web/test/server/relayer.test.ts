@@ -2,7 +2,7 @@
 
 import type { GameView, Hex } from '@maze/shared';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createMemoryStore } from '../../src/server/store';
+import { createMemoryStore, type StoreEvent } from '../../src/server/store';
 import {
   api,
   deadEndRoute,
@@ -132,6 +132,67 @@ describe('settlement sending', () => {
     expect(env.chain.sent).toHaveLength(1);
     await block();
     expect(env.chain.games.get(game.gameId)!.status).toBe(ONCHAIN.Settled);
+  });
+
+  it('a send that fails outright is retried on the next pass, also when the chain clock has not moved', async () => {
+    env = await makeEnv();
+    const game = await openGame(env);
+    env.chain.sendMode = 'fail';
+    await cashOut(game);
+    expect(env.chain.sent).toHaveLength(0);
+
+    // No new block: the chain second is the one of the failed attempt.
+    const second = env.chain.time;
+    await env.tick();
+    expect(env.chain.sent).toHaveLength(0);
+    expect(logged('settle-send-failed', game.gameId)).toHaveLength(2);
+
+    env.chain.sendMode = 'accept';
+    await env.tick();
+    expect(env.chain.time).toBe(second);
+    expect(env.chain.sent).toHaveLength(1);
+    expect(logged('settle-sent', game.gameId)).toEqual([expect.objectContaining({ chainSec: second })]);
+
+    // Once the node has accepted a transaction, further passes in that second send nothing.
+    await env.tick();
+    await Promise.all([env.container.relayer.sweep(), env.container.relayer.sweep(), env.tick()]);
+    expect(env.chain.sent).toHaveLength(1);
+    env.chain.mine();
+    await env.tick();
+    expect(env.chain.games.get(game.gameId)!.status).toBe(ONCHAIN.Settled);
+    expect(await settledEvents(game.gameId)).toBe(1);
+  });
+
+  it('a send the node accepted is not repeated when recording it failed: no duplicate inside 10 chain seconds', async () => {
+    let failing = true;
+    const inner = createMemoryStore();
+    env = await makeEnv({
+      store: {
+        load: () => inner.load(),
+        close: () => inner.close(),
+        append(events) {
+          const list = Array.isArray(events) ? events : [events];
+          if (failing && list.some((event: StoreEvent) => event.type === 'settle-sent')) {
+            return Promise.reject(new Error('disk full'));
+          }
+          return inner.append(events);
+        },
+      },
+    });
+    const game = await openGame(env);
+    env.chain.sendMode = 'drop';
+    await cashOut(game);
+    expect(env.chain.sent).toHaveLength(1);
+    expect(env.container.service.get(game.gameId)!.settle.lastSentSec).toBeNull();
+
+    // The log does not know about the transaction, the relayer does: nothing is sent again
+    // for the next nine chain seconds, in however many passes.
+    await env.tick();
+    await block(9);
+    expect(env.chain.sent).toHaveLength(1);
+    failing = false;
+    await block();
+    expect(env.chain.sent).toHaveLength(2);
   });
 
   it('simultaneous passes send one transaction', async () => {

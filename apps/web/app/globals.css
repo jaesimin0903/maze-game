@@ -260,6 +260,14 @@ textarea {
   border-left-color: var(--loss);
 }
 
+/* The server is not playing a fair game: louder than every other banner. */
+.banner-hooks {
+  display: block;
+  border: 2px solid var(--loss);
+  border-left-width: 6px;
+  color: var(--loss);
+}
+
 /* ------------------------------------------------------------------ lobby */
 
 .lobby {

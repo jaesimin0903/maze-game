@@ -29,7 +29,8 @@ export class ApiError extends Error {
 
 /**
  * No usable answer: the request failed at the network level, or the response was not one the
- * game server produces (for example a proxy error page while the process is down).
+ * game server produces (for example a proxy error page while the process is down). A 500 that
+ * carries the server's own `INTERNAL` error body is an `ApiError`, not this: the server answered.
  */
 export class ServerUnreachableError extends Error {
   override readonly name = 'ServerUnreachableError';
@@ -50,6 +51,7 @@ const API_MESSAGES: Record<ErrorCode, string> = {
   DEADLINE_PASSED: '제한 시간이 지나 서버가 게임을 정산하고 있습니다',
   NOT_REVEALABLE: '이 게임의 서버 시드는 아직 공개할 수 없습니다',
   RATE_LIMITED: '요청이 너무 잦습니다. 잠시 뒤에 다시 시도하세요',
+  INTERNAL: '게임 서버 안에서 오류가 났습니다. 서버는 응답하고 있으니 잠시 뒤에 다시 시도하세요',
   NOT_CALIBRATED: '배당 표가 아직 인증되지 않아 게임을 열 수 없습니다',
   TABLE_MISMATCH: '서버와 컨트랙트의 배당 표가 달라 게임을 열 수 없습니다',
   CHAIN_UNAVAILABLE: '서버가 체인에 연결하지 못했습니다',

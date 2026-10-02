@@ -29,7 +29,7 @@ describe('createApi', () => {
   it('uses the documented method and path for every call', async () => {
     const { api, seen } = recording(() => json(200, {}));
     await api.config();
-    await api.createTicket({ player: '0x00', tier: 0, sessionTokenHash: '0x00' });
+    await api.createTicket({ player: '0x00', tier: 0, sessionTokenHash: '0x00', signature: '0x00' });
     await api.start(GAME_ID, 't');
     await api.cashout(GAME_ID, 't', { step: 2 });
     await api.game(GAME_ID, 't');
@@ -67,6 +67,33 @@ describe('createApi', () => {
     await expect(proxy.api.config()).rejects.toBeInstanceOf(ServerUnreachableError);
 
     const unknown = recording(() => json(500, { message: 'boom' }));
+    await expect(unknown.api.config()).rejects.toBeInstanceOf(ServerUnreachableError);
+  });
+
+  it('sends the signed ticket request as given', async () => {
+    const { api, seen } = recording(() => json(201, {}));
+    const request = {
+      player: `0x${'aa'.repeat(20)}`,
+      tier: 1,
+      sessionTokenHash: `0x${'bb'.repeat(32)}`,
+      signature: `0x${'cc'.repeat(65)}`,
+    } as const;
+    await api.createTicket(request);
+    expect(seen[0].url).toBe('/api/games');
+    expect(JSON.parse(seen[0].init?.body as string)).toEqual(request);
+  });
+
+  it('an INTERNAL answer is a server error with its own message, not an unreachable server', async () => {
+    const { api } = recording(() => json(500, { error: { code: 'INTERNAL', message: 'boom' } }));
+    const error = await api.config().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).not.toBeInstanceOf(ServerUnreachableError);
+    expect((error as ApiError).code).toBe('INTERNAL');
+    expect((error as ApiError).status).toBe(500);
+    expect(apiMessage(error as ApiError)).toContain('서버 안에서 오류');
+
+    // A 500 whose body names no known code is still "no usable answer".
+    const unknown = recording(() => json(500, { error: { code: 'EXPLODED', message: 'boom' } }));
     await expect(unknown.api.config()).rejects.toBeInstanceOf(ServerUnreachableError);
   });
 

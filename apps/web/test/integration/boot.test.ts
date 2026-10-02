@@ -105,7 +105,7 @@ describe('AC-S8: booting from the environment', () => {
     expect(config.contract.toLowerCase()).toBe(h.contract.toLowerCase());
 
     const player = playerOf(h, 0);
-    const { ticket, token } = await requestTicket(player.address);
+    const { ticket, token } = await requestTicket(player);
     await createOnChain(h, player, ticket, BET, `0x${'71'.repeat(32)}`);
     expect((await api.start(ticket.gameId, token)).status).toBe(200);
     const ended = await api.cashout<GameView>(ticket.gameId, token, { step: 0 });

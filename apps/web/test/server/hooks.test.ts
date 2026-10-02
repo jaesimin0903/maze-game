@@ -175,6 +175,7 @@ describe('AC-A4: dev wallet', () => {
     MAZEBET_ADDRESS: CONTRACT,
     SERVER_SIGNER_PRIVATE_KEY: SIGNER_KEY,
     RELAYER_PRIVATE_KEY: SIGNER_KEY,
+    MAZE_DATA_DIR: '/tmp/x',
   };
 
   it('is offered only on chain 31337 with NEXT_PUBLIC_ENABLE_DEV_WALLET=1', () => {

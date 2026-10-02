@@ -7,6 +7,7 @@ import { tierLabel } from '../config';
 import { formatEth, formatMultiplier, formatPercent, parseEthInput } from '../format';
 import { isHex32, randomHex32 } from '../seed';
 import type { BetStep } from '../use-game';
+import type { WalletKind } from '../wallet';
 import { DomInput } from './DomInput';
 import { RefundSchedule } from './RefundSchedule';
 
@@ -14,6 +15,8 @@ interface Props {
   config: ConfigResponse;
   table: TuningTable;
   walletConnected: boolean;
+  /** Decides the wording of the bet steps: a browser wallet asks the player twice, the dev wallet never. */
+  walletKind: WalletKind | null;
   /** Non-null while a bet is being placed. */
   betStep: BetStep | null;
   busy: boolean;
@@ -22,11 +25,24 @@ interface Props {
   onBet(bet: { tier: number; betWei: bigint; clientSeed: Hex }): void;
 }
 
-const STEP_TEXT: Record<BetStep, string> = {
-  ticket: '서버가 미로의 시드를 정하고 커밋을 보내는 중입니다',
-  tx: '지갑에서 베팅 트랜잭션을 승인하세요',
-  confirm: '베팅 트랜잭션이 블록에 담기기를 기다리는 중입니다',
-};
+/** What the page is waiting for at each bet step. A browser wallet prompts at `sign` and at `tx`. */
+function stepText(step: BetStep, kind: WalletKind | null): string {
+  const prompted = kind !== 'dev';
+  switch (step) {
+    case 'sign':
+      return prompted
+        ? '지갑 승인 1/2: 지갑에서 티켓 요청 서명을 승인하세요. 서명만 하며 돈은 나가지 않습니다'
+        : '개발용 지갑으로 티켓 요청에 서명하는 중입니다';
+    case 'ticket':
+      return '서버가 미로의 시드를 정하고 커밋을 보내는 중입니다';
+    case 'tx':
+      return prompted
+        ? '지갑 승인 2/2: 지갑에서 베팅 트랜잭션을 승인하세요'
+        : '개발용 지갑으로 베팅 트랜잭션을 보내는 중입니다';
+    case 'confirm':
+      return '베팅 트랜잭션이 블록에 담기기를 기다리는 중입니다';
+  }
+}
 
 /** The bet in wei, or the reason the typed amount cannot be bet. */
 function readAmount(text: string, min: bigint, max: bigint): { betWei: bigint } | { reason: string } {
@@ -37,7 +53,16 @@ function readAmount(text: string, min: bigint, max: bigint): { betWei: bigint } 
   return { betWei: wei };
 }
 
-export function BetPanel({ config, table, walletConnected, betStep, busy, previous, onBet }: Props) {
+export function BetPanel({
+  config,
+  table,
+  walletConnected,
+  walletKind,
+  betStep,
+  busy,
+  previous,
+  onBet,
+}: Props) {
   const min = BigInt(config.minBetWei);
   const max = BigInt(config.maxBetWei);
   const [tier, setTier] = useState(previous?.tier ?? 0);
@@ -190,7 +215,7 @@ export function BetPanel({ config, table, walletConnected, betStep, busy, previo
           {betWei === null ? '베팅하고 시작' : `${formatEth(betWei)} ETH 베팅하고 시작`}
         </button>
         <p className="bet-status" data-testid="bet-status" data-step={betStep ?? ''} aria-live="polite">
-          {betStep !== null ? STEP_TEXT[betStep] : (blocked ?? '')}
+          {betStep !== null ? stepText(betStep, walletKind) : (blocked ?? '')}
         </p>
 
         <ul className="bet-rules">

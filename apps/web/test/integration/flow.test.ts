@@ -66,7 +66,7 @@ async function settledRead(game: LiveGame, txHash: string): Promise<GameView> {
 }
 
 describe('AC-E1: one game per ending', () => {
-  it('AC-R2: exit: bet × multiplier is paid, and anyone can verify the game afterwards', async () => {
+  it('AC-R2 AC-M6: exit: bet × multiplier is paid, and the maze is reproduced from on-chain data and the revealed seed alone', async () => {
     const player = playerOf(h, 0);
     const game = await openGame(h, player);
     const balanceAfterBet = await h.publicClient.getBalance({ address: player.address });
@@ -171,7 +171,7 @@ describe('AC-E1: one game per ending', () => {
 describe('what the server takes from the chain', () => {
   it('AC-M3: the first cell is not shown before createGame is on chain', async () => {
     const player = playerOf(h, 3);
-    const { ticket, token } = await requestTicket(player.address);
+    const { ticket, token } = await requestTicket(player);
     const before = await api.start(ticket.gameId, token);
     expect(before.status).toBe(409);
     expect(before.body).toEqual({ error: { code: 'NOT_ON_CHAIN', message: expect.any(String) } });

@@ -83,6 +83,30 @@ describe('runtime configuration', () => {
     expect(screen.queryByTestId('fixture-banner')).toBeNull();
   });
 
+  it('warns on screen whenever the server runs with test hooks, whichever table it uses', async () => {
+    // The calibrated production table with test hooks on: no fixture banner, and still a warning.
+    const hooked = new FakeWorld({ testHooks: true, fixture: false, calibrated: true });
+    render(<GameApp deps={hooked.deps()} />);
+    const banner = await screen.findByTestId('test-hooks-banner');
+    expect(banner.textContent).toContain('테스트 훅');
+    expect(banner.textContent).toContain('미리 알아낼 수 있습니다');
+    expect(banner.getAttribute('role')).toBe('alert');
+    expect(screen.queryByTestId('fixture-banner')).toBeNull();
+    cleanup();
+
+    const both = new FakeWorld({ testHooks: true, fixture: true });
+    render(<GameApp deps={both.deps()} />);
+    expect(await screen.findByTestId('test-hooks-banner')).toBeTruthy();
+    expect(screen.getByTestId('fixture-banner')).toBeTruthy();
+    expect(screen.getByTestId('fixture-banner')).not.toBe(screen.getByTestId('test-hooks-banner'));
+    cleanup();
+
+    const plain = new FakeWorld({ testHooks: false, fixture: true });
+    render(<GameApp deps={plain.deps()} />);
+    await screen.findByTestId('fixture-banner');
+    expect(screen.queryByTestId('test-hooks-banner')).toBeNull();
+  });
+
   it('tells the player what the idle and maximum-time rules are, from the config', async () => {
     const world = new FakeWorld({ idleTimeoutSec: 77, maxGameSec: 555 });
     render(<GameApp deps={world.deps()} />);

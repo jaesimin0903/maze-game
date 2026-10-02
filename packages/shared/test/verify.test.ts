@@ -280,6 +280,22 @@ describe('verifyGame', () => {
     }
   });
 
+  it('a record without observations compares nothing, and says so instead of reporting a match', () => {
+    const honest = exitGame(first);
+    const empty = verifyGame({ ...honest, observations: [] });
+    expect(empty.cells).toEqual([]);
+    expect(empty.cellsOk).toBeNull();
+    // The checks that do not depend on the observations are unaffected.
+    expect([empty.commitmentOk, empty.outcomeOk, empty.payoutOk]).toEqual([true, true, true]);
+
+    expect(verifyGame(honest).cellsOk).toBe(true);
+    expect(verifyGame(cashOutGame(first, 0)).cellsOk).toBe(true);
+    const observations = honest.observations.map((observation, j) =>
+      j === 1 ? { ...observation, open: observation.open ^ 1 } : observation,
+    );
+    expect(verifyGame({ ...honest, observations }).cellsOk).toBe(false);
+  });
+
   it('a settlement whose step count is not a step count never verifies and never throws', () => {
     const honest = cashOutGame(first, 3);
     for (const steps of [-1, 1.5, Number.NaN, 25, 1000]) {

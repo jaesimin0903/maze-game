@@ -24,7 +24,7 @@ import {
   type ServerConfig,
 } from './config';
 import { ApiError, BootError, type BootFailureCode } from './errors';
-import { GameService } from './game-service';
+import { GameService, TICKET_RETENTION_SEC } from './game-service';
 import { createLogger, describeError, type LogSink, type Logger } from './log';
 import { Relayer } from './relayer';
 import { Worker } from './settler';
@@ -52,7 +52,24 @@ export interface ContainerDeps {
   background?: boolean;
   /** Poll period of the worker in milliseconds. Default 500. */
   pollMs?: number;
+  /**
+   * Called once, when an append to the event log fails. The server must stop then: it can no
+   * longer record a move or an ending, and one that keeps running in that state signs no
+   * automatic cash-out, so every live game would run into its settle deadline and be reclaimed
+   * in full. Defaults to ending the process with `STORE_FAILURE_EXIT_CODE`; a supervisor starts
+   * it again, and the boot catch-up signs what is overdue.
+   */
+  onStoreFailure?: (error: Error) => void;
 }
+
+/** Exit code of a server that stopped because its event log could not be written. */
+export const STORE_FAILURE_EXIT_CODE = 70;
+
+/** The worker counts as stalled when no pass has completed for this long. */
+export const WORKER_STALE_MS = 10_000;
+
+/** Why the server cannot be relied on to settle games right now. */
+export type HealthProblem = 'store-failed' | 'worker-stalled';
 
 export interface Container {
   readonly config: ServerConfig;
@@ -69,6 +86,8 @@ export interface Container {
   readonly relayer: Relayer;
   readonly worker: Worker;
   readonly snapshots: UiSnapshots;
+  /** `null` while the event log is writable and the worker completes its passes. */
+  health(): HealthProblem | null;
   /** Stops the worker, waits for sends in flight and closes the event log. */
   close(): Promise<void>;
 }
@@ -94,8 +113,29 @@ function lastMarker(events: readonly StoreEvent[]): ScanMarker | null {
  *   this server's signing key, or the event log belongs to another deployment or chain.
  */
 export async function createContainer(deps: ContainerDeps): Promise<Container> {
-  const { config, table, chain, store } = deps;
+  const { config, table, chain } = deps;
   const log = createLogger(deps.logSink);
+
+  // Fail-stop: every append of the server goes through this wrapper.
+  let storeFailure: Error | null = null;
+  let closing = false;
+  const store: EventStore = {
+    load: () => deps.store.load(),
+    close: () => deps.store.close(),
+    append: (events) =>
+      deps.store.append(events).catch((error: unknown) => {
+        if (storeFailure === null && !closing) {
+          storeFailure = error instanceof Error ? error : new Error(String(error));
+          log.event({
+            level: 'alert',
+            event: 'store-failed',
+            detail: { dataDir: config.dataDir, error: describeError(error) },
+          });
+          (deps.onStoreFailure ?? exitOnStoreFailure)(storeFailure);
+        }
+        throw error;
+      }),
+  };
 
   assertTablePolicy(table, config.testHooks);
   const { idleTimeoutSec, maxGameSec } = effectiveTiming(table, config);
@@ -103,14 +143,15 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
   const signer =
     deps.signer ?? createSigner(config.signerKey, mazeBetDomain(config.chainId, config.contract));
   const tableHash = hashOfTable(table);
-  let onchain: { chainId: number; tableHash: Hex; serverSigner: Hex };
+  let onchain: { chainId: number; tableHash: Hex; serverSigner: Hex; reservedWei: bigint };
   try {
-    const [chainId, onchainHash, serverSigner] = await Promise.all([
+    const [chainId, onchainHash, serverSigner, reservedWei] = await Promise.all([
       chain.chainId(),
       chain.tableHash(),
       chain.serverSigner(),
+      chain.totalReserved(),
     ]);
-    onchain = { chainId, tableHash: onchainHash, serverSigner };
+    onchain = { chainId, tableHash: onchainHash, serverSigner, reservedWei };
   } catch (error) {
     throw new BootError('CHAIN_UNAVAILABLE', `cannot read the contract: ${describeError(error)}`);
   }
@@ -142,6 +183,16 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
     if (events.length > 0) {
       throw new BootError('CHAIN_UNAVAILABLE', 'the event log has no header; use a fresh data directory');
     }
+    // A game is created with a ticket, and the ticket is in the log before it is handed out. An
+    // empty log next to a contract that holds money for Active games is therefore the wrong
+    // directory: this server could play and settle none of them.
+    if (onchain.reservedWei > 0n) {
+      throw new BootError(
+        'CHAIN_UNAVAILABLE',
+        `the event log in ${config.dataDir} is empty, but the contract holds ${onchain.reservedWei} wei ` +
+          'for games that are Active; start the server on the data directory their tickets were issued from',
+      );
+    }
     await store.append({ type: 'meta', chainId: config.chainId, contract: config.contract });
   } else if (
     meta.chainId !== config.chainId ||
@@ -155,6 +206,8 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
 
   const clock = deps.clock ?? createChainClock(() => chain.head());
   const service = new GameService({
+    chainId: config.chainId,
+    contract: config.contract,
     table,
     idleTimeoutSec,
     maxGameSec,
@@ -192,6 +245,7 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
   });
 
   let bootedAtSec: number;
+  let unknownReservedWei = 0n;
   try {
     if (!(await watcher.markerMatchesChain())) {
       throw new BootError(
@@ -201,6 +255,17 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
     }
     // Catch up before serving: games created or finished while the server was down.
     await worker.tick();
+    // After the catch-up the log knows every game its tickets created. Whatever the contract
+    // reserves beyond those belongs to games this server cannot settle. A game created in the
+    // moment between the scan and the read would look like one, so a difference is checked
+    // again after one more pass.
+    for (let pass = 0; pass < 2; pass++) {
+      const reservedWei = await chain.totalReserved();
+      const knownWei = service.reservedWei();
+      unknownReservedWei = reservedWei > knownWei ? reservedWei - knownWei : 0n;
+      if (unknownReservedWei === 0n || pass === 1) break;
+      await worker.tick();
+    }
     bootedAtSec = await clock.chainNow();
   } catch (error) {
     if (error instanceof BootError) throw error;
@@ -223,6 +288,36 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
       replayedEvents: events.length,
     },
   });
+  if (unknownReservedWei > 0n) {
+    // Not a reason to refuse the boot: the games this log does know still have to be settled.
+    log.event({
+      level: 'alert',
+      event: 'unknown-active-games',
+      chainSec: bootedAtSec,
+      detail: {
+        warning:
+          'The contract holds money for Active games that are not in this event log. This server ' +
+          'cannot settle them; they will be reclaimed in full after their settle deadline.',
+        unknownReservedWei,
+        dataDir: config.dataDir,
+      },
+    });
+  }
+  if (config.testHooks) {
+    log.event({
+      level: 'alert',
+      event: 'test-hooks-enabled',
+      chainSec: bootedAtSec,
+      detail: {
+        warning:
+          'TEST HOOKS ARE ON. This server is for automated tests only and must not hold real bets: ' +
+          'with the seed hook, every maze can be computed from the public game id.',
+        seedHook: config.testSeedSecret !== null,
+        fixtureTable: table.fixture === true,
+        uiSnapshotRoutes: true,
+      },
+    });
+  }
 
   return {
     config,
@@ -239,12 +334,22 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
     relayer,
     worker,
     snapshots: new UiSnapshots(),
+    health() {
+      if (storeFailure !== null) return 'store-failed';
+      const sincePassMs = worker.sinceCompletedMs();
+      return sincePassMs === null || sincePassMs > WORKER_STALE_MS ? 'worker-stalled' : null;
+    },
     async close() {
+      closing = true;
       await worker.stop();
       await relayer.drain();
       await store.close();
     },
   };
+}
+
+function exitOnStoreFailure(): void {
+  process.exit(STORE_FAILURE_EXIT_CODE);
 }
 
 // ----- the process-wide instance -----
@@ -262,7 +367,7 @@ async function bootOnce(env: Env): Promise<BootResult> {
     const config = loadConfig(env);
     const table = loadTable(config);
     const chain = createViemChain(config);
-    store = await openFileStore(config.dataDir);
+    store = await openFileStore(config.dataDir, { ticketRetentionSec: TICKET_RETENTION_SEC });
     return { ok: true, container: await createContainer({ config, table, chain, store }) };
   } catch (error) {
     await store?.close().catch(() => undefined);

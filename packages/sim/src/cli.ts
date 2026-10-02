@@ -3,7 +3,7 @@
 //   node dist/cli.js <command> [options]
 //
 //   bench        [--table <file>]
-//   exact        [--table <file>] [--variant 0..3]
+//   exact        [--table <file>] [--variant 0..3] [--check]
 //   calibrate    --curve <i | ii | iii | point:<tier>:<aBps>:<phi>> [--base <file>] [--sizes 5,7,10]
 //                [--ceiling <bps>[,<bps>,<bps>]] [--variant 0..3] [--screen-last]
 //   certify      [--table <file>] [--tiers 0,1,2] [--check]
@@ -14,6 +14,7 @@
 //           --rng fast|seed               --slice-minutes <m>   --reports <dir>
 //
 // Without `--table` every command uses packages/shared/src/tuning.json.
+// `--check` reads the cache and writes nothing: no cache entry, no certify.json, no exact/<hash>.json.
 //
 // Exit codes: 0 = finished and every gate passed
 //             1 = finished and a gate failed (or the command could not run: bad arguments, an error)
@@ -63,7 +64,7 @@ const EXIT_BLOCKED = 3;
 
 const USAGE = `usage: cli.js <bench | exact | calibrate | certify | tune | sensitivity> [options]
   bench        [--table <file>]
-  exact        [--table <file>] [--variant 0..3]
+  exact        [--table <file>] [--variant 0..3] [--check]
   calibrate    --curve <i|ii|iii|point:<tier>:<aBps>:<phi>> [--base <file>] [--sizes 5,7,10] [--ceiling <bps>[,..]] [--variant 0..3] [--screen-last]
   certify      [--table <file>] [--tiers 0,1,2] [--check]
   tune         [--report-out <file>] [--sizes 5,7,10]
@@ -148,12 +149,21 @@ function formatExact(report: ExactGateReport): string {
   return lines.join('\n');
 }
 
+/** A path inside the repository as the reports store it: relative to the repository root. Other paths are kept as given. */
+function repositoryPath(path: string): string {
+  const repoRoot = resolve(simPackageRoot(), '..', '..');
+  return path.startsWith(`${repoRoot}/`) ? path.slice(repoRoot.length + 1) : path;
+}
+
 async function commandExact(context: Context): Promise<number> {
   const { path, table } = tableOption(context);
   const hash = tableHash(table);
   const level = variantOption(context, readMeta(context.paths, hash)?.variantLevel ?? 0);
   const report = await exactGate(context.runner, distinctCurves(table), BOT_VARIANTS[level]);
-  writeJsonFile(join(context.paths.exact, `${hash}.json`), { tablePath: path, tableHash: hash, ...report });
+  // `--check` writes nothing: the record belongs to the run that computed the gate.
+  if (!context.runner.readOnly) {
+    writeJsonFile(join(context.paths.exact, `${hash}.json`), { tablePath: repositoryPath(path), tableHash: hash, ...report });
+  }
   console.log(formatExact(report));
   // Branch 2 counts as applied only when the table itself carries the lowered ceiling and the raised e0.
   const branchTwoApplied =
@@ -267,16 +277,14 @@ function reportPath(context: Context): string {
 function writeReport(context: Context, result: TuneResult, secondsThisCall: number): void {
   const analysis = result.candidates.length > 0 ? sensitivity(result) : null;
   if (analysis !== null) writeJsonFile(context.paths.sensitivityJson, analysis);
-  const repoRoot = resolve(simPackageRoot(), '..', '..');
-  const shown = (path: string): string => (path.startsWith(`${repoRoot}/`) ? path.slice(repoRoot.length + 1) : path);
   const times = context.runner.store.campaignTimes();
   const text = renderTuningReport({
     result,
     sensitivity: analysis,
     finalCertification: certificationOf(context, result.final?.tableHash ?? null),
     houseMaxCertification: certificationOf(context, result.houseMax?.run?.tableHash ?? null),
-    candidateTablePath: shown(context.paths.candidateTable),
-    houseMaxTablePath: shown(context.paths.houseMaxTable),
+    candidateTablePath: repositoryPath(context.paths.candidateTable),
+    houseMaxTablePath: repositoryPath(context.paths.houseMaxTable),
     games: context.runner.store.gamesByKind(),
     // The ledger gets this call's seconds when the command ends; add them here.
     stageSeconds: { ...times, tune: (times.tune ?? 0) + secondsThisCall },

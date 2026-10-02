@@ -1,15 +1,18 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { EIP1193Provider } from 'viem';
+import { stringToHex, verifyMessage, type EIP1193Provider } from 'viem';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { ticketRequestMessage } from '@maze/shared';
 import { GameApp } from '../../src/client/GameApp';
 import type { ClientDeps } from '../../src/client/deps';
 import {
   DEV_ACCOUNT_INDEXES,
   connectDevWallet,
   connectInjectedWallet,
+  describeTxError,
+  isUserRejection,
   walletOptions,
 } from '../../src/client/wallet';
-import { FakeWorld, PLAYER, makeConfig } from './helpers';
+import { CONTRACT, FakeWorld, PLAYER, anvilAccount, makeConfig } from './helpers';
 
 beforeEach(() => window.localStorage.clear());
 afterEach(() => cleanup());
@@ -112,5 +115,65 @@ describe('wallet connection', () => {
     expect(wallet.address.toLowerCase()).toBe(PLAYER.toLowerCase());
     expect(calls).toContain('wallet_switchEthereumChain');
     expect(chainId).toBe('0x7a69');
+  });
+});
+
+describe('message signing', () => {
+  const message = ticketRequestMessage({
+    chainId: 31337,
+    mazeBetAddress: CONTRACT,
+    player: PLAYER,
+    tier: 1,
+    sessionTokenHash: `0x${'ab'.repeat(32)}`,
+  });
+
+  /** A browser wallet holding `PLAYER` on the configured chain; `sign` answers `personal_sign`. */
+  function providerWith(sign: (params: unknown[]) => Promise<unknown>) {
+    const calls: { method: string; params?: unknown[] }[] = [];
+    const provider = {
+      request: async (call: { method: string; params?: unknown[] }) => {
+        calls.push(call);
+        if (call.method === 'eth_requestAccounts') return [PLAYER];
+        if (call.method === 'eth_chainId') return '0x7a69';
+        if (call.method === 'personal_sign') return sign(call.params ?? []);
+        throw new Error(`unexpected ${call.method}`);
+      },
+      on: () => undefined,
+      removeListener: () => undefined,
+    } as unknown as EIP1193Provider;
+    return { provider, calls };
+  }
+
+  it('the dev wallet signs the ticket request locally with its Anvil key, as personal_sign would', async () => {
+    const wallet = await connectDevWallet(makeConfig(), 2);
+    const signature = await wallet.signMessage(message);
+    expect(await verifyMessage({ address: PLAYER, message, signature })).toBe(true);
+    expect(signature).toBe(await anvilAccount(2).signMessage({ message }));
+    // Another account's signature does not pass for this player.
+    const other = await (await connectDevWallet(makeConfig(), 3)).signMessage(message);
+    expect(await verifyMessage({ address: PLAYER, message, signature: other })).toBe(false);
+  });
+
+  it('a browser wallet is asked through personal_sign for the UTF-8 bytes of the message', async () => {
+    const signed = await anvilAccount(2).signMessage({ message });
+    const { provider, calls } = providerWith(async () => signed);
+    const wallet = await connectInjectedWallet(makeConfig(), provider);
+
+    expect(await wallet.signMessage(message)).toBe(signed);
+    const asked = calls.filter((call) => call.method === 'personal_sign');
+    expect(asked).toHaveLength(1);
+    expect(asked[0].params).toEqual([stringToHex(message), PLAYER]);
+    expect(await verifyMessage({ address: PLAYER, message, signature: signed })).toBe(true);
+  });
+
+  it('a dismissed browser-wallet prompt is recognised as the player\'s refusal', async () => {
+    const { provider } = providerWith(async () => {
+      throw Object.assign(new Error('User rejected the request.'), { code: 4001 });
+    });
+    const wallet = await connectInjectedWallet(makeConfig(), provider);
+    const error = await wallet.signMessage(message).catch((e: unknown) => e);
+    expect(isUserRejection(error)).toBe(true);
+    expect(describeTxError(error)).toContain('거절');
+    expect(isUserRejection(new Error('rpc down'))).toBe(false);
   });
 });

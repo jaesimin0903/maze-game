@@ -12,6 +12,7 @@ interface Props {
   /** The chain confirms the settlement or the reclaim. */
   confirmed: boolean;
   canSelfSettle: boolean;
+  walletConnected: boolean;
   busy: Busy | null;
   onSettleSelf(): void;
   onNewGame(): void;
@@ -41,6 +42,7 @@ export function ResultPanel({
   betWei,
   confirmed,
   canSelfSettle,
+  walletConnected,
   busy,
   onSettleSelf,
   onNewGame,
@@ -92,15 +94,17 @@ export function ResultPanel({
       </p>
       {canSelfSettle && (
         <p className="result-self">
-          서버의 정산이 늦어지고 있습니다. 서버가 서명한 정산을 직접 제출할 수 있습니다.
+          서버의 정산이 체인에서 아직 확인되지 않았습니다. 서버가 서명한 정산을 직접 제출할 수
+          있습니다.
           <button
             type="button"
             data-testid="settle-self"
-            disabled={busy !== null}
+            disabled={busy !== null || !walletConnected}
             onClick={onSettleSelf}
           >
             정산 직접 제출
           </button>
+          {!walletConnected && <span>정산 트랜잭션을 보내려면 지갑을 연결하세요.</span>}
         </p>
       )}
       <div className="result-actions">

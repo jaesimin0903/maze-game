@@ -105,6 +105,13 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
         />
       </header>
 
+      {config.testHooks && (
+        <p className="banner banner-hooks" role="alert" data-testid="test-hooks-banner">
+          <strong>테스트 훅이 켜진 서버입니다.</strong> 시험용 장치가 미로의 시드를 게임 번호에서
+          계산할 수 있어 미로를 미리 알아낼 수 있습니다. 공정한 판이 아니므로 실제 가치가 있는 돈을
+          걸지 마세요.
+        </p>
+      )}
       {config.fixture && (
         <p className="banner banner-fixture" data-testid="fixture-banner">
           테스트 표로 실행 중입니다. 배당과 환불 수치는 인증되지 않은 시험용 값입니다.
@@ -134,6 +141,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
           config={config}
           table={table}
           walletConnected={wallet !== null}
+          walletKind={wallet?.kind ?? null}
           betStep={state.betStep}
           busy={phase === 'betting'}
           previous={previousBet}
@@ -185,6 +193,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
                 betWei={betWei}
                 confirmed={confirmed}
                 canSelfSettle={game.canSelfSettle}
+                walletConnected={wallet !== null}
                 busy={state.busy}
                 onSettleSelf={() => void game.settleSelf()}
                 onNewGame={game.newGame}

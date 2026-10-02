@@ -25,6 +25,7 @@ export const ERROR_STATUS = {
   DEADLINE_PASSED: 409,
   NOT_REVEALABLE: 409,
   RATE_LIMITED: 429,
+  INTERNAL: 500,
   NOT_CALIBRATED: 503,
   TABLE_MISMATCH: 503,
   CHAIN_UNAVAILABLE: 503,
@@ -50,6 +51,32 @@ export interface CreateGameRequest {
    * The token is the exact string later sent as `Authorization: Bearer <token>`.
    */
   sessionTokenHash: Hex;
+  /**
+   * EIP-191 `personal_sign` signature by `player` over `ticketRequestMessage(...)`.
+   * It proves the requester controls `player`, so nobody else can hold that address's ticket slot.
+   */
+  signature: Hex;
+}
+
+/**
+ * The exact UTF-8 string a player signs to request a ticket. Addresses are lowercased; `tier` is
+ * its decimal form; `sessionTokenHash` is the 0x-prefixed lowercase hex sent in the request.
+ */
+export function ticketRequestMessage(args: {
+  chainId: number;
+  mazeBetAddress: Hex;
+  player: Hex;
+  tier: number;
+  sessionTokenHash: Hex;
+}): string {
+  return [
+    'maze-ticket',
+    String(args.chainId),
+    args.mazeBetAddress.toLowerCase(),
+    args.player.toLowerCase(),
+    String(args.tier),
+    args.sessionTokenHash.toLowerCase(),
+  ].join(':');
 }
 
 /** `POST /api/games/:id/start` (Bearer). The body is an empty object. */

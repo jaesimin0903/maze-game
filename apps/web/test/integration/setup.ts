@@ -40,25 +40,20 @@ import {
 } from '../../src/server/container';
 import { openFileStore } from '../../src/server/store';
 import { testServerSeed } from '../../src/server/test-hooks';
-import { api, fixtureTable, newToken, pickClientSeed } from '../server/helpers';
+import {
+  api,
+  fixtureTable,
+  newToken,
+  pickClientSeed,
+  PLAYER_KEYS,
+  signTicketBody,
+} from '../server/helpers';
 
 /** The Anvil port reserved for these tests (`MAZE_INT_ANVIL_PORT` in scripts/ports.sh). */
 export const ANVIL_PORT = 8546;
 export const RPC_URL = `http://127.0.0.1:${ANVIL_PORT}`;
 export const SEED_SECRET = 'integration-secret';
 export const BET = 10_000_000_000_000_000n;
-
-/** Anvil accounts #2 .. #9. Public, well-known test keys. */
-const PLAYER_KEYS: readonly Hex[] = [
-  '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
-  '0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6',
-  '0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a',
-  '0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba',
-  '0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e',
-  '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356',
-  '0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97',
-  '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6',
-];
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -192,6 +187,8 @@ export interface Server {
   config: ServerConfig;
   dataDir: string;
   logs: LogLine[];
+  /** Every failure of the event log the server reported instead of ending the process. */
+  storeFailures: Error[];
   /** Stops the worker and closes the event log. */
   stop(): Promise<void>;
 }
@@ -218,6 +215,7 @@ export async function startServer(h: Harness, options: ServerOptions = {}): Prom
   const dataDir = options.dataDir ?? (await mkdtemp(path.join(os.tmpdir(), 'maze-int-')));
   const config = serverConfig(h, dataDir, options);
   const logs: LogLine[] = [];
+  const storeFailures: Error[] = [];
   const store = await openFileStore(dataDir);
   let container: Container;
   try {
@@ -229,13 +227,14 @@ export async function startServer(h: Harness, options: ServerOptions = {}): Prom
       logSink: (line) => logs.push(JSON.parse(line) as LogLine),
       watcher: options.watcher,
       background: options.background,
+      onStoreFailure: (error) => storeFailures.push(error),
     });
   } catch (error) {
     await store.close();
     throw error;
   }
   installContainer(container);
-  return { container, config, dataDir, logs, stop: () => uninstallContainer() };
+  return { container, config, dataDir, logs, storeFailures, stop: () => uninstallContainer() };
 }
 
 // ----- players and games -----
@@ -244,6 +243,9 @@ export function playerOf(h: Harness, index: number) {
   const account = privateKeyToAccount(PLAYER_KEYS[index]);
   return {
     address: account.address,
+    key: PLAYER_KEYS[index],
+    /** The chain and contract this player's ticket requests are signed for. */
+    domain: { chainId: h.deployment.chainId, contract: h.contract },
     wallet: createWalletClient({ chain: h.chain, transport: http(h.rpcUrl), account }),
   };
 }
@@ -256,12 +258,15 @@ export function mazeOf(ticket: TicketResponse, clientSeed: Hex, n: number): Maze
   return generateMaze(deriveFinalSeed({ serverSeed, clientSeed, gameId: ticket.gameId }), n);
 }
 
+/** A ticket request signed by the player, as the page signs it with the wallet. */
 export async function requestTicket(
-  player: Hex,
+  player: Pick<Player, 'key' | 'domain'>,
   tier = 0,
 ): Promise<{ ticket: TicketResponse; token: string }> {
   const { token, sessionTokenHash } = newToken();
-  const reply = await api.ticket<TicketResponse>({ player, tier, sessionTokenHash });
+  const reply = await api.ticket<TicketResponse>(
+    await signTicketBody(player.key, { tier, sessionTokenHash }, player.domain),
+  );
   if (reply.status !== 201) throw new Error(`ticket refused: ${reply.text}`);
   return { ticket: reply.body, token };
 }
@@ -317,7 +322,7 @@ export async function openGame(
   player: Player,
   p: { tier?: number; betWei?: bigint; start?: boolean; deadEnd?: boolean } = {},
 ): Promise<LiveGame> {
-  const { ticket, token } = await requestTicket(player.address, p.tier ?? 0);
+  const { ticket, token } = await requestTicket(player, p.tier ?? 0);
   const betWei = p.betWei ?? BET;
   const n = h.table.tiers[ticket.tier].n;
   const { clientSeed } = pickClientSeed(

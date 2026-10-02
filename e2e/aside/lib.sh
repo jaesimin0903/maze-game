@@ -4,7 +4,8 @@
 #
 # What a scenario gets from here:
 #   - its own stack: a fresh Anvil (8550 + i), a fresh data directory, a fresh deployment and the
-#     app on 3050 + i, started through scripts/dev-up.sh with the hook flags on the command line;
+#     app on 3050 + i, started through scripts/dev-up.sh --allow-test-hooks with the hook flags
+#     on the command line and a seed-hook secret that is random per run;
 #   - one `aside repl` session that stays open for the whole scenario (tabs opened by a session
 #     are closed by Aside when the session ends, so a scenario cannot be split over invocations);
 #   - DOM reads through the path the capability probe found (A: the REPL reads the page;
@@ -30,7 +31,14 @@ WORK_ROOT="${MAZE_E2E_WORK_DIR:-$ROOT_DIR/.data/e2e-aside}"
 RUN_ID="${MAZE_E2E_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 # fixture: the test table. production: packages/shared/src/tuning.json with only the seed hook.
 TABLE_MODE="${MAZE_E2E_TABLE:-fixture}"
-SEED_SECRET="${MAZE_TEST_SEED_SECRET:-maze-e2e-aside}"
+# The secret of the test seed hook: the server derives every server seed from it, and
+# plan-moves.ts rebuilds the maze with it. It is random and new for every run, so no value in
+# the repository opens a stack. scripts/e2e-aside.sh draws one per run and hands it to every
+# scenario; a scenario started on its own draws its own. Set MAZE_TEST_SEED_SECRET to repeat a
+# run with the secret it logged (the scenario's run.log, under the git-ignored .data/).
+# Both users read this one variable: stack_env (the server) and plan (the route planner).
+SEED_SECRET="${MAZE_TEST_SEED_SECRET:-$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')}"
+[ "${#SEED_SECRET}" -ge 16 ] || { echo "lib.sh: could not draw a seed secret (set MAZE_TEST_SEED_SECRET)" >&2; exit 2; }
 FIXTURE_FILE="$ROOT_DIR/packages/shared/test/fixtures/tuning.fixture.json"
 PRELUDE_FILE="$E2E_DIR/lib/prelude.js"
 TSX="$ROOT_DIR/node_modules/.bin/tsx"
@@ -211,6 +219,7 @@ scenario_begin() {
   trap 'SC_FATAL="${SC_FATAL:-interrupted}"; exit 130' INT TERM
   log "scenario $SC_NUM $SC_NAME: $SC_PROVES"
   log "table mode $TABLE_MODE, input path $INPUT_PATH, DOM read path $READ_PATH, anvil $ANVIL_PORT, app $NEXT_PORT"
+  log "seed secret of this run (MAZE_TEST_SEED_SECRET repeats it): $SEED_SECRET"
 }
 
 # evidence <key> <value>: something worth keeping in the result (game id, transaction hash).
@@ -345,6 +354,15 @@ stack_env() {
   fi
 }
 
+# dev_up [VAR=value ...]: the one place that builds the command starting a scenario's stack.
+# scripts/dev-up.sh starts with test hooks only when asked to with --allow-test-hooks; without
+# the switch it refuses to start while a hook flag is set. The flags come from stack_env alone:
+# env -u keeps a hook flag of the caller's shell from leaking in.
+dev_up() {
+  (cd "$ROOT_DIR" && env -u MAZE_ALLOW_TEST_HOOKS -u MAZE_TEST_SEED_SECRET -u MAZE_TUNING_FIXTURE -u MAZE_SKIP_BUILD \
+    "${STACK_ENV[@]}" "$@" bash scripts/dev-up.sh --allow-test-hooks)
+}
+
 # stack_up [VAR=value ...]: starts Anvil, deploys, starts the app. Extra variables are passed on
 # to dev-up.sh (MAZE_IDLE_TIMEOUT_SEC=6, NEXT_PUBLIC_ENABLE_DEV_WALLET=0, ...).
 stack_up() {
@@ -362,9 +380,7 @@ stack_up() {
   STACK_EXTRA=("$@")
   STACK_UP=1
   log "starting the stack ($TABLE_MODE table)"
-  # env -u: a hook flag of the caller's shell must not leak in, only the ones listed here count.
-  if ! (cd "$ROOT_DIR" && env -u MAZE_TUNING_FIXTURE -u MAZE_SKIP_BUILD "${STACK_ENV[@]}" "$@" \
-    bash scripts/dev-up.sh) >"$SC_DIR/dev-up.log" 2>&1; then
+  if ! dev_up "$@" >"$SC_DIR/dev-up.log" 2>&1; then
     STACK_UP=0
     tail -n 15 "$SC_DIR/dev-up.log" | redact
     fail_scenario "the stack did not start (see $SC_DIR/dev-up.log)"
@@ -379,11 +395,44 @@ stack_up() {
   log "stack up: contract $CONTRACT, chain $RPC, app $APP_URL"
 }
 
+# dev-up.sh runs the app under a supervisor that starts it again about a second after it exits
+# (supervisor.pid: the supervising shell; next.pid: the current app, rewritten on every
+# restart). Before the app is killed for good the supervisor has to go, or the app is back.
+# The recorded PID is stopped only when it is this stack's supervisor: an ancestor of the
+# recorded app process, or a process whose command line is `dev-up.sh --supervise` for this
+# state directory (the same test scripts/dev-down.sh applies). A stack without a supervisor
+# (app_start_again, dev-up.sh --no-supervisor) has nothing to stop here.
+supervisor_stop() {
+  local supervisor app parent _
+  supervisor="$(tr -cd '0-9' <"$STATE_DIR/supervisor.pid" 2>/dev/null)"
+  [ -n "$supervisor" ] && kill -0 "$supervisor" 2>/dev/null || return 0
+  app="$(tr -cd '0-9' <"$STATE_DIR/next.pid" 2>/dev/null)"
+  parent="$app"
+  for _ in 1 2 3 4 5; do
+    [ -n "$parent" ] && [ "$parent" -gt 1 ] || break
+    parent="$(ps -o ppid= -p "$parent" 2>/dev/null | tr -cd '0-9')"
+    [ "$parent" = "$supervisor" ] && break
+  done
+  if [ "$parent" != "$supervisor" ] &&
+    ! ps -o command= -p "$supervisor" 2>/dev/null | grep -Eq "dev-up\.sh --supervise .*/dev-up-$NEXT_PORT -- "; then
+    log "PID $supervisor in supervisor.pid is not this stack's supervisor; it was left alone"
+    return 0
+  fi
+  kill -KILL "$supervisor" 2>/dev/null
+  for _ in $(seq 1 50); do
+    kill -0 "$supervisor" 2>/dev/null || break
+    sleep 0.1
+  done
+  log "supervisor stopped (PID $supervisor)"
+}
+
 stack_down() {
   local pid
   # `next start` can take more than ten seconds to leave on SIGTERM while a browser still holds
   # connections to it; dev-down.sh then falls back to SIGKILL. This stack is disposable, so the
   # app is stopped at once here (same PID check as app_stop) and dev-down.sh does the rest.
+  # The supervisor goes first, so that it does not start a new app in between.
+  supervisor_stop
   pid="$(tr -cd '0-9' <"$STATE_DIR/next.pid" 2>/dev/null)"
   if [ -n "$pid" ] && lsof -nP -a -p "$pid" -iTCP:"$NEXT_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     kill -KILL "$pid" 2>/dev/null
@@ -393,8 +442,10 @@ stack_down() {
   STACK_UP=0
 }
 
-# Stops only the app, by the PID dev-up recorded, after checking that this PID is the process
-# listening on this scenario's port. The chain keeps running (scenarios 05 and 10).
+# Stops the app for good, by the PID dev-up recorded, after checking that this PID is the
+# process listening on this scenario's port. The supervisor is stopped first: these scenarios
+# are a server that is gone and stays gone, not a crash the supervisor recovers from. The chain
+# keeps running (scenarios 05 and 10).
 app_stop() {
   local file="$STATE_DIR/next.pid" pid
   pid="$(tr -cd '0-9' <"$file" 2>/dev/null)"
@@ -402,6 +453,7 @@ app_stop() {
   if ! lsof -nP -a -p "$pid" -iTCP:"$NEXT_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     fail_scenario "PID $pid is not the process listening on port $NEXT_PORT; nothing was stopped"
   fi
+  supervisor_stop
   # SIGKILL: the scenario is a server that is gone, not one that shuts down politely while it
   # still answers the page's open connections.
   kill -KILL "$pid" 2>/dev/null
@@ -411,8 +463,11 @@ app_stop() {
     sleep 0.1
   done
   kill -0 "$pid" 2>/dev/null && fail_scenario "the app (PID $pid) did not stop"
+  # A supervisor that is still alive brings the app back after about a second.
+  sleep 2
+  port_in_use "$NEXT_PORT" && fail_scenario "the app is listening on port $NEXT_PORT again: a supervisor restarted it"
   APP_DOWN=1
-  log "app stopped (PID $pid); the chain keeps running"
+  log "app stopped (PID $pid) and not restarted; the chain keeps running"
 }
 
 # Starts the app again on the same chain, deployment and data directory, the way dev-up.sh

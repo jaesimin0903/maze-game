@@ -133,6 +133,12 @@ export class FakeWorld {
   rpcUp = true;
   /** The relayer settles ended games on the request after the one that ended them. */
   autoSettle = true;
+  /** `settle` transactions the relayer sends that are dropped (never mined) before one is mined. */
+  settlesToDrop = 0;
+  /** Every settlement hash the server has reported, in the order it sent the transactions. */
+  settleHashesSent: Hex[] = [];
+  /** Game id -> the transaction that settled it on the chain. */
+  readonly settledBy = new Map<Hex, Hex>();
   pending = 0n;
   balance = 10n ** 19n;
 
@@ -222,11 +228,17 @@ export class FakeWorld {
     for (const g of this.games.values()) {
       if (!g.onChain) continue;
       const game = this.onchain.get(g.gameId);
-      if (g.terminal && g.terminal.settleTxHash === null && this.autoSettle) {
-        if (game?.status === ONCHAIN_STATUS.Active) {
+      if (g.terminal && this.autoSettle && game?.status === ONCHAIN_STATUS.Active) {
+        // Like the real server, the hash is reported as soon as the transaction is sent.
+        if (this.settlesToDrop > 0) {
+          this.settlesToDrop -= 1;
+          g.terminal.settleTxHash = this.nextHash('d40bbed');
+        } else {
           game.status = ONCHAIN_STATUS.Settled;
           g.terminal.settleTxHash = this.nextHash('5e771e');
+          this.settledBy.set(g.gameId, g.terminal.settleTxHash);
         }
+        this.settleHashesSent.push(g.terminal.settleTxHash);
       }
       const deadline = Math.min(
         g.lastMoveAt + this.config.idleTimeoutSec,
@@ -377,6 +389,10 @@ export class FakeWorld {
     pendingOf: async () => this.pending,
     balanceOf: async () => this.balance,
     waitForTx: async () => 'success',
+    settledBy: async (hash, gameId) => {
+      if (!this.rpcUp) throw new Error('rpc down');
+      return this.settledBy.get(gameId) === hash;
+    },
   };
 
   wallet(address: Hex = PLAYER): WalletApi {
@@ -411,7 +427,9 @@ export class FakeWorld {
         const game = this.onchain.get(gameId);
         if (!game || game.status !== ONCHAIN_STATUS.Active) throw new Error('GameNotActive');
         game.status = ONCHAIN_STATUS.Settled;
-        return this.nextHash('5e1f');
+        const hash = this.nextHash('5e1f');
+        this.settledBy.set(gameId, hash);
+        return hash;
       },
       reclaim: async (gameId) => {
         this.txs.push('reclaim');

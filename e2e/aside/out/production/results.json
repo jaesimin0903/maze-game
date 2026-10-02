@@ -1,0 +1,3873 @@
+{
+  "schema": 1,
+  "runId": "20261002T115029Z-80672",
+  "startedAt": "2026-10-02T11:50:29Z",
+  "finishedAt": "2026-10-02T11:53:28Z",
+  "tableMode": "production",
+  "partial": false,
+  "selected": [
+    "01",
+    "02",
+    "03",
+    "04",
+    "06",
+    "07",
+    "08",
+    "09",
+    "11",
+    "10",
+    "05"
+  ],
+  "paths": {
+    "input": "repl",
+    "read": "repl"
+  },
+  "capabilitiesProbedAt": "2026-10-02T11:36:28Z",
+  "scenarios": [
+    {
+      "scenario": "01",
+      "name": "exit",
+      "proves": "schedule and exit payout before the bet, then the solution to the exit, the payout on chain and the verify page",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 28, http 21, dom 64 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/01",
+      "startedAt": "2026-10-02T11:50:33Z",
+      "finishedAt": "2026-10-02T11:51:01Z",
+      "seconds": 28,
+      "evidence": {
+        "gameId": "0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125",
+        "settleTx": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475"
+      },
+      "assertions": [
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: devWallet is on",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: testHooks is on",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: fixture matches the table mode (production)",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: the contract is the one deployed for this scenario",
+          "expected": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+          "actual": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: the chain is this scenario's Anvil",
+          "expected": "http://127.0.0.1:8551",
+          "actual": "http://127.0.0.1:8551"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "chain-info shows chain 31337 (from /api/config, not from the build)",
+          "expected": "31337",
+          "actual": "31337"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "fixture-banner is not shown with the production table",
+          "expected": "not in the DOM",
+          "actual": "not in the DOM"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "wallet-dev-option is offered while devWallet is on",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "wallet-address is Anvil account #2",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the connected wallet is the dev wallet",
+          "expected": "dev",
+          "actual": "dev"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "no game exists on chain while the schedule is read",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refund-schedule is drawn for size 2",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refund-schedule is drawn for the typed amount (20000000000000000 wei)",
+          "expected": "20000000000000000",
+          "actual": "20000000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 2: every schedule row shows step, refundBps and bet x refundBps (9 x 9 rows)",
+          "expected": "0:9500:19000000000000000 1:7300:14600000000000000 2:6770:13540000000000000 3:6280:12560000000000000 4:5824:11648000000000000 5:5402:10804000000000000 6:5010:10020000000000000 7:4647:9294000000000000 8:4310:8620000000000000 9:3998:7996000000000000 10:3708:7416000000000000 11:3439:6878000000000000 12:3190:6380000000000000 13:2959:5918000000000000 14:2744:5488000000000000 15:2545:5090000000000000 16:2361:4722000000000000 17:2190:4380000000000000 18:2031:4062000000000000 19:1884:3768000000000000 20:1747:3494000000000000 21:1620:3240000000000000 22:1503:3006000000000000 23:1394:2788000000000000 24:1293:2586000000000000 25:1199:2398000000000000 26:1112:2224000000000000 27:1031:2062000000000000 28:957:1914000000000000 29:887:1774000000000000 30:823:1646000000000000 31:763:1526000000000000 32:708:1416000000000000 33:657:1314000000000000 34:609:1218000000000000 35:565:1130000000000000 36:524:1048000000000000 37:486:972000000000000 38:450:900000000000000 39:418:836000000000000 40:387:774000000000000 41:359:718000000000000 42:333:666000000000000 43:309:618000000000000 44:287:574000000000000 45:266:532000000000000 46:247:494000000000000 47:229:458000000000000 48:212:424000000000000 49:197:394000000000000 50:182:364000000000000 51:169:338000000000000 52:157:314000000000000 53:145:290000000000000 54:135:270000000000000 55:125:250000000000000 56:116:232000000000000 57:107:214000000000000 58:100:200000000000000 59:92:184000000000000 60:86:172000000000000 61:79:158000000000000 62:74:148000000000000 63:68:136000000000000 64:63:126000000000000 65:59:118000000000000 66:54:108000000000000 67:50:100000000000000 68:47:94000000000000 69:43:86000000000000 70:40:80000000000000 71:37:74000000000000 72:34:68000000000000 73:32:64000000000000 74:30:60000000000000 75:27:54000000000000 76:25:50000000000000 77:23:46000000000000 78:22:44000000000000 79:20:40000000000000 80:19:38000000000000 ",
+          "actual": "0:9500:19000000000000000 1:7300:14600000000000000 2:6770:13540000000000000 3:6280:12560000000000000 4:5824:11648000000000000 5:5402:10804000000000000 6:5010:10020000000000000 7:4647:9294000000000000 8:4310:8620000000000000 9:3998:7996000000000000 10:3708:7416000000000000 11:3439:6878000000000000 12:3190:6380000000000000 13:2959:5918000000000000 14:2744:5488000000000000 15:2545:5090000000000000 16:2361:4722000000000000 17:2190:4380000000000000 18:2031:4062000000000000 19:1884:3768000000000000 20:1747:3494000000000000 21:1620:3240000000000000 22:1503:3006000000000000 23:1394:2788000000000000 24:1293:2586000000000000 25:1199:2398000000000000 26:1112:2224000000000000 27:1031:2062000000000000 28:957:1914000000000000 29:887:1774000000000000 30:823:1646000000000000 31:763:1526000000000000 32:708:1416000000000000 33:657:1314000000000000 34:609:1218000000000000 35:565:1130000000000000 36:524:1048000000000000 37:486:972000000000000 38:450:900000000000000 39:418:836000000000000 40:387:774000000000000 41:359:718000000000000 42:333:666000000000000 43:309:618000000000000 44:287:574000000000000 45:266:532000000000000 46:247:494000000000000 47:229:458000000000000 48:212:424000000000000 49:197:394000000000000 50:182:364000000000000 51:169:338000000000000 52:157:314000000000000 53:145:290000000000000 54:135:270000000000000 55:125:250000000000000 56:116:232000000000000 57:107:214000000000000 58:100:200000000000000 59:92:184000000000000 60:86:172000000000000 61:79:158000000000000 62:74:148000000000000 63:68:136000000000000 64:63:126000000000000 65:59:118000000000000 66:54:108000000000000 67:50:100000000000000 68:47:94000000000000 69:43:86000000000000 70:40:80000000000000 71:37:74000000000000 72:34:68000000000000 73:32:64000000000000 74:30:60000000000000 75:27:54000000000000 76:25:50000000000000 77:23:46000000000000 78:22:44000000000000 79:20:40000000000000 80:19:38000000000000 "
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 2: schedule-exit-payout is bet x multiplier",
+          "expected": "369390000000000000",
+          "actual": "369390000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 2: tier-payout-2 is bet x multiplier",
+          "expected": "369390000000000000",
+          "actual": "369390000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "size 2: the contract quotes the same exit payout",
+          "expected": "369390000000000000",
+          "actual": "369390000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "size 2: the contract's size and multiplier are the table's",
+          "expected": "9 184695",
+          "actual": "9 184695"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refund-schedule is drawn for size 1",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refund-schedule is drawn for the typed amount (20000000000000000 wei)",
+          "expected": "20000000000000000",
+          "actual": "20000000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 1: every schedule row shows step, refundBps and bet x refundBps (7 x 7 rows)",
+          "expected": "0:9500:19000000000000000 1:7300:14600000000000000 2:6890:13780000000000000 3:6503:13006000000000000 4:6138:12276000000000000 5:5794:11588000000000000 6:5468:10936000000000000 7:5161:10322000000000000 8:4872:9744000000000000 9:4598:9196000000000000 10:4340:8680000000000000 11:4096:8192000000000000 12:3867:7734000000000000 13:3650:7300000000000000 14:3445:6890000000000000 15:3251:6502000000000000 16:3069:6138000000000000 17:2897:5794000000000000 18:2734:5468000000000000 19:2580:5160000000000000 20:2436:4872000000000000 21:2299:4598000000000000 22:2170:4340000000000000 23:2048:4096000000000000 24:1933:3866000000000000 25:1825:3650000000000000 26:1722:3444000000000000 27:1625:3250000000000000 28:1534:3068000000000000 29:1448:2896000000000000 30:1367:2734000000000000 31:1290:2580000000000000 32:1218:2436000000000000 33:1149:2298000000000000 34:1085:2170000000000000 35:1024:2048000000000000 36:966:1932000000000000 37:912:1824000000000000 38:861:1722000000000000 39:812:1624000000000000 40:767:1534000000000000 41:724:1448000000000000 42:683:1366000000000000 43:645:1290000000000000 44:609:1218000000000000 45:574:1148000000000000 46:542:1084000000000000 47:512:1024000000000000 48:483:966000000000000 ",
+          "actual": "0:9500:19000000000000000 1:7300:14600000000000000 2:6890:13780000000000000 3:6503:13006000000000000 4:6138:12276000000000000 5:5794:11588000000000000 6:5468:10936000000000000 7:5161:10322000000000000 8:4872:9744000000000000 9:4598:9196000000000000 10:4340:8680000000000000 11:4096:8192000000000000 12:3867:7734000000000000 13:3650:7300000000000000 14:3445:6890000000000000 15:3251:6502000000000000 16:3069:6138000000000000 17:2897:5794000000000000 18:2734:5468000000000000 19:2580:5160000000000000 20:2436:4872000000000000 21:2299:4598000000000000 22:2170:4340000000000000 23:2048:4096000000000000 24:1933:3866000000000000 25:1825:3650000000000000 26:1722:3444000000000000 27:1625:3250000000000000 28:1534:3068000000000000 29:1448:2896000000000000 30:1367:2734000000000000 31:1290:2580000000000000 32:1218:2436000000000000 33:1149:2298000000000000 34:1085:2170000000000000 35:1024:2048000000000000 36:966:1932000000000000 37:912:1824000000000000 38:861:1722000000000000 39:812:1624000000000000 40:767:1534000000000000 41:724:1448000000000000 42:683:1366000000000000 43:645:1290000000000000 44:609:1218000000000000 45:574:1148000000000000 46:542:1084000000000000 47:512:1024000000000000 48:483:966000000000000 "
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 1: schedule-exit-payout is bet x multiplier",
+          "expected": "132224000000000000",
+          "actual": "132224000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 1: tier-payout-1 is bet x multiplier",
+          "expected": "132224000000000000",
+          "actual": "132224000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "size 1: the contract quotes the same exit payout",
+          "expected": "132224000000000000",
+          "actual": "132224000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "size 1: the contract's size and multiplier are the table's",
+          "expected": "7 66112",
+          "actual": "7 66112"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refund-schedule is drawn for size 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refund-schedule is drawn for the typed amount (10000000000000000 wei)",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 0: every schedule row shows step, refundBps and bet x refundBps (5 x 5 rows)",
+          "expected": "0:9500:9500000000000000 1:7300:7300000000000000 2:6694:6694000000000000 3:6138:6138000000000000 4:5629:5629000000000000 5:5161:5161000000000000 6:4733:4733000000000000 7:4340:4340000000000000 8:3980:3980000000000000 9:3650:3650000000000000 10:3347:3347000000000000 11:3069:3069000000000000 12:2814:2814000000000000 13:2580:2580000000000000 14:2366:2366000000000000 15:2170:2170000000000000 16:1990:1990000000000000 17:1825:1825000000000000 18:1673:1673000000000000 19:1534:1534000000000000 20:1407:1407000000000000 21:1290:1290000000000000 22:1183:1183000000000000 23:1085:1085000000000000 24:995:995000000000000 ",
+          "actual": "0:9500:9500000000000000 1:7300:7300000000000000 2:6694:6694000000000000 3:6138:6138000000000000 4:5629:5629000000000000 5:5161:5161000000000000 6:4733:4733000000000000 7:4340:4340000000000000 8:3980:3980000000000000 9:3650:3650000000000000 10:3347:3347000000000000 11:3069:3069000000000000 12:2814:2814000000000000 13:2580:2580000000000000 14:2366:2366000000000000 15:2170:2170000000000000 16:1990:1990000000000000 17:1825:1825000000000000 18:1673:1673000000000000 19:1534:1534000000000000 20:1407:1407000000000000 21:1290:1290000000000000 22:1183:1183000000000000 23:1085:1085000000000000 24:995:995000000000000 "
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 0: schedule-exit-payout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "size 0: tier-payout-0 is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "size 0: the contract quotes the same exit payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "size 0: the contract's size and multiplier are the table's",
+          "expected": "5 26088",
+          "actual": "5 26088"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "schedule-row-0 is the refund right after the bet",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "schedule-row-1 is the refund after the first move",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0x765ff501ae4b7aa2bedb6bffbbccc871d442ca4227b150f5e91e4c5dab1b6c59",
+          "actual": "0x765ff501ae4b7aa2bedb6bffbbccc871d442ca4227b150f5e91e4c5dab1b6c59"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the board has n x n cells",
+          "expected": "25",
+          "actual": "25"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exactly one cell is current after 0 move(s)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "one cell is visited per move made (0)",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "no hidden cell carries wall data",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "every cell the player has been to shows its walls",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the start cell is marked",
+          "expected": "cell-0-0",
+          "actual": "cell-0-0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the exit cell is marked",
+          "expected": "cell-4-4",
+          "actual": "cell-4-4"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount after 0 move(s) is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract's refundBps(0, 0) is the table's",
+          "expected": "9500",
+          "actual": "9500"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's refundableWei after 0 move(s)",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exit-payout shows bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the cash-out button is on screen",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the board has n x n cells",
+          "expected": "25",
+          "actual": "25"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exactly one cell is current after 1 move(s)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "one cell is visited per move made (1)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "no hidden cell carries wall data",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "every cell the player has been to shows its walls",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the start cell is marked",
+          "expected": "cell-0-0",
+          "actual": "cell-0-0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the exit cell is marked",
+          "expected": "cell-4-4",
+          "actual": "cell-4-4"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount after 1 move(s) is bet x refundBps[1]",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract's refundBps(0, 1) is the table's",
+          "expected": "7300",
+          "actual": "7300"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's refundableWei after 1 move(s)",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows exit",
+          "expected": "exit",
+          "actual": "exit"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "16088000000000000",
+          "actual": "16088000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the board has n x n cells",
+          "expected": "25",
+          "actual": "25"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exactly one cell is current after 10 move(s)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "one cell is visited per move made (10)",
+          "expected": "10",
+          "actual": "10"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "no hidden cell carries wall data",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "every cell the player has been to shows its walls",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the start cell is marked",
+          "expected": "cell-0-0",
+          "actual": "cell-0-0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the exit cell is marked",
+          "expected": "cell-4-4",
+          "actual": "cell-4-4"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "10",
+          "actual": "10"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "10000015870169560316325",
+          "actual": "10000015870169560316325"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c",
+          "actual": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as won",
+          "expected": "won",
+          "actual": "won"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = false",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475",
+          "actual": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c",
+          "actual": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0x160c5393f924befc5cf7b5bd3c816331a3e15bec21e12a991fc5842c1a646b8c",
+          "actual": "0x160c5393f924befc5cf7b5bd3c816331a3e15bec21e12a991fc5842c1a646b8c"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "99983912000000000000",
+          "actual": "99983912000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "99983912000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx is marked confirmed by the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx names the settlement transaction",
+          "expected": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475",
+          "actual": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/test/ui-snapshot answers 200 while test hooks are on",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the snapshot carries the result the page shows",
+          "expected": "exit",
+          "actual": "exit"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the snapshot carries the payout the page shows",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the snapshot's seq keeps rising (heartbeat)",
+          "expected": "above 49",
+          "actual": "53"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-link points at /verify/<gameId>",
+          "expected": "/verify/0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125",
+          "actual": "/verify/0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the revealed seed hashes to the commitment",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: commitment and client seed match the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: every observed cell matches the recomputed maze",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the recorded moves end in the settled outcome",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the payout is what the table prescribes",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: one compared cell per observation",
+          "expected": "11",
+          "actual": "11"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: no compared cell is a mismatch",
+          "expected": "",
+          "actual": ""
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-game names this game",
+          "expected": "0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125",
+          "actual": "0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-maze draws the whole n x n maze",
+          "expected": "5",
+          "actual": "5"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-solution shows the solution, as long as the route walked",
+          "expected": "10",
+          "actual": "10"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-server-seed is the settled seed",
+          "expected": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c",
+          "actual": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c"
+        }
+      ],
+      "counts": {
+        "http.PASS": 21,
+        "dom.PASS": 64,
+        "chain.PASS": 28
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "02",
+      "name": "deadend",
+      "proves": "a route into a dead end loses the whole bet: the page says so and the chain pays nothing",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 19, http 10, dom 13 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/02",
+      "startedAt": "2026-10-02T11:51:01Z",
+      "finishedAt": "2026-10-02T11:51:14Z",
+      "seconds": 13,
+      "evidence": {
+        "gameId": "0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2",
+        "input": "moves by key",
+        "settleTx": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0x3f50623f4cab8f269c198ab9892ba125fdf52b79efe226fe4f368aad28a0ba67",
+          "actual": "0x3f50623f4cab8f269c198ab9892ba125fdf52b79efe226fe4f368aad28a0ba67"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "66112000000000000",
+          "actual": "66112000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "66112000000000000",
+          "actual": "66112000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows loss",
+          "expected": "loss",
+          "actual": "loss"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "-10000000000000000",
+          "actual": "-10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "3",
+          "actual": "3"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "9999989742860830257903",
+          "actual": "9999989742860830257903"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576",
+          "actual": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as lost",
+          "expected": "lost",
+          "actual": "lost"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = false",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82",
+          "actual": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576",
+          "actual": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0x7c355d0e7893f020e9233b05771bff08efde5ba93e483eb24518f1100fec8eb0",
+          "actual": "0x7c355d0e7893f020e9233b05771bff08efde5ba93e483eb24518f1100fec8eb0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100010000000000000000",
+          "actual": "100010000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100010000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx is marked confirmed by the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx names the settlement transaction",
+          "expected": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82",
+          "actual": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-link points at /verify/<gameId>",
+          "expected": "/verify/0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2",
+          "actual": "/verify/0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the revealed seed hashes to the commitment",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: commitment and client seed match the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: every observed cell matches the recomputed maze",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the recorded moves end in the settled outcome",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the payout is what the table prescribes",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: one compared cell per observation",
+          "expected": "4",
+          "actual": "4"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: no compared cell is a mismatch",
+          "expected": "",
+          "actual": ""
+        }
+      ],
+      "counts": {
+        "chain.PASS": 19,
+        "http.PASS": 10,
+        "dom.PASS": 13
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "03",
+      "name": "cashout",
+      "proves": "three moves, then cash-out: the refund follows the table at every step and is paid on chain",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 23, http 14, dom 20 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/03",
+      "startedAt": "2026-10-02T11:51:14Z",
+      "finishedAt": "2026-10-02T11:51:31Z",
+      "seconds": 17,
+      "evidence": {
+        "gameId": "0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f",
+        "settleTx": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0xb6c5b8521fd37e24c55c9cc58ef11b2e3ebb7c2fa3c7bfc1c67b976d33657eda",
+          "actual": "0xb6c5b8521fd37e24c55c9cc58ef11b2e3ebb7c2fa3c7bfc1c67b976d33657eda"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "184695000000000000",
+          "actual": "184695000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "184695000000000000",
+          "actual": "184695000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount after 0 move(s) is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract's refundBps(2, 0) is the table's",
+          "expected": "9500",
+          "actual": "9500"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's refundableWei after 0 move(s)",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exit-payout shows bet x multiplier during play",
+          "expected": "184695000000000000",
+          "actual": "184695000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the cash-out button is on screen during play",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount after 1 move(s) is bet x refundBps[1]",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract's refundBps(2, 1) is the table's",
+          "expected": "7300",
+          "actual": "7300"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's refundableWei after 1 move(s)",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount after 2 move(s) is bet x refundBps[2]",
+          "expected": "6770000000000000",
+          "actual": "6770000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract's refundBps(2, 2) is the table's",
+          "expected": "6770",
+          "actual": "6770"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's refundableWei after 2 move(s)",
+          "expected": "6770000000000000",
+          "actual": "6770000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount after 3 move(s) is bet x refundBps[3]",
+          "expected": "6280000000000000",
+          "actual": "6280000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract's refundBps(2, 3) is the table's",
+          "expected": "6280",
+          "actual": "6280"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's refundableWei after 3 move(s)",
+          "expected": "6280000000000000",
+          "actual": "6280000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exit-payout is unchanged after 3 moves",
+          "expected": "184695000000000000",
+          "actual": "184695000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows cashout",
+          "expected": "cashout",
+          "actual": "cashout"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "6280000000000000",
+          "actual": "6280000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "-3720000000000000",
+          "actual": "-3720000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "3",
+          "actual": "3"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "6280000000000000",
+          "actual": "6280000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "9999996022860830257903",
+          "actual": "9999996022860830257903"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326",
+          "actual": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as cashed_out",
+          "expected": "cashed_out",
+          "actual": "cashed_out"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = false",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "6280000000000000",
+          "actual": "6280000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77",
+          "actual": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326",
+          "actual": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0x89866c5f47907b7c0abeb13ffea58883b85a6b5e1c814b5a7b333ba97ff42a78",
+          "actual": "0x89866c5f47907b7c0abeb13ffea58883b85a6b5e1c814b5a7b333ba97ff42a78"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100003720000000000000",
+          "actual": "100003720000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100003720000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx is marked confirmed by the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx names the settlement transaction",
+          "expected": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77",
+          "actual": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-link points at /verify/<gameId>",
+          "expected": "/verify/0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f",
+          "actual": "/verify/0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the revealed seed hashes to the commitment",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: commitment and client seed match the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: every observed cell matches the recomputed maze",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the recorded moves end in the settled outcome",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the payout is what the table prescribes",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: one compared cell per observation",
+          "expected": "4",
+          "actual": "4"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: no compared cell is a mismatch",
+          "expected": "",
+          "actual": ""
+        }
+      ],
+      "counts": {
+        "chain.PASS": 23,
+        "http.PASS": 14,
+        "dom.PASS": 20
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "04",
+      "name": "idle-auto-cashout",
+      "proves": "after 6 idle chain seconds the server cashes out and the page learns it by polling",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 16, http 9, dom 8 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/04",
+      "startedAt": "2026-10-02T11:51:31Z",
+      "finishedAt": "2026-10-02T11:51:48Z",
+      "seconds": 17,
+      "evidence": {
+        "gameId": "0x867970926d9c8c405e49e342933d732fbb6699a0830eb518d283529475748bb4",
+        "shownAfterDeadlineSec": "0",
+        "settleTx": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013"
+      },
+      "assertions": [
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config reports the shortened idle timeout",
+          "expected": "6",
+          "actual": "6"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active after 2 moves",
+          "expected": "active 2",
+          "actual": "active 2"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "idle-countdown carries the server's idle deadline (chain seconds)",
+          "expected": "1790941905",
+          "actual": "1790941905"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active while the idle clock runs",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the page shows a result without any input",
+          "expected": "result-outcome present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the result is on screen within 5 (+3) chain seconds of the idle deadline",
+          "expected": "<= 8",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows auto-cashout",
+          "expected": "auto-cashout",
+          "actual": "auto-cashout"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "-3306000000000000",
+          "actual": "-3306000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "9999996436878312906739",
+          "actual": "9999996436878312906739"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3",
+          "actual": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as cashed_out",
+          "expected": "cashed_out",
+          "actual": "cashed_out"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = true",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013",
+          "actual": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3",
+          "actual": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0xa5bf8de3997795c3278e9e76a8f20201b2a842ff263eafc8097250e442accabd",
+          "actual": "0xa5bf8de3997795c3278e9e76a8f20201b2a842ff263eafc8097250e442accabd"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100003306000000000000",
+          "actual": "100003306000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100003306000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settlement was mined at or after the idle deadline",
+          "expected": ">= 1790941905",
+          "actual": "1790941906"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx is marked confirmed by the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx names the settlement transaction",
+          "expected": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013",
+          "actual": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013"
+        }
+      ],
+      "counts": {
+        "http.PASS": 9,
+        "dom.PASS": 8,
+        "chain.PASS": 16
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "06",
+      "name": "verify-mismatch",
+      "proves": "one changed wall bit in an imported play record is flagged on exactly that cell",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 22, http 12, dom 23 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/06",
+      "startedAt": "2026-10-02T11:51:48Z",
+      "finishedAt": "2026-10-02T11:52:07Z",
+      "seconds": 19,
+      "evidence": {
+        "gameId": "0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431",
+        "settleTx": "0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6",
+          "actual": "0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows cashout",
+          "expected": "cashout",
+          "actual": "cashout"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "-3306000000000000",
+          "actual": "-3306000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "9999996436913278204411",
+          "actual": "9999996436913278204411"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66",
+          "actual": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as cashed_out",
+          "expected": "cashed_out",
+          "actual": "cashed_out"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = false",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba",
+          "actual": "0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66",
+          "actual": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e",
+          "actual": "0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100003306000000000000",
+          "actual": "100003306000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100003306000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-link points at /verify/<gameId>",
+          "expected": "/verify/0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431",
+          "actual": "/verify/0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the revealed seed hashes to the commitment",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: commitment and client seed match the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: every observed cell matches the recomputed maze",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the recorded moves end in the settled outcome",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the payout is what the table prescribes",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: one compared cell per observation",
+          "expected": "3",
+          "actual": "3"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: no compared cell is a mismatch",
+          "expected": "",
+          "actual": ""
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the import page starts without a record",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the imported record is shown as this game",
+          "expected": "0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431",
+          "actual": "0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "one flipped wall bit: the cell check fails",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "one flipped wall bit: the commitment check still passes",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "exactly the tampered cell is marked as a mismatch",
+          "expected": "verify-cell-1-0",
+          "actual": "verify-cell-1-0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the other compared cells still match",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the tampered observation's row is a mismatch",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the row before it still matches",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the row after it still matches",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "a changed server seed fails the commitment check",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the untouched record, imported, passes the commitment check",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the untouched record, imported, matches on every cell",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's game read is unchanged by the imports",
+          "expected": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":2,\"y\":0},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942815,\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"idleDeadlineSec\":1790942036,\"n\":5,\"open\":10,\"path\":[{\"open\":2,\"x\":0,\"y\":0},{\"open\":10,\"x\":1,\"y\":0},{\"open\":10,\"x\":2,\"y\":0}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790943715,\"status\":\"cashed_out\",\"step\":2,\"terminal\":{\"clientSeed\":\"0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6\",\"outcome\":1,\"payoutWei\":\"6694000000000000\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\",\"settleTxHash\":\"0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba\",\"signature\":\"0x1964afd909e3b71bd4ea8ac4d9d5544840307688fb5d3bcdd6f675d0c47fbc8e79700ec179e646567587b7747a6611dc9024a585e73a26c3ad412ef00c10ec301b\",\"steps\":2},\"tier\":0}",
+          "actual": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":2,\"y\":0},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942815,\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"idleDeadlineSec\":1790942036,\"n\":5,\"open\":10,\"path\":[{\"open\":2,\"x\":0,\"y\":0},{\"open\":10,\"x\":1,\"y\":0},{\"open\":10,\"x\":2,\"y\":0}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790943715,\"status\":\"cashed_out\",\"step\":2,\"terminal\":{\"clientSeed\":\"0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6\",\"outcome\":1,\"payoutWei\":\"6694000000000000\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\",\"settleTxHash\":\"0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba\",\"signature\":\"0x1964afd909e3b71bd4ea8ac4d9d5544840307688fb5d3bcdd6f675d0c47fbc8e79700ec179e646567587b7747a6611dc9024a585e73a26c3ad412ef00c10ec301b\",\"steps\":2},\"tier\":0}"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the reveal answer is unchanged by the imports",
+          "expected": "{\"commitment\":\"0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e\",\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"reason\":\"settled\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\"}",
+          "actual": "{\"commitment\":\"0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e\",\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"reason\":\"settled\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\"}"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game is still Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game is still settled exactly once",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled payout is unchanged",
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
+        }
+      ],
+      "counts": {
+        "chain.PASS": 22,
+        "http.PASS": 12,
+        "dom.PASS": 23
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "07",
+      "name": "invalid-move",
+      "proves": "moves through a wall, off the grid, onto a visited cell or with a stale step are refused and change nothing",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 22, http 29, dom 9 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/07",
+      "startedAt": "2026-10-02T11:52:07Z",
+      "finishedAt": "2026-10-02T11:52:24Z",
+      "seconds": 17,
+      "evidence": {
+        "gameId": "0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842",
+        "settleTx": "0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0x7d730868c85df6e413613893156b70902840bf0851c8872483443411ff28cb55",
+          "actual": "0x7d730868c85df6e413613893156b70902840bf0851c8872483443411ff28cb55"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move off the grid at step 0: 409 INVALID_MOVE_BOUNDS",
+          "expected": "409 INVALID_MOVE_BOUNDS",
+          "actual": "409 INVALID_MOVE_BOUNDS"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move off the grid at step 0: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount before the refused moves",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the page does not offer the wall direction (move-S is not legal)",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move through a wall: 409 INVALID_MOVE_WALL",
+          "expected": "409 INVALID_MOVE_WALL",
+          "actual": "409 INVALID_MOVE_WALL"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move through a wall: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move back onto a visited cell: 409 INVALID_MOVE_VISITED",
+          "expected": "409 INVALID_MOVE_VISITED",
+          "actual": "409 INVALID_MOVE_VISITED"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move back onto a visited cell: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with a stale step: 409 STALE_STEP",
+          "expected": "409 STALE_STEP",
+          "actual": "409 STALE_STEP"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with a stale step: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with a direction that does not exist: 400 BAD_REQUEST",
+          "expected": "400 BAD_REQUEST",
+          "actual": "400 BAD_REQUEST"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with a direction that does not exist: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with an extra field: 400 BAD_REQUEST",
+          "expected": "400 BAD_REQUEST",
+          "actual": "400 BAD_REQUEST"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with an extra field: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move without a session token: 401 UNAUTHORIZED",
+          "expected": "401 UNAUTHORIZED",
+          "actual": "401 UNAUTHORIZED"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move without a session token: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with a wrong session token: 401 UNAUTHORIZED",
+          "expected": "401 UNAUTHORIZED",
+          "actual": "401 UNAUTHORIZED"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "a move with a wrong session token: the body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the seed of a game in progress is not revealed",
+          "expected": "409 NOT_REVEALABLE",
+          "actual": "409 NOT_REVEALABLE"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the game cannot be read without the session token",
+          "expected": "401 UNAUTHORIZED",
+          "actual": "401 UNAUTHORIZED"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's game read is unchanged by the refused moves",
+          "expected": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":0,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942834,\"gameId\":\"0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842\",\"idleDeadlineSec\":1790942055,\"n\":5,\"open\":3,\"path\":[{\"open\":4,\"x\":0,\"y\":0},{\"open\":3,\"x\":0,\"y\":1}],\"refundableWei\":\"7300000000000000\",\"settleDeadlineSec\":1790943734,\"status\":\"active\",\"step\":1,\"tier\":0}",
+          "actual": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":0,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942834,\"gameId\":\"0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842\",\"idleDeadlineSec\":1790942055,\"n\":5,\"open\":3,\"path\":[{\"open\":4,\"x\":0,\"y\":0},{\"open\":3,\"x\":0,\"y\":1}],\"refundableWei\":\"7300000000000000\",\"settleDeadlineSec\":1790943734,\"status\":\"active\",\"step\":1,\"tier\":0}"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game is still Active",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "nothing was settled",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved still holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the board is still at step 1",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "refundable-amount is unchanged",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the current cell is unchanged",
+          "expected": "cell-0-1",
+          "actual": "cell-0-1"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the page shows no error: it sent none of these moves",
+          "expected": "not in the DOM",
+          "actual": "not in the DOM"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows cashout",
+          "expected": "cashout",
+          "actual": "cashout"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "-2700000000000000",
+          "actual": "-2700000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "9999997042895795555575",
+          "actual": "9999997042895795555575"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a",
+          "actual": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as cashed_out",
+          "expected": "cashed_out",
+          "actual": "cashed_out"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = false",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "7300000000000000",
+          "actual": "7300000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e",
+          "actual": "0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a",
+          "actual": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0xa06aa14768f08f07ec6258f709790f31f8e33503905497807e77dc6be25a2f3e",
+          "actual": "0xa06aa14768f08f07ec6258f709790f31f8e33503905497807e77dc6be25a2f3e"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100002700000000000000",
+          "actual": "100002700000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100002700000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        }
+      ],
+      "counts": {
+        "chain.PASS": 22,
+        "http.PASS": 29,
+        "dom.PASS": 9
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "08",
+      "name": "multi-tab",
+      "proves": "a second tab resumes the game, and of two different moves sent for the same step exactly one counts",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 19, http 17, dom 15 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/08",
+      "startedAt": "2026-10-02T11:52:24Z",
+      "finishedAt": "2026-10-02T11:52:42Z",
+      "seconds": 18,
+      "evidence": {
+        "gameId": "0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722",
+        "acceptedTab": "A",
+        "settleTx": "0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0x36145e9ac022296d81ef9aa170f00e8328abfcf3e44421b9c2111cb27a6d145c",
+          "actual": "0x36145e9ac022296d81ef9aa170f00e8328abfcf3e44421b9c2111cb27a6d145c"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B resumes the same game from localStorage",
+          "expected": "0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722",
+          "actual": "0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B resumes at step 7",
+          "expected": "7",
+          "actual": "7"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B shows the same refundable amount",
+          "expected": "4340000000000000",
+          "actual": "4340000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B has no wallet connected: the session token alone resumes the game",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "each tab's page sent one move, both for step 7",
+          "expected": "7 7",
+          "actual": "7 7"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the two moves were different directions",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server accepted exactly one of them (200)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server refused exactly one of them with 409 STALE_STEP",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the refusal carries no game state: its body is only { error: { code, message } }",
+          "expected": "[\"error\"] [\"code\",\"message\"]",
+          "actual": "[\"error\"] [\"code\",\"message\"]"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server holds one more step, not two",
+          "expected": "active 8",
+          "actual": "active 8"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's path has one cell per step",
+          "expected": "9",
+          "actual": "9"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab A shows the server's current cell",
+          "expected": "cell-2-2",
+          "actual": "cell-2-2"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B shows the server's current cell",
+          "expected": "cell-2-2",
+          "actual": "cell-2-2"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the tab whose move was refused (tab B) says so",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the tab whose move was accepted (tab A) shows no error",
+          "expected": "not in the DOM",
+          "actual": "not in the DOM"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab A shows the refund of step 8",
+          "expected": "3980000000000000",
+          "actual": "3980000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B shows the refund of step 8",
+          "expected": "3980000000000000",
+          "actual": "3980000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows cashout",
+          "expected": "cashout",
+          "actual": "cashout"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the amount paid",
+          "expected": "3980000000000000",
+          "actual": "3980000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-net shows payout minus bet",
+          "expected": "-6020000000000000",
+          "actual": "-6020000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B learns the cash-out by polling",
+          "expected": "cashout",
+          "actual": "cashout"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "tab B shows the same payout",
+          "expected": "3980000000000000",
+          "actual": "3980000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Settled",
+          "expected": "2",
+          "actual": "2"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was settled exactly once (GameSettled events)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.outcome",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.steps",
+          "expected": "8",
+          "actual": "8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameSettled.payout",
+          "expected": "3980000000000000",
+          "actual": "3980000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the relayer (Anvil #1) submitted the settlement",
+          "expected": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "actual": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance changed by exactly the payout",
+          "expected": "9999993722895795555575",
+          "actual": "9999993722895795555575"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the settled server seed is the one the route was planned with",
+          "expected": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7",
+          "actual": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game as cashed_out",
+          "expected": "cashed_out",
+          "actual": "cashed_out"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports auto = false",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.payoutWei is the settled payout",
+          "expected": "3980000000000000",
+          "actual": "3980000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "terminal.settleTxHash is the settlement transaction",
+          "expected": "0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28",
+          "actual": "0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id/reveal answers 200 with reason settled",
+          "expected": "200 settled",
+          "actual": "200 settled"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed server seed is the settled one",
+          "expected": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7",
+          "actual": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0x45f01eff350f8b6b95576c26da65a61a0f8d0e02e3ca77e5bad3a744ea7d81ee",
+          "actual": "0x45f01eff350f8b6b95576c26da65a61a0f8d0e02e3ca77e5bad3a744ea7d81ee"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100006020000000000000",
+          "actual": "100006020000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100006020000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        }
+      ],
+      "counts": {
+        "chain.PASS": 19,
+        "http.PASS": 17,
+        "dom.PASS": 15
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "09",
+      "name": "exploratory-agent",
+      "proves": "advisory: after a model-driven agent has tried to cheat, the contract's accounting and the server's access rules still hold",
+      "runId": "20261002T115029Z-80672",
+      "result": "NOT-RUN",
+      "reason": "advisory and on request only: aside exec is model-driven and billed to the user's model account (scripts/e2e-aside.sh --with-exec)",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/09",
+      "startedAt": "2026-10-02T11:52:42Z",
+      "finishedAt": "2026-10-02T11:52:42Z",
+      "seconds": 0,
+      "evidence": {},
+      "assertions": [],
+      "counts": {},
+      "advisory": true
+    },
+    {
+      "scenario": "11",
+      "name": "dev-wallet-gating",
+      "proves": "the dev wallet is offered only when /api/config says devWallet, with the same build",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 2, http 4, dom 8 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/11",
+      "startedAt": "2026-10-02T11:52:42Z",
+      "finishedAt": "2026-10-02T11:52:50Z",
+      "seconds": 8,
+      "evidence": {},
+      "assertions": [
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: devWallet is false when NEXT_PUBLIC_ENABLE_DEV_WALLET=0",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: the chain is 31337",
+          "expected": "31337",
+          "actual": "31337"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the chain id is 31337",
+          "expected": "31337",
+          "actual": "31337"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the lobby is up: wallet-connect is offered",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the page knows the chain from /api/config",
+          "expected": "31337",
+          "actual": "31337"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "wallet-dev-option is not in the DOM while devWallet is false",
+          "expected": "not in the DOM",
+          "actual": "not in the DOM"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "wallet-dev-account is not in the DOM while devWallet is false",
+          "expected": "not in the DOM",
+          "actual": "not in the DOM"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "bet-submit is disabled without a wallet",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "no game was created while no wallet could be connected",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: devWallet is true after the restart with NEXT_PUBLIC_ENABLE_DEV_WALLET=1",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "/api/config: the contract is unchanged",
+          "expected": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+          "actual": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "after a reload wallet-dev-option is in the DOM",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the dev wallet connects Anvil account #2",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the connected wallet is the dev wallet",
+          "expected": "dev",
+          "actual": "dev"
+        }
+      ],
+      "counts": {
+        "http.PASS": 4,
+        "chain.PASS": 2,
+        "dom.PASS": 8
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "10",
+      "name": "cli-reclaim",
+      "proves": "with the server dead, anyone reclaims the bet for the player with scripts/reclaim.sh after the settle deadline",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 26, http 9, dom 8 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/10",
+      "startedAt": "2026-10-02T11:52:50Z",
+      "finishedAt": "2026-10-02T11:53:13Z",
+      "seconds": 23,
+      "evidence": {
+        "gameId": "0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15",
+        "reclaimTx": "0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0x809d9fd9f9d82aba71f1140e756c392a365778ec9951efe201d378e7dec25f92",
+          "actual": "0x809d9fd9f9d82aba71f1140e756c392a365778ec9951efe201d378e7dec25f92"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 1 before it is stopped",
+          "expected": "active 1",
+          "actual": "active 1"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server cannot be reached after the stop",
+          "expected": "000",
+          "actual": "000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "scripts/reclaim.sh exits 1 before the settle deadline",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "scripts/reclaim.sh names the refusal DeadlineNotReached",
+          "expected": "DeadlineNotReached",
+          "actual": "reclaim.sh: DeadlineNotReached: the settle deadline of 0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15 has not passed yet"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game is still Active after the refused reclaim",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "scripts/reclaim.sh exits 0 after the settle deadline",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Reclaimed",
+          "expected": "3",
+          "actual": "3"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "exactly one GameReclaimed event",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameReclaimed.amount is the whole bet",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameReclaimed.player is the player",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "a third party (Anvil #9) sent the reclaim",
+          "expected": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+          "actual": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance grew by exactly the bet",
+          "expected": "9999999742878312906739",
+          "actual": "9999999742878312906739"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "scripts/reclaim.sh printed the transaction it sent",
+          "expected": "0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4",
+          "actual": "reclaimed 0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15 tx 0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "a second reclaim is refused (exit 1)",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the second refusal is GameNotActive",
+          "expected": "GameNotActive",
+          "actual": "reclaim.sh: GameNotActive: 0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15 is not an active game (never created, settled, or already reclaimed)"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the open page shows reclaimed, learnt from the chain alone",
+          "expected": "reclaimed",
+          "actual": "reclaimed"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the whole bet",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx names no transaction: someone else sent it",
+          "expected": "",
+          "actual": ""
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "after the restart the reveal route answers 200 with reason reclaimed",
+          "expected": "200 reclaimed",
+          "actual": "200 reclaimed"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed seed is the one the route was planned with",
+          "expected": "0x7f4bfd40c6ffdaa25427ba571538ff99c55261a5a1f48ffe8c0496e85de3af67",
+          "actual": "0x7f4bfd40c6ffdaa25427ba571538ff99c55261a5a1f48ffe8c0496e85de3af67"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the revealed commitment is the one on chain",
+          "expected": "0x57d6c45bb0e5ee5102b25717b9350a66d4cad2f46a745058327782b61ca49575",
+          "actual": "0x57d6c45bb0e5ee5102b25717b9350a66d4cad2f46a745058327782b61ca49575"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the restarted server refuses a move on the reclaimed game",
+          "expected": "409 GAME_NOT_ACTIVE",
+          "actual": "409 GAME_NOT_ACTIVE"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the restarted server does not settle the reclaimed game",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game is still Reclaimed",
+          "expected": "3",
+          "actual": "3"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100000000000000000000",
+          "actual": "100000000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100000000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify-link points at /verify/<gameId>",
+          "expected": "/verify/0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15",
+          "actual": "/verify/0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: the revealed seed hashes to the commitment",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: commitment and client seed match the chain",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: every observed cell matches the recomputed maze",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "verify: one compared cell per observation (start and one move)",
+          "expected": "2",
+          "actual": "2"
+        }
+      ],
+      "counts": {
+        "chain.PASS": 26,
+        "http.PASS": 9,
+        "dom.PASS": 8
+      },
+      "advisory": false
+    },
+    {
+      "scenario": "05",
+      "name": "server-down-reclaim",
+      "proves": "with the server dead, the page that was open reclaims the bet itself after the settle deadline",
+      "runId": "20261002T115029Z-80672",
+      "result": "PASS",
+      "reason": "chain 20, http 6, dom 11 assertions passed",
+      "tableMode": "production",
+      "inputPath": "repl",
+      "readPath": "repl",
+      "logs": ".data/e2e-aside/20261002T115029Z-80672/05",
+      "startedAt": "2026-10-02T11:53:13Z",
+      "finishedAt": "2026-10-02T11:53:28Z",
+      "seconds": 15,
+      "evidence": {
+        "gameId": "0x7d70295783aadb2d9edf8fbd0716b50720f452a154bfdc9328d2c73eedab352b",
+        "reclaimTx": "0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d"
+      },
+      "assertions": [
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Active after the bet",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.player is the dev wallet (Anvil #2)",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.bet is the amount typed into the page",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.clientSeed is the seed typed into the page",
+          "expected": "0x83e54328c25094e84bc26ffcd24003aea319e5590ecfa0ee23012c547cd7f87f",
+          "actual": "0x83e54328c25094e84bc26ffcd24003aea319e5590ecfa0ee23012c547cd7f87f"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.maxPayout is bet x multiplier",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved holds the game's maximum payout",
+          "expected": "26088000000000000",
+          "actual": "26088000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "GET /api/games/:id answers 200 to the session token",
+          "expected": "200",
+          "actual": "200"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 0",
+          "expected": "active 0",
+          "actual": "active 0"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "refundableWei at step 0 is bet x refundBps[0]",
+          "expected": "9500000000000000",
+          "actual": "9500000000000000"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server reports the game active at step 1 before it is stopped",
+          "expected": "active 1",
+          "actual": "active 1"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server's settleDeadlineSec is the contract's settleDeadline",
+          "expected": "1790943800",
+          "actual": "1790943800"
+        },
+        {
+          "kind": "http",
+          "status": "PASS",
+          "label": "the server cannot be reached after the stop",
+          "expected": "000",
+          "actual": "000"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the open page shows server-unreachable",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the open page shows the reclaim countdown",
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "reclaim-countdown is not ready before the deadline",
+          "expected": "false",
+          "actual": "false"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "reclaim-countdown carries the contract's settle deadline",
+          "expected": "1790943800",
+          "actual": "1790943800"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the countdown's clock is the block timestamp (at most 3 seconds behind the chain)",
+          "expected": "<= 3",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "the remaining seconds are deadline + 1 - block time",
+          "expected": "1798",
+          "actual": "1798"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "reclaim-button is disabled before the deadline",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the contract refuses reclaim before the settle deadline",
+          "expected": "DeadlineNotReached",
+          "actual": "DeadlineNotReached"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the chain clock is past the settle deadline",
+          "expected": "> 1790943800",
+          "actual": "1790943802"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "reclaim-countdown becomes ready once block time passes the deadline",
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-outcome shows reclaimed",
+          "expected": "reclaimed",
+          "actual": "reclaimed"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "result-payout shows the whole bet",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "getGame.status is Reclaimed",
+          "expected": "3",
+          "actual": "3"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "exactly one GameReclaimed event",
+          "expected": "1",
+          "actual": "1"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameReclaimed.amount is the whole bet",
+          "expected": "10000000000000000",
+          "actual": "10000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "GameReclaimed.player is the player",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the page's dev wallet sent the reclaim",
+          "expected": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "actual": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the player's balance grew by the bet minus the transaction fee",
+          "expected": "9999999693436684353845",
+          "actual": "9999999693436684353845"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "the game was never settled",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "totalReserved is back to 0",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
+          "expected": "100000000000000000000",
+          "actual": "100000000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: totalReserved is the sum of the active games' reserves",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: the balance covers totalReserved + totalPending",
+          "expected": ">= 0",
+          "actual": "100000000000000000000"
+        },
+        {
+          "kind": "chain",
+          "status": "PASS",
+          "label": "accounting: no settlement paid more than its game's maximum payout",
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "kind": "dom",
+          "status": "PASS",
+          "label": "settle-tx names the reclaim transaction",
+          "expected": "0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d",
+          "actual": "0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d"
+        }
+      ],
+      "counts": {
+        "chain.PASS": 20,
+        "http.PASS": 6,
+        "dom.PASS": 11
+      },
+      "advisory": false
+    }
+  ],
+  "totals": {
+    "PASS": 10,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "NOT-RUN": 0
+  },
+  "exit": 0
+}

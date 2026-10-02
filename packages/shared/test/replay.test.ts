@@ -164,7 +164,7 @@ describe('replayMoves', () => {
     expect([...new Set(reads)].sort((a, b) => a - b)).toEqual([0, 1, 3, 4]);
   });
 
-  it.each([5, 7, 10])('n = %i: generated mazes replay to the outcome their structure dictates', (n) => {
+  it.each([5, 7, 9, 10])('n = %i: generated mazes replay to the outcome their structure dictates', (n) => {
     const exit = n * n - 1;
     for (let i = 0; i < 200; i++) {
       const maze = generateMaze(seedOf(`replay ${n} #${i}`), n);

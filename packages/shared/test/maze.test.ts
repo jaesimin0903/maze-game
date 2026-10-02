@@ -7,6 +7,7 @@ import {
   generateMaze,
   isDeadEnd,
   isPerfect,
+  loadTuning,
   MAZE_VERSION,
   neighbor,
   openDirs,
@@ -18,6 +19,14 @@ import {
   type Rng,
 } from '../src';
 import { expectVector, mazeVectors, vectorsMazeVersion } from './vectors';
+
+/**
+ * Every board size a table offers: the tiers of the production table, and 5, 7 and 10 (the
+ * sizes of the specification, which the house-max table keeps).
+ */
+const GAME_SIZES = [...new Set([5, 7, 10, ...loadTuning().tiers.map((tier) => tier.n)])].sort(
+  (a, b) => a - b,
+);
 
 function seedOf(label: string): Hex {
   return `0x${createHash('sha256').update(label, 'utf8').digest('hex')}`;
@@ -182,8 +191,8 @@ const HAND: Maze = { w: 3, h: 3, open: Uint8Array.from([4, 6, 8, 7, 11, 12, 3, 8
 describe('fixed vectors', () => {
   it('AC-M1 there are at least three vectors for each game size and they are for this maze version', () => {
     expect(vectorsMazeVersion).toBe(MAZE_VERSION);
-    expect(mazeVectors).toHaveLength(9);
-    for (const n of [5, 7, 10]) {
+    expect(mazeVectors.length).toBeGreaterThanOrEqual(3 * GAME_SIZES.length);
+    for (const n of GAME_SIZES) {
       expect(mazeVectors.filter((v) => v.n === n).length).toBeGreaterThanOrEqual(3);
     }
   });
@@ -234,7 +243,7 @@ describe('generateGridFromRng', () => {
 
   it('AC-M1 matches an independent reference implementation, rectangles included', () => {
     const mismatches: string[] = [];
-    for (const [w, h] of [[2, 2], [3, 3], [4, 4], [5, 4], [4, 5], [5, 5], [7, 7], [10, 10]]) {
+    for (const [w, h] of [[2, 2], [3, 3], [4, 4], [5, 4], [4, 5], [5, 5], [7, 7], [9, 9], [10, 10]]) {
       for (let i = 0; i < 300; i++) {
         const seed = seedOf(`reference ${w}x${h} #${i}`);
         const maze = generateGridFromRng(seedRng(seed), w, h);
@@ -247,7 +256,7 @@ describe('generateGridFromRng', () => {
   });
 
   it('AC-M1 generateMaze is the square grid driven by the production stream of the seed', () => {
-    for (const n of [5, 7, 10]) {
+    for (const n of GAME_SIZES) {
       const seed = seedOf(`square ${n}`);
       const maze = generateMaze(seed, n);
       expect([maze.w, maze.h, maze.open.length]).toEqual([n, n, n * n]);
@@ -259,7 +268,7 @@ describe('generateGridFromRng', () => {
     );
   });
 
-  it.each([5, 7, 10])(
+  it.each(GAME_SIZES)(
     'AC-M2 n = %i: 10,000 seeds give perfect mazes whose start cell has exactly one opening',
     (n) => {
       const seeds = 10_000;

@@ -8,7 +8,9 @@
 //   createGame(...) + receipt            the bet, with the client seed, on chain
 //   POST /api/games/:id/start            first cell
 //   POST /api/games/:id/move | cashout   play
-//   GET  /api/games/:id                  every `pollMs`, and on every chain tick past a deadline
+//   GET  /api/games/:id                  every `pollMs`, and on every chain tick past a deadline;
+//                                        after the end, until the chain shows which transaction
+//                                        settled the game
 // The server settles on chain itself. The player sends `settle` or `reclaim` only when it did not.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -51,6 +53,8 @@ export interface GameState {
   onchain: OnchainGame | null;
   /** Hash of a `settle` the player sent. */
   selfSettleTx: Hex | null;
+  /** The transaction that settled the game, once the chain has shown that it did. */
+  settledTx: Hex | null;
   /** Chain second at which this page first saw the game ended. */
   endedAtSec: number | null;
   serverUnreachable: boolean;
@@ -61,7 +65,7 @@ export interface GameState {
 export interface GameResult {
   outcome: ResultOutcome;
   payoutWei: bigint;
-  /** Settlement or reclaim transaction, once known. */
+  /** The transaction that settled or reclaimed the game on chain, once the chain has shown it. */
   txHash: Hex | null;
 }
 
@@ -96,6 +100,7 @@ const INITIAL: GameState = {
   view: null,
   onchain: null,
   selfSettleTx: null,
+  settledTx: null,
   endedAtSec: null,
   serverUnreachable: false,
   busy: null,
@@ -150,7 +155,9 @@ export function resultOf(s: GameState): GameResult | null {
   if (!t) return null;
   const outcome: ResultOutcome =
     t.outcome === 0 ? 'exit' : t.outcome === 2 ? 'loss' : record.auto ? 'auto-cashout' : 'cashout';
-  return { outcome, payoutWei: BigInt(t.payoutWei), txHash: t.settleTxHash ?? s.selfSettleTx };
+  // The server reports a settlement transaction as soon as it is sent; one that was sent is not
+  // shown until the chain says it settled the game (`settledTx`).
+  return { outcome, payoutWei: BigInt(t.payoutWei), txHash: s.settledTx };
 }
 
 /**
@@ -190,6 +197,7 @@ export function useGame(p: {
 
   const syncing = useRef(false);
   const readingChain = useRef(false);
+  const checkingSettle = useRef(false);
   const failedSyncs = useRef(0);
   const noneReads = useRef(0);
   const pollTicks = useRef(0);
@@ -448,14 +456,11 @@ export function useGame(p: {
   const dismissError = useCallback((): void => update({ error: null }), [update]);
 
   // Poll the server: quickly until it has seen the bet, every `pollMs` during play, and after the
-  // end until the settlement transaction is known.
+  // end until the chain has shown which transaction settled the game. The hash the server reports
+  // changes when a transaction it sent is dropped and sent again, so one answer is not enough.
   const { phase, record, view } = state;
   const awaitingStart = phase === 'playing' && view === null;
-  const awaitingSettlement =
-    phase === 'ended' &&
-    !record?.reclaimed &&
-    record?.terminal?.settleTxHash == null &&
-    state.selfSettleTx === null;
+  const awaitingSettlement = phase === 'ended' && !record?.reclaimed && state.settledTx === null;
   const pollMs = awaitingStart
     ? deps.timing.startRetryMs
     : phase === 'playing' || awaitingSettlement
@@ -502,6 +507,33 @@ export function useGame(p: {
         readingChain.current = false;
       });
   }, [absorbChain, chain, now, ticks, state.phase, state.serverUnreachable, state.view]);
+
+  // Once the chain reports the game settled, ask it whether a transaction this page knows of is
+  // the one that did it: the player's own, or the one the server last reported. A hash that is
+  // not (dropped, reverted, overtaken by another copy) is asked about again after the next poll.
+  useEffect(() => {
+    const s = store.current;
+    const current = s.record;
+    if (s.phase !== 'ended' || !current?.terminal || current.reclaimed || s.settledTx !== null) return;
+    if (s.onchain?.status !== ONCHAIN_STATUS.Settled || checkingSettle.current) return;
+    const { gameId } = current;
+    const candidates = [s.selfSettleTx, current.terminal.settleTxHash].filter(
+      (hash): hash is Hex => hash !== null,
+    );
+    if (candidates.length === 0) return;
+    checkingSettle.current = true;
+    Promise.all(candidates.map((hash) => chain.settledBy(hash, gameId)))
+      .then((settled) => {
+        const hash = candidates[settled.indexOf(true)];
+        if (hash !== undefined && store.current.record?.gameId === gameId) update({ settledTx: hash });
+      })
+      .catch(() => {
+        // The chain clock reports an unreachable RPC; the next tick asks again.
+      })
+      .finally(() => {
+        checkingSettle.current = false;
+      });
+  }, [chain, now, ticks, update, state.onchain, state.record, state.selfSettleTx, state.settledTx]);
 
   const active = phase === 'playing' && view?.status === 'active' && record !== null;
   const legal = active && state.busy === null ? legalMoves(record.n, record.observations) : [];

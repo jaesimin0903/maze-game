@@ -2,8 +2,9 @@
 # 01 exit win (plan §9.1; AC-W1, AC-W2, AC-W3, AC-W4, AC-W5, AC-W6, AC-R1, AC-R2, AC-E1, AC-M4,
 # AC-T8, and the positive half of AC-A4).
 #
-# Connects the dev wallet, reads the refund schedule and the exit payout BEFORE betting (for two
-# different sizes and amounts), bets, walks the solution to the exit, and opens the verify page.
+# Connects the dev wallet, reads the refund schedule and the exit payout BEFORE betting (for
+# every size of the table, with two different amounts), bets on the smallest size, walks the
+# solution to the exit, and opens the verify page.
 #
 #   DOM    the dev wallet option is offered and connects Anvil #2; before any bet every
 #          schedule row and the exit payout equal the table for the chosen size and amount, and
@@ -56,9 +57,14 @@ LOGS_BEFORE="$(cast logs --from-block 0 --to-block latest --address "$CONTRACT" 
   'GameCreated(bytes32 indexed,address indexed,uint8,uint256,uint256,bytes32,bytes32,uint64)' 2>/dev/null | jq 'length')"
 check chain "no game exists on chain while the schedule is read" 0 "$LOGS_BEFORE"
 
-# Another size and amount first, to see that the schedule follows the form.
-fill_bet A 1 0.02 "$(client_seed 1)"
-expect_schedule A 1 "$BET_WEI"
+# Every other size of the table and another amount first, to see that the schedule follows the
+# form for each size the table offers.
+OTHER=$(($(tier_count) - 1))
+while [ "$OTHER" -ge 1 ]; do
+  fill_bet A "$OTHER" 0.02 "$(client_seed 1)"
+  expect_schedule A "$OTHER" "$BET_WEI"
+  OTHER=$((OTHER - 1))
+done
 fill_bet A 0 "$BET_ETH" "$(client_seed 1)"
 expect_schedule A 0 "$BET_WEI"
 expect_attr "schedule-row-0 is the refund right after the bet" A schedule-row-0 data-wei "$(refund_wei "$BET_WEI" 0 0)" 5

@@ -1,5 +1,5 @@
 {
-  "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/tuning.candidate.json",
+  "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/shared/src/tuning.json",
   "tableHash": "0xd07642f3561163900d1c90b74a8e4acce618f5d58e51750f4061486d57777caf",
   "schema": 1,
   "profile": "production",

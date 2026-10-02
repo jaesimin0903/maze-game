@@ -25,9 +25,14 @@ export function formatPercent(bps: number): string {
   return `${(bps / 100).toFixed(2)}%`;
 }
 
-/** A payout multiplier in basis points: 25500 -> "2.55배". */
+/**
+ * A payout multiplier in basis points, printed exactly with two to four decimals:
+ * 25500 -> "2.55배", 26088 -> "2.6088배". It is never rounded, so the page does not show a
+ * multiplier larger than the one the contract pays.
+ */
 export function formatMultiplier(bps: number): string {
-  return `${(bps / 10_000).toFixed(2)}배`;
+  const fraction = String(bps % 10_000).padStart(4, '0').replace(/0{1,2}$/, '');
+  return `${Math.floor(bps / 10_000)}.${fraction}배`;
 }
 
 export function shortHex(value: string, head = 6, tail = 4): string {

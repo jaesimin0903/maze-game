@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 03 cash-out (plan §9.1; AC-W3, AC-W4, AC-E1, AC-R3, AC-T8).
 #
-# Bets through the page, walks three moves of the solution, cashes out, and follows the money.
+# Bets through the page on the largest size of the table, walks three moves of the solution,
+# cashes out, and follows the money.
 #
 #   DOM    after every move refundable-amount is bet x refundBps[k]; exit-payout and the
 #          cash-out button are on screen the whole time; result-outcome = cashout with the
@@ -26,7 +27,9 @@ aside_start || blocked_scenario "the aside repl session did not start (see $ASID
 MOVES=3
 open_lobby A
 connect_dev_wallet A
-fill_bet A 0 "$BET_ETH" "$(client_seed 1)"
+# The largest size of the table: its board, refund table and multiplier are the ones that differ
+# most from one table to the next.
+fill_bet A $(($(tier_count) - 1)) "$BET_ETH" "$(client_seed 1)"
 submit_bet A
 expect_game_open
 plan "cashout:$MOVES" || fail_scenario "the solution of this maze is shorter than $((MOVES + 1)) moves"

@@ -117,7 +117,7 @@ describe('AC-T2 generator equivalence', () => {
     expect(kruskal.maxDeviation > MAX_RELATIVE_DEVIATION || kruskal.totalVariation > MAX_TOTAL_VARIATION).toBe(true);
   }, 600_000);
 
-  for (const n of [5, 7, 10]) {
+  for (const n of [5, 7, 9, 10]) {
     it(`AC-T2 ${n}×${n}: path length and leaf count agree within 0.5% and the start direction is 0.5 ± 0.005 (200,000 mazes per source)`, () => {
       const production = shape(n, (sample) => generateGridFromRng(seedRng(gameFinalSeed('E', n, n, sample) as Hex), n, n));
       const fast = shape(n, (sample) => generateGridFromRng(fastRng(gameSeed('E', n, n, sample)), n, n));

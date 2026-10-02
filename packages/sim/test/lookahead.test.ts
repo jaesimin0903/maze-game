@@ -98,9 +98,9 @@ describe('AC-T1 lookahead probabilities', () => {
     expect(worst.sum).toBeLessThan(1e-12);
   });
 
-  it('the two implementations agree on the game sizes 5×5, 7×7 and 10×10', () => {
+  it('the two implementations agree on the game sizes 5×5, 7×7, 9×9 and 10×10', () => {
     // Establishes: the fast update is the same function as the definition where enumeration is impossible.
-    for (const n of [5, 7, 10]) {
+    for (const n of [5, 7, 9, 10]) {
       const g = new Game(econFor(n, n, 20_000));
       const posterior = new Posterior(n, n);
       const q = new Float64Array(4);

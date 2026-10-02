@@ -1,6 +1,6 @@
 {
   "mazeVersion": 1,
-  "note": "Fixed vectors for maze generation v1 (plan AC-M1): three per game size (5, 7, 10). serverSeed, clientSeed and gameId are sha256 of the UTF-8 text \"MazeBet maze-v1 vector <id> <field>\". The expected values were produced by an independent reference implementation (node:crypto, explicit loop erasure), not by the module under test. streamHead is the first ten uint32 of the maze stream of finalSeed; open is one byte per cell in row-major order (N=1, E=2, S=4, W=8); wallsDigest is sha256(uint16be(w) || uint16be(h) || open); solution lists the cells from start to exit.",
+  "note": "Fixed vectors for maze generation v1 (plan AC-M1): three per game size (5, 7, 9, 10; 9 is the large tier of the certified default table, 10 that of the house-max table). serverSeed, clientSeed and gameId are sha256 of the UTF-8 text \"MazeBet maze-v1 vector <id> <field>\". The expected values were produced by an independent reference implementation (node:crypto, explicit loop erasure), not by the module under test. streamHead is the first ten uint32 of the maze stream of finalSeed; open is one byte per cell in row-major order (N=1, E=2, S=4, W=8); wallsDigest is sha256(uint16be(w) || uint16be(h) || open); solution lists the cells from start to exit.",
   "vectors": [
     {
       "id": 1,
@@ -118,6 +118,45 @@
       "open": "0x020e08060e0c06080608060b0e0d010309020b0c0106090504060a0a0805060d04050709020a0e0905010505070e0a08030c070a09030d01020a0a0d030e08060b0a0c0404050407080308020b0f0f09070b08040608020d030c030a08030b0a0a0b0801",
       "wallsDigest": "0x35a11522274a7080cbca715f99f00b2cea90631666511f2bf0aac44bdf09952a",
       "solution": [0, 1, 11, 12, 13, 23, 33, 43, 53, 54, 64, 65, 66, 76, 77, 78, 88, 89, 99]
+    },
+    {
+      "id": 10,
+      "n": 9,
+      "serverSeed": "0xa917bae9e273b6116254494660fbe5e18825f832d07811f644dbec99fd389cde",
+      "clientSeed": "0x5919750e08c7bfa7d238f22c0e900cd464623d48e314ad6160703dad526d0a52",
+      "gameId": "0x63f61658f8f01ad37eea92e98771fd2c25f89a56637d4c2c08a64b58c448cfdb",
+      "commitment": "0x62b1acbf2890f93d1c2ea9af56032754646db9d06e03098332181506d7d8642f",
+      "finalSeed": "0x6847ea0738288f9ab1fbfafb709295f11dda1754783f754cfaba4d02e5cb3a72",
+      "streamHead": [3090833228, 3683472192, 3866521331, 3128817404, 2383995526, 310643568, 3136671118, 3716836526, 1771468102, 118640105],
+      "open": "0x04060a0e0a08020e0c030d04070a0e08050504030d070803080501070801030c04020f0c030e0a0a0f0b0e0905020b0a0c01020b0c01060a0c05060806090401060b0f09060b0c05020b08030803080309",
+      "wallsDigest": "0x46c6cdba441d48a8e53c7db18318bc18bdfa12122e2e83589f6dce6d71e330e9",
+      "solution": [0, 9, 10, 1, 2, 3, 12, 21, 30, 31, 40, 41, 42, 51, 52, 61, 60, 69, 70, 79, 80]
+    },
+    {
+      "id": 11,
+      "n": 9,
+      "serverSeed": "0xc5608b4ba2f35ea9775d9579de1c39fc3599b22dbc5d5b5a3cd65978491110be",
+      "clientSeed": "0x24ee1d5f60e231070326411c4a644b2c827673a7d63220f5329b8f95f129fbb7",
+      "gameId": "0xc03bc1cfdb9465d0e00b975b7719e22ec7d2c2e02a9addb0562b61fb95ed49a0",
+      "commitment": "0x614f0a0ac6268015141c2cab00003674bf46e95e49cefb13c3d48e061e352be1",
+      "finalSeed": "0xec549e81d638e95a753f86f4b2cd773e80cf3df7dc78f3eb1d8840b5cca38c83",
+      "streamHead": [854656415, 1732839524, 4222122151, 2278985251, 2729914898, 455775534, 1686215142, 2597620944, 3771152021, 1358548891],
+      "open": "0x020c060c020e0a0804020f0d05020d04020d02090105020d05060d04060a0b0c07090501070904060905060f0c030e0d050407090105040101070905020a090708060f0e09020a0c030a0901030a0a0a09",
+      "wallsDigest": "0x21644ac945f7117830a463f8b811e560ef3dce64d71b8fad85830cfd17af787e",
+      "solution": [0, 1, 10, 11, 2, 3, 12, 21, 30, 31, 40, 39, 48, 57, 66, 67, 76, 77, 78, 79, 80]
+    },
+    {
+      "id": 12,
+      "n": 9,
+      "serverSeed": "0xa3eac2612f93be5eae6f030977ee837284da136f956c8e4059b05e34dee46153",
+      "clientSeed": "0xf3b74efa4cf9a6a7583965b3d9862c7270699db805e383b702a940e3c4566bcd",
+      "gameId": "0x2dfef034cf810c5258d3d4d238d0539b859902e046181cbb60dcc0aa4699ec03",
+      "commitment": "0x20f6c1a77f97f78a36f83c80d4cac3874f0d041d4631e9ae692b3bf3c847f770",
+      "finalSeed": "0xd7c374340b7e8e035d7e14ba1be7ff09259f01f26259feda3086527346b28ba2",
+      "streamHead": [2729422109, 3611160201, 2647891320, 1713009222, 404774732, 3815074287, 131088875, 3325637922, 50194304, 3155270236],
+      "open": "0x020e08060a0a0a080404070c05060e0a0c05050105050101020d05030c070b0a0e080709020f0f0a0c070c05040405050209050105050501070c020d04070d070e0905020f0f0905010308030801010209",
+      "wallsDigest": "0x725f9eb0773714147e4263151a54699c1555ab70181c0cc09d38b93732c768cd",
+      "solution": [0, 1, 10, 11, 20, 29, 30, 31, 32, 41, 50, 59, 68, 69, 70, 61, 62, 71, 80]
     }
   ]
 }

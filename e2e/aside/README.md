@@ -20,7 +20,14 @@ pnpm e2e:aside --with-exec          # also run the advisory scenario 09 (`aside 
 bash e2e/aside/03-cashout.sh        # a scenario by itself (set MAZE_E2E_DIST_DIR=.next-f-0 to
                                     # reuse the runner's build)
 bash e2e/aside/00-capability-probe.sh
+
+# The production-table run kept next to the test-table run instead of replacing it
+# (results in e2e/aside/out/production/; the directory has no capability file at first, so the
+# probe runs):
+MAZE_E2E_OUT_DIR="$PWD/e2e/aside/out/production" pnpm e2e:aside --table production
 ```
+
+`pnpm verify:all` runs `pnpm e2e:aside`, that is the test table, and writes to `out/`.
 
 Needs: Aside running and signed in, `anvil` and `cast` (Foundry), `node`, `pnpm`, `jq`, `curl`,
 `bc`, `perl`. The scripts are written for the bash 3.2 of macOS.
@@ -97,9 +104,9 @@ are passed on the command line only.
 
 | # | Script | Proves | Chain | HTTP | DOM |
 |---|---|---|---|---|---|
-| 01 | `01-exit.sh` | exit win; schedule and exit payout **before** the bet | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; every schedule row and exit payout for two sizes and amounts; fog board; result, settlement tx; verify page (hash, cells, solution) |
-| 02 | `02-deadend.sh` | dead-end loss, moves by arrow keys | outcome 2, payout 0, balance unchanged | status lost, reveal | result loss, payout 0; verify page |
-| 03 | `03-cashout.sh` | cash-out after 3 moves | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount at every step, exit payout, cash-out button, result; verify page |
+| 01 | `01-exit.sh` | exit win on the smallest size; schedule and exit payout **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; every schedule row and exit payout for every size, with two amounts; fog board; result, settlement tx; verify page (hash, cells, solution) |
+| 02 | `02-deadend.sh` | dead-end loss on the middle size, moves by arrow keys | outcome 2, payout 0, balance unchanged | status lost, reveal | result loss, payout 0; verify page |
+| 03 | `03-cashout.sh` | cash-out after 3 moves on the largest size | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount at every step, exit payout, cash-out button, result; verify page |
 | 04 | `04-idle-auto-cashout.sh` | idle auto cash-out (`MAZE_IDLE_TIMEOUT_SEC=6`) learnt by polling | outcome 1, steps 2, mined at or after the idle deadline, relayer sent it | idleTimeoutSec 6; cashed_out, auto true | idle deadline on screen; `auto-cashout` shown without input within 5 (+3) chain seconds |
 | 05 | `05-server-down-reclaim.sh` | server killed: the open page reclaims after the settle deadline | `DeadlineNotReached` before; Reclaimed, amount = bet, sent by the player's wallet, balance + bet - fee, never settled | active before the stop, unreachable after | `server-unreachable`, countdown on block time, button disabled then enabled, result `reclaimed` |
 | 06 | `06-verify-mismatch.sh` | verify screen flags a tampered record | still Settled, once | game read and reveal unchanged by imports | one flipped wall bit marks exactly that cell and row; a changed seed fails the hash check; the untouched record passes |
@@ -110,6 +117,10 @@ are passed on the command line only.
 | 11 | `11-dev-wallet-gating.sh` | dev wallet offered only when `/api/config` says so, same build | chain 31337, no game created | devWallet false, then true after a restart | option absent and bet disabled; after restart and reload present and connects #2 |
 
 Order: 01 02 03 04 06 07 08 09 11, then the two that move the chain clock, 10 and 05 (05 last).
+
+Sizes, multipliers and refund tables are read from `/api/config`, so the scenarios follow the
+table that is deployed: 01, 02 and 03 play its smallest, middle and largest size (5×5, 7×7 and
+9×9 with the certified production table; 5×5, 7×7 and 10×10 with the test table).
 
 Routes are planned offline by `plan-moves.ts`: the scenario reads the game id from the page,
 computes the server seed the test seed hook derives from it, rebuilds the maze with

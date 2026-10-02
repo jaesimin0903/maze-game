@@ -29,7 +29,7 @@ const tierTable = (n: number, c: CurveParams): number[] =>
 // The tuning grid of plan §3.1.
 const GRID_A = [9000, 8500, 8000, 7600, 7300, 7000, 6500];
 const GRID_PHI = [0.3, 0.4, 0.5, 0.6, 0.7];
-const SIZES = [5, 7, 10];
+const SIZES = [5, 7, 9, 10];
 
 describe('buildRefundTable', () => {
   it('follows raw[0] = 10000 - e0Bps, raw[k] = floor(aBps * phi^((k - 1) / L)) (plan §2.3 values)', () => {

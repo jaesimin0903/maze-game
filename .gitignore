@@ -32,3 +32,4 @@ coverage/
 
 # aside scenario run logs and screenshots (results.json and report.md stay tracked)
 e2e/aside/out/scenarios/
+e2e/aside/out/production/scenarios/

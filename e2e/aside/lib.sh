@@ -627,6 +627,9 @@ warp_past() {
 
 # ----- the table, as the server reports it -----
 
+# How many sizes the table offers. The scenarios take sizes, multipliers and refunds from
+# /api/config, never from a list of their own, so they follow whichever table is deployed.
+tier_count() { printf '%s' "$CONFIG_JSON" | jq -r '.tiers | length'; }
 tier_n() { printf '%s' "$CONFIG_JSON" | jq -r --argjson t "$1" '.tiers[$t].n'; }
 tier_multiplier_bps() { printf '%s' "$CONFIG_JSON" | jq -r --argjson t "$1" '.tiers[$t].multiplierBps'; }
 tier_refund_bps() { printf '%s' "$CONFIG_JSON" | jq -r --argjson t "$1" --argjson k "$2" '.tiers[$t].refundBps[$k]'; }

@@ -1,7 +1,15 @@
 // Read access to the chain (plan §7.4, §7.7). The browser uses its own RPC connection for the
 // chain clock and for the state of its game, so both keep working while the game server is down.
 
-import { createPublicClient, defineChain, http, type Chain } from 'viem';
+import {
+  createPublicClient,
+  defineChain,
+  http,
+  isAddressEqual,
+  parseEventLogs,
+  TransactionReceiptNotFoundError,
+  type Chain,
+} from 'viem';
 import { mazeBetAbi, type ConfigResponse, type Hex } from '@maze/shared';
 
 /** `getGame(gameId)`. `status` follows `ONCHAIN_STATUS`; times are chain seconds. */
@@ -26,6 +34,12 @@ export interface ChainApi {
   balanceOf(address: Hex): Promise<bigint>;
   /** Resolves once the transaction is mined. */
   waitForTx(hash: Hex): Promise<'success' | 'reverted'>;
+  /**
+   * Whether `hash` is the transaction that settled `gameId`: it is mined, it succeeded and the
+   * contract's `GameSettled` event of that game is in its receipt. `false` for a transaction
+   * that is pending, dropped, reverted, or about something else.
+   */
+  settledBy(hash: Hex, gameId: Hex): Promise<boolean>;
 }
 
 export type ChainConfig = Pick<ConfigResponse, 'chainId' | 'rpcUrl' | 'contract'>;
@@ -72,6 +86,21 @@ export function createChainApi(config: ChainConfig): ChainApi {
     async waitForTx(hash) {
       const receipt = await client.waitForTransactionReceipt({ hash });
       return receipt.status;
+    },
+    async settledBy(hash, gameId) {
+      let receipt;
+      try {
+        receipt = await client.getTransactionReceipt({ hash });
+      } catch (error) {
+        if (error instanceof TransactionReceiptNotFoundError) return false;
+        throw error;
+      }
+      if (receipt.status !== 'success') return false;
+      return parseEventLogs({ abi: mazeBetAbi, eventName: 'GameSettled', logs: receipt.logs }).some(
+        (log) =>
+          isAddressEqual(log.address, config.contract) &&
+          log.args.gameId.toLowerCase() === gameId.toLowerCase(),
+      );
     },
   };
 }

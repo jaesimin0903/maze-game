@@ -5,6 +5,7 @@ import {
   deriveFinalSeed,
   exitPayoutWei,
   generateMaze,
+  loadTuning,
   openDirs,
   Outcome,
   parseTuning,
@@ -16,6 +17,7 @@ import {
   type Hex,
   type Maze,
   type Observation,
+  type TuningTable,
 } from '../src';
 import fixtureJson from './fixtures/tuning.fixture.json';
 import { mazeVectors, openHex } from './vectors';
@@ -30,7 +32,13 @@ interface Seeds {
   gameId: Hex;
 }
 
-const tierOf = (n: number): number => table.tiers.findIndex((tier) => tier.n === n);
+const production = loadTuning();
+
+/** The table a game of size `n` is played on: the test table, or the production table for a size only it has. */
+const tableOf = (n: number): TuningTable => (table.tiers.some((tier) => tier.n === n) ? table : production);
+const tierOf = (n: number): number => tableOf(n).tiers.findIndex((tier) => tier.n === n);
+/** Every board size one of the two tables offers. */
+const SIZES = [...new Set([...table.tiers, ...production.tiers].map((tier) => tier.n))].sort((a, b) => a - b);
 const mazeOf = (seeds: Seeds): Maze => generateMaze(deriveFinalSeed(seeds), seeds.n);
 
 function seedOf(label: string): Hex {
@@ -80,9 +88,9 @@ function game(
     open: maze.open[cell],
   }));
   return {
-    table,
+    table: tableOf(seeds.n),
     tier: tierOf(seeds.n),
-    commitment: commitmentOf({ mazeVersion: table.mazeVersion, n: seeds.n, serverSeed: seeds.serverSeed }),
+    commitment: commitmentOf({ mazeVersion: tableOf(seeds.n).mazeVersion, n: seeds.n, serverSeed: seeds.serverSeed }),
     serverSeed: seeds.serverSeed,
     clientSeed: seeds.clientSeed,
     gameId: seeds.gameId,
@@ -97,7 +105,7 @@ function exitGame(seeds: Seeds): Parameters<typeof verifyGame>[0] {
   return game(seeds, moves, {
     outcome: Outcome.Exit,
     steps: moves.length,
-    payoutWei: exitPayoutWei(table, BET, tierOf(seeds.n)),
+    payoutWei: exitPayoutWei(tableOf(seeds.n), BET, tierOf(seeds.n)),
   });
 }
 
@@ -106,7 +114,7 @@ function cashOutGame(seeds: Seeds, k: number): Parameters<typeof verifyGame>[0] 
   return game(seeds, moves, {
     outcome: Outcome.CashOut,
     steps: k,
-    payoutWei: refundWei(table, BET, tierOf(seeds.n), k),
+    payoutWei: refundWei(tableOf(seeds.n), BET, tierOf(seeds.n), k),
   });
 }
 
@@ -123,9 +131,11 @@ const flags = (report: ReturnType<typeof verifyGame>): boolean[] => [
 ];
 
 const first = mazeVectors[0];
+/** The fixed vectors of the sizes a table offers (a table switch can retire a size). */
+const playableVectors = mazeVectors.filter((vector) => SIZES.includes(vector.n));
 
 describe('verifyGame', () => {
-  it.each(mazeVectors)(
+  it.each(playableVectors)(
     'AC-M6 vector $id: an exit game verifies from the commitment, the client seed, the game id and the revealed server seed',
     (vector) => {
       const params = exitGame(vector);
@@ -294,8 +304,8 @@ describe('verifyGame', () => {
 
   it('honest games of every kind verify on every tier', () => {
     const failures: string[] = [];
-    for (let i = 0; i < 240; i++) {
-      const n = [5, 7, 10][i % 3];
+    for (let i = 0; i < 80 * SIZES.length; i++) {
+      const n = SIZES[i % SIZES.length];
       const seeds: Seeds = {
         n,
         serverSeed: seedOf(`verify server ${i}`),

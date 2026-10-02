@@ -31,6 +31,7 @@ describe('AC-X8 start-direction symmetry of harmonic', () => {
 
   for (const [n, games] of [
     [7, 600_000],
+    [9, 300_000],
     [10, 300_000],
   ]) {
     it(`AC-X8 ${n}×${n} (reduced to ${games.toLocaleString('en-US')} games): no significant difference between the start directions`, () => {

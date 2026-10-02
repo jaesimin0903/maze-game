@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net';
 import { mazeBetAbi, type GameView } from '@maze/shared';
 import { parseEther } from 'viem';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createChainApi, type ChainApi } from '../../src/client/chain';
 import { api } from '../server/helpers';
 import {
   chainTime,
@@ -84,6 +85,11 @@ function sent(gameId: `0x${string}`): LogLine[] {
   return linesOf(server, gameId).filter((line) => line.event === 'settle-sent');
 }
 
+/** The page's own read access to the chain: what it asks before it names a settlement transaction. */
+function browserChain(): ChainApi {
+  return createChainApi({ chainId: 31337, rpcUrl: h.rpcUrl, contract: h.contract });
+}
+
 async function waitRecorded(gameId: `0x${string}`): Promise<void> {
   await until(`the server to record the settlement of ${gameId}`, async () =>
     server.container.service.get(gameId)?.final === 'settled',
@@ -157,6 +163,11 @@ describe('AC-S11: at-least-once settlement', () => {
 
     const read = await api.game<GameView>(game.gameId, game.token);
     expect(read.body.terminal!.settleTxHash).toBe(settled.txHash);
+
+    // The page shows a settlement transaction only when the chain says it settled the game:
+    // the dropped one, which the server had reported first, never qualifies.
+    expect(await browserChain().settledBy(droppedHash, game.gameId)).toBe(false);
+    expect(await browserChain().settledBy(settled.txHash, game.gameId)).toBe(true);
   });
 
   it("the player's own copy and the relayer's copy settle the game once", async () => {
@@ -206,6 +217,13 @@ describe('AC-S11: at-least-once settlement', () => {
     const read = await api.game<GameView>(game.gameId, game.token);
     expect(read.body.terminal!.settleTxHash).toBe(settled.txHash);
     expect(sent(game.gameId)).toHaveLength(1);
+
+    // Of the two mined copies, the page accepts only the one that took effect, and only for
+    // this game.
+    const reverted = [playerTx, sent(game.gameId)[0].txHash!].find((hash) => hash !== settled.txHash)!;
+    expect(await browserChain().settledBy(settled.txHash, game.gameId)).toBe(true);
+    expect(await browserChain().settledBy(reverted, game.gameId)).toBe(false);
+    expect(await browserChain().settledBy(settled.txHash, `0x${'ab'.repeat(32)}`)).toBe(false);
   });
 
   it('alerts 300 s before the deadline while unsettled, and still settles before it', async () => {

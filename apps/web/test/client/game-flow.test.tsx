@@ -193,6 +193,46 @@ describe('game flow', () => {
     await waitFor(() => expect(attr('settle-tx', 'data-confirmed')).toBe('true'));
     expect(world.txs).toEqual(['createGame', 'settle']);
   });
+
+  it('a settle transaction that is dropped and sent again: the page names the one that settled the game, then stops asking', async () => {
+    const world = new FakeWorld();
+    world.settlesToDrop = 1;
+    const gameId = await startGame(world);
+    await walk(planExit(world.mazeOf(gameId)));
+    await screen.findByTestId('result-outcome');
+
+    // The first transaction the server reports is never mined; the second one settles the game.
+    await waitFor(() => expect(world.settleHashesSent).toHaveLength(2));
+    const [dropped, mined] = world.settleHashesSent;
+    expect(dropped).toMatch(/^0xd40bbed/);
+    expect(world.settledBy.get(gameId)).toBe(mined);
+    await waitFor(() => expect(attr('settle-tx', 'data-tx')).toBe(mined));
+    expect(attr('settle-tx', 'data-confirmed')).toBe('true');
+    expect(loadRecord(gameId)?.terminal?.settleTxHash).toBe(mined);
+
+    // Nothing is left to learn: the page no longer asks the server.
+    const reads = (): number => world.requests.filter((r) => r === 'GET /api/games/:id').length;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const settledReads = reads();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(reads()).toBe(settledReads);
+    expect(attr('settle-tx', 'data-tx')).toBe(mined);
+  });
+
+  it('a transaction that was sent but did not settle the game is not shown as the settlement', async () => {
+    const world = new FakeWorld();
+    world.settlesToDrop = 1_000;
+    const gameId = await startGame(world);
+    await walk(planExit(world.mazeOf(gameId)));
+    await screen.findByTestId('result-outcome');
+
+    // The server keeps reporting transactions that are never mined: no hash, not confirmed, and
+    // the page keeps asking.
+    await waitFor(() => expect(world.settleHashesSent.length).toBeGreaterThanOrEqual(3));
+    expect(world.settledBy.has(gameId)).toBe(false);
+    expect(attr('settle-tx', 'data-tx')).toBe('');
+    expect(attr('settle-tx', 'data-confirmed')).toBe('false');
+  });
 });
 
 describe('board', () => {

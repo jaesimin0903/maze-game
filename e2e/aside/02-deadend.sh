@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 02 dead-end loss (plan §9.1; AC-R4, AC-W4, AC-E1).
 #
-# Bets through the page and walks, with the arrow keys, the shortest route into a dead end.
+# Bets through the page on the middle size of the table and walks, with the arrow keys, the
+# shortest route into a dead end.
 #
 #   DOM    result-outcome = loss with a payout of 0 and a net of minus the bet; the settlement
 #          transaction is named; the verify page passes for the lost game too
@@ -28,7 +29,8 @@ cap pressKey && HOW=key
 
 open_lobby A
 connect_dev_wallet A
-open_game_for A 0 deadend
+# The middle size of the table: with 01 (smallest) and 03 (largest) every size is played.
+open_game_for A $((($(tier_count) - 1) / 2)) deadend
 expect_game_open
 STEPS="$(printf '%s' "$PLAN_JSON" | jq -r '.steps')"
 evidence input "moves by $HOW"

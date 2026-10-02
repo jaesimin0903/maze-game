@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameView, Hex } from '@maze/shared';
+import { loadTuning, type GameView, type Hex } from '@maze/shared';
 import { formatClock, formatEth, formatMultiplier, formatPercent, parseEthInput } from '../../src/client/format';
 import {
   activeGameId,
@@ -198,6 +198,17 @@ describe('format', () => {
     expect(formatEth(2n * 10n ** 18n)).toBe('2');
   });
 
+  it('AC-R1 a multiplier is printed exactly: what the page shows is never more than the game pays', () => {
+    // Certified multipliers have four decimals; rounding 2.6088 to "2.61" would promise too much.
+    expect(formatMultiplier(26088)).toBe('2.6088배');
+    expect(formatMultiplier(66112)).toBe('6.6112배');
+    expect(formatMultiplier(184695)).toBe('18.4695배');
+    expect(formatMultiplier(265570)).toBe('26.557배');
+    for (const { multiplierBps } of loadTuning().tiers) {
+      expect(Number.parseFloat(formatMultiplier(multiplierBps)) * 10_000).toBeCloseTo(multiplierBps, 6);
+    }
+  });
+
   it('parses a typed ETH amount and rejects anything that is not a plain decimal', () => {
     expect(parseEthInput(' 0.01 ')).toBe(10n ** 16n);
     expect(parseEthInput('1')).toBe(10n ** 18n);
@@ -211,6 +222,7 @@ describe('format', () => {
     expect(formatPercent(9500)).toBe('95.00%');
     expect(formatPercent(7300)).toBe('73.00%');
     expect(formatMultiplier(25500)).toBe('2.55배');
+    expect(formatMultiplier(200000)).toBe('20.00배');
     expect(formatClock(125)).toBe('2:05');
     expect(formatClock(-3)).toBe('0:00');
   });

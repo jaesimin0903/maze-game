@@ -33,3 +33,7 @@ coverage/
 # aside scenario run logs and screenshots (results.json and report.md stay tracked)
 e2e/aside/out/scenarios/
 e2e/aside/out/production/scenarios/
+
+# rewritten by every fixture-table scenario run (verify:all); the production-table run stays tracked
+e2e/aside/out/results.json
+e2e/aside/out/report.md

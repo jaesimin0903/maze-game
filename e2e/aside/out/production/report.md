@@ -1,6 +1,6 @@
-# aside scenarios: run 20261002T115029Z-80672
+# aside scenarios: run 20261002T142231Z-60984
 
-- started 2026-10-02T11:50:29Z, finished 2026-10-02T11:53:28Z
+- started 2026-10-02T14:22:31Z, finished 2026-10-02T14:25:36Z
 - table: production
 - input path: repl; DOM read path: repl (capabilities probed 2026-10-02T11:36:28Z)
 - totals (scenario 09 is advisory and not counted): 10 PASS, 0 FAIL, 0 BLOCKED; exit code 0
@@ -9,15 +9,15 @@
 | # | scenario | result | input | read | chain | HTTP | DOM | seconds | reason |
 |---|---|---|---|---|---|---|---|---|---|
 | 01 | exit | PASS | repl | repl | 28 | 21 | 64 | 28 | chain 28, http 21, dom 64 assertions passed |
-| 02 | deadend | PASS | repl | repl | 19 | 10 | 13 | 13 | chain 19, http 10, dom 13 assertions passed |
+| 02 | deadend | PASS | repl | repl | 19 | 10 | 13 | 14 | chain 19, http 10, dom 13 assertions passed |
 | 03 | cashout | PASS | repl | repl | 23 | 14 | 20 | 17 | chain 23, http 14, dom 20 assertions passed |
 | 04 | idle-auto-cashout | PASS | repl | repl | 16 | 9 | 8 | 17 | chain 16, http 9, dom 8 assertions passed |
-| 06 | verify-mismatch | PASS | repl | repl | 22 | 12 | 23 | 19 | chain 22, http 12, dom 23 assertions passed |
+| 06 | verify-mismatch | PASS | repl | repl | 22 | 12 | 23 | 20 | chain 22, http 12, dom 23 assertions passed |
 | 07 | invalid-move | PASS | repl | repl | 22 | 29 | 9 | 17 | chain 22, http 29, dom 9 assertions passed |
 | 08 | multi-tab | PASS | repl | repl | 19 | 17 | 15 | 18 | chain 19, http 17, dom 15 assertions passed |
 | 09 | exploratory-agent (advisory) | NOT-RUN | repl | repl | 0 | 0 | 0 | 0 | advisory and on request only: aside exec is model-driven and billed to the user's model account (scripts/e2e-aside.sh --with-exec) |
-| 11 | dev-wallet-gating | PASS | repl | repl | 2 | 4 | 8 | 8 | chain 2, http 4, dom 8 assertions passed |
-| 10 | cli-reclaim | PASS | repl | repl | 26 | 9 | 8 | 23 | chain 26, http 9, dom 8 assertions passed |
+| 11 | dev-wallet-gating | PASS | repl | repl | 2 | 4 | 8 | 11 | chain 2, http 4, dom 8 assertions passed |
+| 10 | cli-reclaim | PASS | repl | repl | 26 | 9 | 8 | 25 | chain 26, http 9, dom 8 assertions passed |
 | 05 | server-down-reclaim | PASS | repl | repl | 20 | 6 | 11 | 15 | chain 20, http 6, dom 11 assertions passed |
 
 ## 01 exit: PASS
@@ -26,8 +26,8 @@ What it proves: schedule and exit payout before the bet, then the solution to th
 
 Reason: chain 28, http 21, dom 64 assertions passed
 
-Evidence: gameId `0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125`, settleTx `0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/01`
+Evidence: gameId `0x64ab639aa4bdf811b5edceaeaaed0bbe23eb5b3cfec11a5ba678fccc98f095fd`, settleTx `0xf9b5c4be4e9878c2ff9e0646dd8cdcc8e3f71be5507c69d290da0933da68b849`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/01`
 
 - PASS [http] /api/config: devWallet is on
 - PASS [http] /api/config: testHooks is on
@@ -149,8 +149,8 @@ What it proves: a route into a dead end loses the whole bet: the page says so an
 
 Reason: chain 19, http 10, dom 13 assertions passed
 
-Evidence: gameId `0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2`, input `moves by key`, settleTx `0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/02`
+Evidence: gameId `0xd738152f6357d12956d4bd6a1ffa421cdc32ff412bcf01ab09bab15c9aa7bbd1`, input `moves by key`, settleTx `0xc3c570e101fa1901116b3d207559602af690a05c3e24f4f4053cc3962e5e6fbb`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/02`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)
@@ -201,8 +201,8 @@ What it proves: three moves, then cash-out: the refund follows the table at ever
 
 Reason: chain 23, http 14, dom 20 assertions passed
 
-Evidence: gameId `0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f`, settleTx `0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/03`
+Evidence: gameId `0xdf06b5a93bd570d24ad4022f30478444daa8afb6b36c2eccd294274a6e990913`, settleTx `0x005a2c5fb95fbbe04c917308a6074903aa7f6b220b460dc8a013629c6ae5c5e9`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/03`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)
@@ -268,8 +268,8 @@ What it proves: after 6 idle chain seconds the server cashes out and the page le
 
 Reason: chain 16, http 9, dom 8 assertions passed
 
-Evidence: gameId `0x867970926d9c8c405e49e342933d732fbb6699a0830eb518d283529475748bb4`, shownAfterDeadlineSec `0`, settleTx `0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/04`
+Evidence: gameId `0xe50980d81d408370c9827d686cb11897df1d6f97c66a3503e8f9ef7d30742514`, shownAfterDeadlineSec `0`, settleTx `0x603440601fd0704ea941188bcc9fc2f273ba1bd5af5a2ce1d7d1a9a4ff4501e7`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/04`
 
 - PASS [http] /api/config reports the shortened idle timeout
 - PASS [http] the server reports the game active after 2 moves
@@ -311,8 +311,8 @@ What it proves: one changed wall bit in an imported play record is flagged on ex
 
 Reason: chain 22, http 12, dom 23 assertions passed
 
-Evidence: gameId `0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431`, settleTx `0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/06`
+Evidence: gameId `0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26`, settleTx `0x5d790f1c532fb315567839d6381406099ef5d2acf55a3436e00222add1a2fefb`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/06`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)
@@ -378,8 +378,8 @@ What it proves: moves through a wall, off the grid, onto a visited cell or with 
 
 Reason: chain 22, http 29, dom 9 assertions passed
 
-Evidence: gameId `0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842`, settleTx `0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/07`
+Evidence: gameId `0xcdcf1bc1a0055b6d673ec086a310b4bf5b8be72daa590bad62a6cf048463612d`, settleTx `0xd8e497c5e4d639ebba4b41c6613fb0693152a2573b6be51b7f91770d2e5c6625`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/07`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)
@@ -393,7 +393,7 @@ Logs: `.data/e2e-aside/20261002T115029Z-80672/07`
 - PASS [http] a move off the grid at step 0: 409 INVALID_MOVE_BOUNDS
 - PASS [http] a move off the grid at step 0: the body is only { error: { code, message } }
 - PASS [dom] refundable-amount before the refused moves
-- PASS [dom] the page does not offer the wall direction (move-S is not legal)
+- PASS [dom] the page does not offer the wall direction (move-W is not legal)
 - PASS [http] a move through a wall: 409 INVALID_MOVE_WALL
 - PASS [http] a move through a wall: the body is only { error: { code, message } }
 - PASS [http] a move back onto a visited cell: 409 INVALID_MOVE_VISITED
@@ -414,7 +414,7 @@ Logs: `.data/e2e-aside/20261002T115029Z-80672/07`
 - PASS [chain] the game is still Active
 - PASS [chain] nothing was settled
 - PASS [chain] totalReserved still holds the game's maximum payout
-- PASS [dom] the board is still at step 1
+- PASS [dom] the board is still at step 2
 - PASS [dom] refundable-amount is unchanged
 - PASS [dom] the current cell is unchanged
 - PASS [dom] the page shows no error: it sent none of these moves
@@ -448,8 +448,8 @@ What it proves: a second tab resumes the game, and of two different moves sent f
 
 Reason: chain 19, http 17, dom 15 assertions passed
 
-Evidence: gameId `0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722`, acceptedTab `A`, settleTx `0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/08`
+Evidence: gameId `0x672958703464584082a450f51e359a7564d8a43d771f693a13a3e81b4b9da90b`, acceptedTab `A`, settleTx `0x56c506551ab8bc417e29e04694da2b41da54a88202c12a399cf91064c40da811`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/08`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)
@@ -461,10 +461,10 @@ Logs: `.data/e2e-aside/20261002T115029Z-80672/08`
 - PASS [http] the server reports the game active at step 0
 - PASS [http] refundableWei at step 0 is bet x refundBps[0]
 - PASS [dom] tab B resumes the same game from localStorage
-- PASS [dom] tab B resumes at step 7
+- PASS [dom] tab B resumes at step 2
 - PASS [dom] tab B shows the same refundable amount
 - PASS [dom] tab B has no wallet connected: the session token alone resumes the game
-- PASS [http] each tab's page sent one move, both for step 7
+- PASS [http] each tab's page sent one move, both for step 2
 - PASS [http] the two moves were different directions
 - PASS [http] the server accepted exactly one of them (200)
 - PASS [http] the server refused exactly one of them with 409 STALE_STEP
@@ -475,8 +475,8 @@ Logs: `.data/e2e-aside/20261002T115029Z-80672/08`
 - PASS [dom] tab B shows the server's current cell
 - PASS [dom] the tab whose move was refused (tab B) says so
 - PASS [dom] the tab whose move was accepted (tab A) shows no error
-- PASS [dom] tab A shows the refund of step 8
-- PASS [dom] tab B shows the refund of step 8
+- PASS [dom] tab A shows the refund of step 3
+- PASS [dom] tab B shows the refund of step 3
 - PASS [dom] result-outcome shows cashout
 - PASS [dom] result-payout shows the amount paid
 - PASS [dom] result-net shows payout minus bet
@@ -509,7 +509,7 @@ What it proves: advisory: after a model-driven agent has tried to cheat, the con
 
 Reason: advisory and on request only: aside exec is model-driven and billed to the user's model account (scripts/e2e-aside.sh --with-exec)
 
-Logs: `.data/e2e-aside/20261002T115029Z-80672/09`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/09`
 
 
 ## 11 dev-wallet-gating: PASS
@@ -518,7 +518,7 @@ What it proves: the dev wallet is offered only when /api/config says devWallet, 
 
 Reason: chain 2, http 4, dom 8 assertions passed
 
-Logs: `.data/e2e-aside/20261002T115029Z-80672/11`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/11`
 
 - PASS [http] /api/config: devWallet is false when NEXT_PUBLIC_ENABLE_DEV_WALLET=0
 - PASS [http] /api/config: the chain is 31337
@@ -541,8 +541,8 @@ What it proves: with the server dead, anyone reclaims the bet for the player wit
 
 Reason: chain 26, http 9, dom 8 assertions passed
 
-Evidence: gameId `0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15`, reclaimTx `0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/10`
+Evidence: gameId `0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce`, reclaimTx `0x0fd7a7b3c5a7cfa11a3fda2243d7122109a5114144050e348b7ffba584ced38c`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/10`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)
@@ -594,8 +594,8 @@ What it proves: with the server dead, the page that was open reclaims the bet it
 
 Reason: chain 20, http 6, dom 11 assertions passed
 
-Evidence: gameId `0x7d70295783aadb2d9edf8fbd0716b50720f452a154bfdc9328d2c73eedab352b`, reclaimTx `0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d`
-Logs: `.data/e2e-aside/20261002T115029Z-80672/05`
+Evidence: gameId `0x60cd30168b991f5fa937634577c6895d52b7ec008c6f14a3c67f3d098b7164a2`, reclaimTx `0x96fa6758cb8d9b92eab1ef4ec04009577db1e1168aeb365bbfb90d46009aef4b`
+Logs: `.data/e2e-aside/20261002T142231Z-60984/05`
 
 - PASS [chain] getGame.status is Active after the bet
 - PASS [chain] getGame.player is the dev wallet (Anvil #2)

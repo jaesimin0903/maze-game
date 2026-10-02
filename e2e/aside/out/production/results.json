@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "runId": "20261002T115029Z-80672",
-  "startedAt": "2026-10-02T11:50:29Z",
-  "finishedAt": "2026-10-02T11:53:28Z",
+  "runId": "20261002T142231Z-60984",
+  "startedAt": "2026-10-02T14:22:31Z",
+  "finishedAt": "2026-10-02T14:25:36Z",
   "tableMode": "production",
   "partial": false,
   "selected": [
@@ -28,19 +28,19 @@
       "scenario": "01",
       "name": "exit",
       "proves": "schedule and exit payout before the bet, then the solution to the exit, the payout on chain and the verify page",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 28, http 21, dom 64 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/01",
-      "startedAt": "2026-10-02T11:50:33Z",
-      "finishedAt": "2026-10-02T11:51:01Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/01",
+      "startedAt": "2026-10-02T14:22:34Z",
+      "finishedAt": "2026-10-02T14:23:02Z",
       "seconds": 28,
       "evidence": {
-        "gameId": "0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125",
-        "settleTx": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475"
+        "gameId": "0x64ab639aa4bdf811b5edceaeaaed0bbe23eb5b3cfec11a5ba678fccc98f095fd",
+        "settleTx": "0xf9b5c4be4e9878c2ff9e0646dd8cdcc8e3f71be5507c69d290da0933da68b849"
       },
       "assertions": [
         {
@@ -614,8 +614,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the player's balance changed by exactly the payout",
-          "expected": "10000015870169560316325",
-          "actual": "10000015870169560316325"
+          "expected": "10000015870154748216729",
+          "actual": "10000015870154748216729"
         },
         {
           "kind": "chain",
@@ -628,8 +628,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c",
-          "actual": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c"
+          "expected": "0xce1fbc4663edb6dbda333bb4ed777bb1e0a3ba95ae4c15785759f1c7420c887e",
+          "actual": "0xce1fbc4663edb6dbda333bb4ed777bb1e0a3ba95ae4c15785759f1c7420c887e"
         },
         {
           "kind": "http",
@@ -656,8 +656,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475",
-          "actual": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475"
+          "expected": "0xf9b5c4be4e9878c2ff9e0646dd8cdcc8e3f71be5507c69d290da0933da68b849",
+          "actual": "0xf9b5c4be4e9878c2ff9e0646dd8cdcc8e3f71be5507c69d290da0933da68b849"
         },
         {
           "kind": "http",
@@ -670,15 +670,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c",
-          "actual": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c"
+          "expected": "0xce1fbc4663edb6dbda333bb4ed777bb1e0a3ba95ae4c15785759f1c7420c887e",
+          "actual": "0xce1fbc4663edb6dbda333bb4ed777bb1e0a3ba95ae4c15785759f1c7420c887e"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0x160c5393f924befc5cf7b5bd3c816331a3e15bec21e12a991fc5842c1a646b8c",
-          "actual": "0x160c5393f924befc5cf7b5bd3c816331a3e15bec21e12a991fc5842c1a646b8c"
+          "expected": "0x04e412f4273b2e2ebf28d0d8fb512c811cebb12f5f470cb9aa6651213ab71565",
+          "actual": "0x04e412f4273b2e2ebf28d0d8fb512c811cebb12f5f470cb9aa6651213ab71565"
         },
         {
           "kind": "chain",
@@ -719,8 +719,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "settle-tx names the settlement transaction",
-          "expected": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475",
-          "actual": "0x3bef781dc03b88adbdff1ba7de6fd74bc36bda3af225098ea6aaf54a98544475"
+          "expected": "0xf9b5c4be4e9878c2ff9e0646dd8cdcc8e3f71be5507c69d290da0933da68b849",
+          "actual": "0xf9b5c4be4e9878c2ff9e0646dd8cdcc8e3f71be5507c69d290da0933da68b849"
         },
         {
           "kind": "http",
@@ -747,15 +747,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the snapshot's seq keeps rising (heartbeat)",
-          "expected": "above 49",
-          "actual": "53"
+          "expected": "above 53",
+          "actual": "55"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "verify-link points at /verify/<gameId>",
-          "expected": "/verify/0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125",
-          "actual": "/verify/0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125"
+          "expected": "/verify/0x64ab639aa4bdf811b5edceaeaaed0bbe23eb5b3cfec11a5ba678fccc98f095fd",
+          "actual": "/verify/0x64ab639aa4bdf811b5edceaeaaed0bbe23eb5b3cfec11a5ba678fccc98f095fd"
         },
         {
           "kind": "dom",
@@ -810,8 +810,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "verify-game names this game",
-          "expected": "0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125",
-          "actual": "0x5f717c7b3bcb75efbfe7d22ca0d28dac4aa92089dd551936aaf97bd2aedf8125"
+          "expected": "0x64ab639aa4bdf811b5edceaeaaed0bbe23eb5b3cfec11a5ba678fccc98f095fd",
+          "actual": "0x64ab639aa4bdf811b5edceaeaaed0bbe23eb5b3cfec11a5ba678fccc98f095fd"
         },
         {
           "kind": "dom",
@@ -831,8 +831,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "verify-server-seed is the settled seed",
-          "expected": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c",
-          "actual": "0x616a33c782164612a568fef45919fba29db6a8f4efb06c0437f12a778b33fb2c"
+          "expected": "0xce1fbc4663edb6dbda333bb4ed777bb1e0a3ba95ae4c15785759f1c7420c887e",
+          "actual": "0xce1fbc4663edb6dbda333bb4ed777bb1e0a3ba95ae4c15785759f1c7420c887e"
         }
       ],
       "counts": {
@@ -846,20 +846,20 @@
       "scenario": "02",
       "name": "deadend",
       "proves": "a route into a dead end loses the whole bet: the page says so and the chain pays nothing",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 19, http 10, dom 13 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/02",
-      "startedAt": "2026-10-02T11:51:01Z",
-      "finishedAt": "2026-10-02T11:51:14Z",
-      "seconds": 13,
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/02",
+      "startedAt": "2026-10-02T14:23:02Z",
+      "finishedAt": "2026-10-02T14:23:16Z",
+      "seconds": 14,
       "evidence": {
-        "gameId": "0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2",
+        "gameId": "0xd738152f6357d12956d4bd6a1ffa421cdc32ff412bcf01ab09bab15c9aa7bbd1",
         "input": "moves by key",
-        "settleTx": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82"
+        "settleTx": "0xc3c570e101fa1901116b3d207559602af690a05c3e24f4f4053cc3962e5e6fbb"
       },
       "assertions": [
         {
@@ -971,8 +971,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "GameSettled.steps",
-          "expected": "3",
-          "actual": "3"
+          "expected": "4",
+          "actual": "4"
         },
         {
           "kind": "chain",
@@ -1006,8 +1006,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576",
-          "actual": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576"
+          "expected": "0xf008d446a300290402e527558a8780a3fcc037d48d82cdc4a665500b429f8822",
+          "actual": "0xf008d446a300290402e527558a8780a3fcc037d48d82cdc4a665500b429f8822"
         },
         {
           "kind": "http",
@@ -1034,8 +1034,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82",
-          "actual": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82"
+          "expected": "0xc3c570e101fa1901116b3d207559602af690a05c3e24f4f4053cc3962e5e6fbb",
+          "actual": "0xc3c570e101fa1901116b3d207559602af690a05c3e24f4f4053cc3962e5e6fbb"
         },
         {
           "kind": "http",
@@ -1048,15 +1048,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576",
-          "actual": "0x1c5c5a127878bcc1697d1819d33cc1f4d3587f4ea2f0ae81efd2ec2aa9400576"
+          "expected": "0xf008d446a300290402e527558a8780a3fcc037d48d82cdc4a665500b429f8822",
+          "actual": "0xf008d446a300290402e527558a8780a3fcc037d48d82cdc4a665500b429f8822"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0x7c355d0e7893f020e9233b05771bff08efde5ba93e483eb24518f1100fec8eb0",
-          "actual": "0x7c355d0e7893f020e9233b05771bff08efde5ba93e483eb24518f1100fec8eb0"
+          "expected": "0x95586971be2c52d9ce2b695fbc387d83b266b69e210e91d555e3e729a2450bf8",
+          "actual": "0x95586971be2c52d9ce2b695fbc387d83b266b69e210e91d555e3e729a2450bf8"
         },
         {
           "kind": "chain",
@@ -1097,15 +1097,15 @@
           "kind": "dom",
           "status": "PASS",
           "label": "settle-tx names the settlement transaction",
-          "expected": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82",
-          "actual": "0x372ae9e81851e7a8c3bd23cb644713ea6eea77e927360ef3f8f4f42ea5110a82"
+          "expected": "0xc3c570e101fa1901116b3d207559602af690a05c3e24f4f4053cc3962e5e6fbb",
+          "actual": "0xc3c570e101fa1901116b3d207559602af690a05c3e24f4f4053cc3962e5e6fbb"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "verify-link points at /verify/<gameId>",
-          "expected": "/verify/0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2",
-          "actual": "/verify/0x05d358fcedcddd33070cb8d85f5584d9d476a412ce6463cee4251f01543d51b2"
+          "expected": "/verify/0xd738152f6357d12956d4bd6a1ffa421cdc32ff412bcf01ab09bab15c9aa7bbd1",
+          "actual": "/verify/0xd738152f6357d12956d4bd6a1ffa421cdc32ff412bcf01ab09bab15c9aa7bbd1"
         },
         {
           "kind": "dom",
@@ -1146,8 +1146,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "verify: one compared cell per observation",
-          "expected": "4",
-          "actual": "4"
+          "expected": "5",
+          "actual": "5"
         },
         {
           "kind": "dom",
@@ -1168,19 +1168,19 @@
       "scenario": "03",
       "name": "cashout",
       "proves": "three moves, then cash-out: the refund follows the table at every step and is paid on chain",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 23, http 14, dom 20 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/03",
-      "startedAt": "2026-10-02T11:51:14Z",
-      "finishedAt": "2026-10-02T11:51:31Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/03",
+      "startedAt": "2026-10-02T14:23:16Z",
+      "finishedAt": "2026-10-02T14:23:33Z",
       "seconds": 17,
       "evidence": {
-        "gameId": "0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f",
-        "settleTx": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77"
+        "gameId": "0xdf06b5a93bd570d24ad4022f30478444daa8afb6b36c2eccd294274a6e990913",
+        "settleTx": "0x005a2c5fb95fbbe04c917308a6074903aa7f6b220b460dc8a013629c6ae5c5e9"
       },
       "assertions": [
         {
@@ -1432,8 +1432,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326",
-          "actual": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326"
+          "expected": "0x74b8699fcf7a6fca1f9f0b35bd6178fdd46040ee9adb634265fa149e57eaf819",
+          "actual": "0x74b8699fcf7a6fca1f9f0b35bd6178fdd46040ee9adb634265fa149e57eaf819"
         },
         {
           "kind": "http",
@@ -1460,8 +1460,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77",
-          "actual": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77"
+          "expected": "0x005a2c5fb95fbbe04c917308a6074903aa7f6b220b460dc8a013629c6ae5c5e9",
+          "actual": "0x005a2c5fb95fbbe04c917308a6074903aa7f6b220b460dc8a013629c6ae5c5e9"
         },
         {
           "kind": "http",
@@ -1474,15 +1474,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326",
-          "actual": "0x68cf715bc2ccd0a69557c6b47a764e9cdda3f4d39c3e6b49ae1a7c50fd131326"
+          "expected": "0x74b8699fcf7a6fca1f9f0b35bd6178fdd46040ee9adb634265fa149e57eaf819",
+          "actual": "0x74b8699fcf7a6fca1f9f0b35bd6178fdd46040ee9adb634265fa149e57eaf819"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0x89866c5f47907b7c0abeb13ffea58883b85a6b5e1c814b5a7b333ba97ff42a78",
-          "actual": "0x89866c5f47907b7c0abeb13ffea58883b85a6b5e1c814b5a7b333ba97ff42a78"
+          "expected": "0x98a9a063b58ea30e10ebd04031ddc75bb71d2f9540932a627fb79d6d47547585",
+          "actual": "0x98a9a063b58ea30e10ebd04031ddc75bb71d2f9540932a627fb79d6d47547585"
         },
         {
           "kind": "chain",
@@ -1523,15 +1523,15 @@
           "kind": "dom",
           "status": "PASS",
           "label": "settle-tx names the settlement transaction",
-          "expected": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77",
-          "actual": "0x2a3d1e416ddb75f60f2b8e5e37614e0a6aa43cce24183bcf15859bb35e3f1c77"
+          "expected": "0x005a2c5fb95fbbe04c917308a6074903aa7f6b220b460dc8a013629c6ae5c5e9",
+          "actual": "0x005a2c5fb95fbbe04c917308a6074903aa7f6b220b460dc8a013629c6ae5c5e9"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "verify-link points at /verify/<gameId>",
-          "expected": "/verify/0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f",
-          "actual": "/verify/0x215bb8b83c4ce6f05967f3cd974d74c5eb652885feddfa05863cca31f1076a2f"
+          "expected": "/verify/0xdf06b5a93bd570d24ad4022f30478444daa8afb6b36c2eccd294274a6e990913",
+          "actual": "/verify/0xdf06b5a93bd570d24ad4022f30478444daa8afb6b36c2eccd294274a6e990913"
         },
         {
           "kind": "dom",
@@ -1594,20 +1594,20 @@
       "scenario": "04",
       "name": "idle-auto-cashout",
       "proves": "after 6 idle chain seconds the server cashes out and the page learns it by polling",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 16, http 9, dom 8 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/04",
-      "startedAt": "2026-10-02T11:51:31Z",
-      "finishedAt": "2026-10-02T11:51:48Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/04",
+      "startedAt": "2026-10-02T14:23:33Z",
+      "finishedAt": "2026-10-02T14:23:50Z",
       "seconds": 17,
       "evidence": {
-        "gameId": "0x867970926d9c8c405e49e342933d732fbb6699a0830eb518d283529475748bb4",
+        "gameId": "0xe50980d81d408370c9827d686cb11897df1d6f97c66a3503e8f9ef7d30742514",
         "shownAfterDeadlineSec": "0",
-        "settleTx": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013"
+        "settleTx": "0x603440601fd0704ea941188bcc9fc2f273ba1bd5af5a2ce1d7d1a9a4ff4501e7"
       },
       "assertions": [
         {
@@ -1628,8 +1628,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "idle-countdown carries the server's idle deadline (chain seconds)",
-          "expected": "1790941905",
-          "actual": "1790941905"
+          "expected": "1790951027",
+          "actual": "1790951027"
         },
         {
           "kind": "chain",
@@ -1740,8 +1740,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3",
-          "actual": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3"
+          "expected": "0x7a7e277bccc628e5b94587459dc455f4e4ec3962312701b3d0c2b4042bcee37c",
+          "actual": "0x7a7e277bccc628e5b94587459dc455f4e4ec3962312701b3d0c2b4042bcee37c"
         },
         {
           "kind": "http",
@@ -1768,8 +1768,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013",
-          "actual": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013"
+          "expected": "0x603440601fd0704ea941188bcc9fc2f273ba1bd5af5a2ce1d7d1a9a4ff4501e7",
+          "actual": "0x603440601fd0704ea941188bcc9fc2f273ba1bd5af5a2ce1d7d1a9a4ff4501e7"
         },
         {
           "kind": "http",
@@ -1782,15 +1782,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3",
-          "actual": "0xdc34d5cd7a6262eeaf282b668e92baa363083dae824564c265ebfd2a807016a3"
+          "expected": "0x7a7e277bccc628e5b94587459dc455f4e4ec3962312701b3d0c2b4042bcee37c",
+          "actual": "0x7a7e277bccc628e5b94587459dc455f4e4ec3962312701b3d0c2b4042bcee37c"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0xa5bf8de3997795c3278e9e76a8f20201b2a842ff263eafc8097250e442accabd",
-          "actual": "0xa5bf8de3997795c3278e9e76a8f20201b2a842ff263eafc8097250e442accabd"
+          "expected": "0xab4720654c14202b33b6b0e9870193944afd4ba326c187a2c2c32bb2f3a19a5a",
+          "actual": "0xab4720654c14202b33b6b0e9870193944afd4ba326c187a2c2c32bb2f3a19a5a"
         },
         {
           "kind": "chain",
@@ -1824,8 +1824,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settlement was mined at or after the idle deadline",
-          "expected": ">= 1790941905",
-          "actual": "1790941906"
+          "expected": ">= 1790951027",
+          "actual": "1790951028"
         },
         {
           "kind": "dom",
@@ -1838,8 +1838,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "settle-tx names the settlement transaction",
-          "expected": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013",
-          "actual": "0xea570cb3e36c7cfeaaae7ef2628d3332719567e42bbf591188af891160f74013"
+          "expected": "0x603440601fd0704ea941188bcc9fc2f273ba1bd5af5a2ce1d7d1a9a4ff4501e7",
+          "actual": "0x603440601fd0704ea941188bcc9fc2f273ba1bd5af5a2ce1d7d1a9a4ff4501e7"
         }
       ],
       "counts": {
@@ -1853,19 +1853,19 @@
       "scenario": "06",
       "name": "verify-mismatch",
       "proves": "one changed wall bit in an imported play record is flagged on exactly that cell",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 22, http 12, dom 23 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/06",
-      "startedAt": "2026-10-02T11:51:48Z",
-      "finishedAt": "2026-10-02T11:52:07Z",
-      "seconds": 19,
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/06",
+      "startedAt": "2026-10-02T14:23:50Z",
+      "finishedAt": "2026-10-02T14:24:10Z",
+      "seconds": 20,
       "evidence": {
-        "gameId": "0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431",
-        "settleTx": "0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba"
+        "gameId": "0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26",
+        "settleTx": "0x5d790f1c532fb315567839d6381406099ef5d2acf55a3436e00222add1a2fefb"
       },
       "assertions": [
         {
@@ -1998,8 +1998,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the player's balance changed by exactly the payout",
-          "expected": "9999996436913278204411",
-          "actual": "9999996436913278204411"
+          "expected": "9999996436878312906739",
+          "actual": "9999996436878312906739"
         },
         {
           "kind": "chain",
@@ -2012,8 +2012,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66",
-          "actual": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66"
+          "expected": "0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36",
+          "actual": "0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36"
         },
         {
           "kind": "http",
@@ -2040,8 +2040,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba",
-          "actual": "0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba"
+          "expected": "0x5d790f1c532fb315567839d6381406099ef5d2acf55a3436e00222add1a2fefb",
+          "actual": "0x5d790f1c532fb315567839d6381406099ef5d2acf55a3436e00222add1a2fefb"
         },
         {
           "kind": "http",
@@ -2054,15 +2054,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66",
-          "actual": "0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66"
+          "expected": "0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36",
+          "actual": "0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e",
-          "actual": "0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e"
+          "expected": "0xbb582c214df6a99b68241b846d2dce82a9f616172c2147a520fb33606bacfa1e",
+          "actual": "0xbb582c214df6a99b68241b846d2dce82a9f616172c2147a520fb33606bacfa1e"
         },
         {
           "kind": "chain",
@@ -2096,8 +2096,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "verify-link points at /verify/<gameId>",
-          "expected": "/verify/0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431",
-          "actual": "/verify/0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431"
+          "expected": "/verify/0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26",
+          "actual": "/verify/0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26"
         },
         {
           "kind": "dom",
@@ -2159,8 +2159,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "the imported record is shown as this game",
-          "expected": "0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431",
-          "actual": "0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431"
+          "expected": "0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26",
+          "actual": "0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26"
         },
         {
           "kind": "dom",
@@ -2180,8 +2180,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "exactly the tampered cell is marked as a mismatch",
-          "expected": "verify-cell-1-0",
-          "actual": "verify-cell-1-0"
+          "expected": "verify-cell-0-1",
+          "actual": "verify-cell-0-1"
         },
         {
           "kind": "dom",
@@ -2236,15 +2236,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the server's game read is unchanged by the imports",
-          "expected": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":2,\"y\":0},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942815,\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"idleDeadlineSec\":1790942036,\"n\":5,\"open\":10,\"path\":[{\"open\":2,\"x\":0,\"y\":0},{\"open\":10,\"x\":1,\"y\":0},{\"open\":10,\"x\":2,\"y\":0}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790943715,\"status\":\"cashed_out\",\"step\":2,\"terminal\":{\"clientSeed\":\"0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6\",\"outcome\":1,\"payoutWei\":\"6694000000000000\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\",\"settleTxHash\":\"0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba\",\"signature\":\"0x1964afd909e3b71bd4ea8ac4d9d5544840307688fb5d3bcdd6f675d0c47fbc8e79700ec179e646567587b7747a6611dc9024a585e73a26c3ad412ef00c10ec301b\",\"steps\":2},\"tier\":0}",
-          "actual": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":2,\"y\":0},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942815,\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"idleDeadlineSec\":1790942036,\"n\":5,\"open\":10,\"path\":[{\"open\":2,\"x\":0,\"y\":0},{\"open\":10,\"x\":1,\"y\":0},{\"open\":10,\"x\":2,\"y\":0}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790943715,\"status\":\"cashed_out\",\"step\":2,\"terminal\":{\"clientSeed\":\"0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6\",\"outcome\":1,\"payoutWei\":\"6694000000000000\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\",\"settleTxHash\":\"0xef0b241dc4f2824fc860bb002ca1a2d7e3190613b62e942fb8cddf31e4dcd9ba\",\"signature\":\"0x1964afd909e3b71bd4ea8ac4d9d5544840307688fb5d3bcdd6f675d0c47fbc8e79700ec179e646567587b7747a6611dc9024a585e73a26c3ad412ef00c10ec301b\",\"steps\":2},\"tier\":0}"
+          "expected": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":1,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790951937,\"gameId\":\"0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26\",\"idleDeadlineSec\":1790951158,\"n\":5,\"open\":10,\"path\":[{\"open\":4,\"x\":0,\"y\":0},{\"open\":7,\"x\":0,\"y\":1},{\"open\":10,\"x\":1,\"y\":1}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790952837,\"status\":\"cashed_out\",\"step\":2,\"terminal\":{\"clientSeed\":\"0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6\",\"outcome\":1,\"payoutWei\":\"6694000000000000\",\"serverSeed\":\"0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36\",\"settleTxHash\":\"0x5d790f1c532fb315567839d6381406099ef5d2acf55a3436e00222add1a2fefb\",\"signature\":\"0xa3a014d6c6ab22f8a66563b6ecbd00347a7cdb5321bb8e4826e9de63e2b58f9b7a8d9cc7d38092d7e1f34098b186eee35780ba70d65708b63724fb16900ed8db1b\",\"steps\":2},\"tier\":0}",
+          "actual": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":1,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790951937,\"gameId\":\"0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26\",\"idleDeadlineSec\":1790951158,\"n\":5,\"open\":10,\"path\":[{\"open\":4,\"x\":0,\"y\":0},{\"open\":7,\"x\":0,\"y\":1},{\"open\":10,\"x\":1,\"y\":1}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790952837,\"status\":\"cashed_out\",\"step\":2,\"terminal\":{\"clientSeed\":\"0xdbb79ebfb86d7663507f23ebf9e4ec0802bc9c9e1d6cda3ae373c777018fb6a6\",\"outcome\":1,\"payoutWei\":\"6694000000000000\",\"serverSeed\":\"0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36\",\"settleTxHash\":\"0x5d790f1c532fb315567839d6381406099ef5d2acf55a3436e00222add1a2fefb\",\"signature\":\"0xa3a014d6c6ab22f8a66563b6ecbd00347a7cdb5321bb8e4826e9de63e2b58f9b7a8d9cc7d38092d7e1f34098b186eee35780ba70d65708b63724fb16900ed8db1b\",\"steps\":2},\"tier\":0}"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the reveal answer is unchanged by the imports",
-          "expected": "{\"commitment\":\"0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e\",\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"reason\":\"settled\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\"}",
-          "actual": "{\"commitment\":\"0x57165bdd955c4ff57274abdd4d007b20e5e8d3510f00ae329c658544fc60e66e\",\"gameId\":\"0x985ed8a14a705ca8c18cf2ac450306cad1ec41c7afefbdaca40c80b59e800431\",\"reason\":\"settled\",\"serverSeed\":\"0xfdeefef909f218f7bbbf1dafde6477c5504fefd3fdfbe4d141dd887eca121a66\"}"
+          "expected": "{\"commitment\":\"0xbb582c214df6a99b68241b846d2dce82a9f616172c2147a520fb33606bacfa1e\",\"gameId\":\"0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26\",\"reason\":\"settled\",\"serverSeed\":\"0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36\"}",
+          "actual": "{\"commitment\":\"0xbb582c214df6a99b68241b846d2dce82a9f616172c2147a520fb33606bacfa1e\",\"gameId\":\"0xee13a192f982b2dac55d417617e843a4ac364e933fd408dd6ae2fe26271dde26\",\"reason\":\"settled\",\"serverSeed\":\"0xaf8708cccef3282818cf7b10dd1b3a9c2ac3188e45d3b1819cf0994cd1132c36\"}"
         },
         {
           "kind": "chain",
@@ -2279,19 +2279,19 @@
       "scenario": "07",
       "name": "invalid-move",
       "proves": "moves through a wall, off the grid, onto a visited cell or with a stale step are refused and change nothing",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 22, http 29, dom 9 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/07",
-      "startedAt": "2026-10-02T11:52:07Z",
-      "finishedAt": "2026-10-02T11:52:24Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/07",
+      "startedAt": "2026-10-02T14:24:10Z",
+      "finishedAt": "2026-10-02T14:24:27Z",
       "seconds": 17,
       "evidence": {
-        "gameId": "0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842",
-        "settleTx": "0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e"
+        "gameId": "0xcdcf1bc1a0055b6d673ec086a310b4bf5b8be72daa590bad62a6cf048463612d",
+        "settleTx": "0xd8e497c5e4d639ebba4b41c6613fb0693152a2573b6be51b7f91770d2e5c6625"
       },
       "assertions": [
         {
@@ -2375,13 +2375,13 @@
           "kind": "dom",
           "status": "PASS",
           "label": "refundable-amount before the refused moves",
-          "expected": "7300000000000000",
-          "actual": "7300000000000000"
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
         },
         {
           "kind": "dom",
           "status": "PASS",
-          "label": "the page does not offer the wall direction (move-S is not legal)",
+          "label": "the page does not offer the wall direction (move-W is not legal)",
           "expected": "false",
           "actual": "false"
         },
@@ -2501,8 +2501,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "the server's game read is unchanged by the refused moves",
-          "expected": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":0,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942834,\"gameId\":\"0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842\",\"idleDeadlineSec\":1790942055,\"n\":5,\"open\":3,\"path\":[{\"open\":4,\"x\":0,\"y\":0},{\"open\":3,\"x\":0,\"y\":1}],\"refundableWei\":\"7300000000000000\",\"settleDeadlineSec\":1790943734,\"status\":\"active\",\"step\":1,\"tier\":0}",
-          "actual": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":0,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790942834,\"gameId\":\"0x10e8b7408480116d82c2e8af534e6dd0d7451fd5dc9a36d8fc0034a1cab89842\",\"idleDeadlineSec\":1790942055,\"n\":5,\"open\":3,\"path\":[{\"open\":4,\"x\":0,\"y\":0},{\"open\":3,\"x\":0,\"y\":1}],\"refundableWei\":\"7300000000000000\",\"settleDeadlineSec\":1790943734,\"status\":\"active\",\"step\":1,\"tier\":0}"
+          "expected": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":1,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790951957,\"gameId\":\"0xcdcf1bc1a0055b6d673ec086a310b4bf5b8be72daa590bad62a6cf048463612d\",\"idleDeadlineSec\":1790951178,\"n\":5,\"open\":7,\"path\":[{\"open\":2,\"x\":0,\"y\":0},{\"open\":14,\"x\":1,\"y\":0},{\"open\":7,\"x\":1,\"y\":1}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790952857,\"status\":\"active\",\"step\":2,\"tier\":0}",
+          "actual": "{\"auto\":false,\"betWei\":\"10000000000000000\",\"cell\":{\"x\":1,\"y\":1},\"exitPayoutWei\":\"26088000000000000\",\"gameDeadlineSec\":1790951957,\"gameId\":\"0xcdcf1bc1a0055b6d673ec086a310b4bf5b8be72daa590bad62a6cf048463612d\",\"idleDeadlineSec\":1790951178,\"n\":5,\"open\":7,\"path\":[{\"open\":2,\"x\":0,\"y\":0},{\"open\":14,\"x\":1,\"y\":0},{\"open\":7,\"x\":1,\"y\":1}],\"refundableWei\":\"6694000000000000\",\"settleDeadlineSec\":1790952857,\"status\":\"active\",\"step\":2,\"tier\":0}"
         },
         {
           "kind": "chain",
@@ -2528,23 +2528,23 @@
         {
           "kind": "dom",
           "status": "PASS",
-          "label": "the board is still at step 1",
-          "expected": "1",
-          "actual": "1"
+          "label": "the board is still at step 2",
+          "expected": "2",
+          "actual": "2"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "refundable-amount is unchanged",
-          "expected": "7300000000000000",
-          "actual": "7300000000000000"
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "the current cell is unchanged",
-          "expected": "cell-0-1",
-          "actual": "cell-0-1"
+          "expected": "cell-1-1",
+          "actual": "cell-1-1"
         },
         {
           "kind": "dom",
@@ -2564,15 +2564,15 @@
           "kind": "dom",
           "status": "PASS",
           "label": "result-payout shows the amount paid",
-          "expected": "7300000000000000",
-          "actual": "7300000000000000"
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "result-net shows payout minus bet",
-          "expected": "-2700000000000000",
-          "actual": "-2700000000000000"
+          "expected": "-3306000000000000",
+          "actual": "-3306000000000000"
         },
         {
           "kind": "chain",
@@ -2599,15 +2599,15 @@
           "kind": "chain",
           "status": "PASS",
           "label": "GameSettled.steps",
-          "expected": "1",
-          "actual": "1"
+          "expected": "2",
+          "actual": "2"
         },
         {
           "kind": "chain",
           "status": "PASS",
           "label": "GameSettled.payout",
-          "expected": "7300000000000000",
-          "actual": "7300000000000000"
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
         },
         {
           "kind": "chain",
@@ -2620,8 +2620,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the player's balance changed by exactly the payout",
-          "expected": "9999997042895795555575",
-          "actual": "9999997042895795555575"
+          "expected": "9999996436878312906739",
+          "actual": "9999996436878312906739"
         },
         {
           "kind": "chain",
@@ -2634,8 +2634,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a",
-          "actual": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a"
+          "expected": "0xa43287ee57a627acd1c43cc3d83c71b59bff7b3712b9669b08c226e94356de23",
+          "actual": "0xa43287ee57a627acd1c43cc3d83c71b59bff7b3712b9669b08c226e94356de23"
         },
         {
           "kind": "http",
@@ -2655,15 +2655,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.payoutWei is the settled payout",
-          "expected": "7300000000000000",
-          "actual": "7300000000000000"
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e",
-          "actual": "0x314a58e7aff3e5af0f5de034e042bb251fae5b4321414f14e445e78e2c70677e"
+          "expected": "0xd8e497c5e4d639ebba4b41c6613fb0693152a2573b6be51b7f91770d2e5c6625",
+          "actual": "0xd8e497c5e4d639ebba4b41c6613fb0693152a2573b6be51b7f91770d2e5c6625"
         },
         {
           "kind": "http",
@@ -2676,22 +2676,22 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a",
-          "actual": "0x9a89371235cdfe54d35d5f448d6a6745a8e31145f25fe2aa9f935fbeb7e80d0a"
+          "expected": "0xa43287ee57a627acd1c43cc3d83c71b59bff7b3712b9669b08c226e94356de23",
+          "actual": "0xa43287ee57a627acd1c43cc3d83c71b59bff7b3712b9669b08c226e94356de23"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0xa06aa14768f08f07ec6258f709790f31f8e33503905497807e77dc6be25a2f3e",
-          "actual": "0xa06aa14768f08f07ec6258f709790f31f8e33503905497807e77dc6be25a2f3e"
+          "expected": "0xd2954aae274c428a3297b10a8502cd6d5b8f761c677278cc9e1a753f0e8454e2",
+          "actual": "0xd2954aae274c428a3297b10a8502cd6d5b8f761c677278cc9e1a753f0e8454e2"
         },
         {
           "kind": "chain",
           "status": "PASS",
           "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
-          "expected": "100002700000000000000",
-          "actual": "100002700000000000000"
+          "expected": "100003306000000000000",
+          "actual": "100003306000000000000"
         },
         {
           "kind": "chain",
@@ -2705,7 +2705,7 @@
           "status": "PASS",
           "label": "accounting: the balance covers totalReserved + totalPending",
           "expected": ">= 0",
-          "actual": "100002700000000000000"
+          "actual": "100003306000000000000"
         },
         {
           "kind": "chain",
@@ -2726,20 +2726,20 @@
       "scenario": "08",
       "name": "multi-tab",
       "proves": "a second tab resumes the game, and of two different moves sent for the same step exactly one counts",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 19, http 17, dom 15 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/08",
-      "startedAt": "2026-10-02T11:52:24Z",
-      "finishedAt": "2026-10-02T11:52:42Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/08",
+      "startedAt": "2026-10-02T14:24:27Z",
+      "finishedAt": "2026-10-02T14:24:45Z",
       "seconds": 18,
       "evidence": {
-        "gameId": "0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722",
+        "gameId": "0x672958703464584082a450f51e359a7564d8a43d771f693a13a3e81b4b9da90b",
         "acceptedTab": "A",
-        "settleTx": "0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28"
+        "settleTx": "0x56c506551ab8bc417e29e04694da2b41da54a88202c12a399cf91064c40da811"
       },
       "assertions": [
         {
@@ -2809,22 +2809,22 @@
           "kind": "dom",
           "status": "PASS",
           "label": "tab B resumes the same game from localStorage",
-          "expected": "0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722",
-          "actual": "0x8bcf4b6bae1696e8cd973e1fa8b41fbfbb2a76620d61824bba7e130faeb92722"
+          "expected": "0x672958703464584082a450f51e359a7564d8a43d771f693a13a3e81b4b9da90b",
+          "actual": "0x672958703464584082a450f51e359a7564d8a43d771f693a13a3e81b4b9da90b"
         },
         {
           "kind": "dom",
           "status": "PASS",
-          "label": "tab B resumes at step 7",
-          "expected": "7",
-          "actual": "7"
+          "label": "tab B resumes at step 2",
+          "expected": "2",
+          "actual": "2"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "tab B shows the same refundable amount",
-          "expected": "4340000000000000",
-          "actual": "4340000000000000"
+          "expected": "6694000000000000",
+          "actual": "6694000000000000"
         },
         {
           "kind": "dom",
@@ -2836,9 +2836,9 @@
         {
           "kind": "http",
           "status": "PASS",
-          "label": "each tab's page sent one move, both for step 7",
-          "expected": "7 7",
-          "actual": "7 7"
+          "label": "each tab's page sent one move, both for step 2",
+          "expected": "2 2",
+          "actual": "2 2"
         },
         {
           "kind": "http",
@@ -2872,29 +2872,29 @@
           "kind": "http",
           "status": "PASS",
           "label": "the server holds one more step, not two",
-          "expected": "active 8",
-          "actual": "active 8"
+          "expected": "active 3",
+          "actual": "active 3"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the server's path has one cell per step",
-          "expected": "9",
-          "actual": "9"
+          "expected": "4",
+          "actual": "4"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "tab A shows the server's current cell",
-          "expected": "cell-2-2",
-          "actual": "cell-2-2"
+          "expected": "cell-1-0",
+          "actual": "cell-1-0"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "tab B shows the server's current cell",
-          "expected": "cell-2-2",
-          "actual": "cell-2-2"
+          "expected": "cell-1-0",
+          "actual": "cell-1-0"
         },
         {
           "kind": "dom",
@@ -2913,16 +2913,16 @@
         {
           "kind": "dom",
           "status": "PASS",
-          "label": "tab A shows the refund of step 8",
-          "expected": "3980000000000000",
-          "actual": "3980000000000000"
+          "label": "tab A shows the refund of step 3",
+          "expected": "6138000000000000",
+          "actual": "6138000000000000"
         },
         {
           "kind": "dom",
           "status": "PASS",
-          "label": "tab B shows the refund of step 8",
-          "expected": "3980000000000000",
-          "actual": "3980000000000000"
+          "label": "tab B shows the refund of step 3",
+          "expected": "6138000000000000",
+          "actual": "6138000000000000"
         },
         {
           "kind": "dom",
@@ -2935,15 +2935,15 @@
           "kind": "dom",
           "status": "PASS",
           "label": "result-payout shows the amount paid",
-          "expected": "3980000000000000",
-          "actual": "3980000000000000"
+          "expected": "6138000000000000",
+          "actual": "6138000000000000"
         },
         {
           "kind": "dom",
           "status": "PASS",
           "label": "result-net shows payout minus bet",
-          "expected": "-6020000000000000",
-          "actual": "-6020000000000000"
+          "expected": "-3862000000000000",
+          "actual": "-3862000000000000"
         },
         {
           "kind": "dom",
@@ -2956,8 +2956,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "tab B shows the same payout",
-          "expected": "3980000000000000",
-          "actual": "3980000000000000"
+          "expected": "6138000000000000",
+          "actual": "6138000000000000"
         },
         {
           "kind": "chain",
@@ -2984,15 +2984,15 @@
           "kind": "chain",
           "status": "PASS",
           "label": "GameSettled.steps",
-          "expected": "8",
-          "actual": "8"
+          "expected": "3",
+          "actual": "3"
         },
         {
           "kind": "chain",
           "status": "PASS",
           "label": "GameSettled.payout",
-          "expected": "3980000000000000",
-          "actual": "3980000000000000"
+          "expected": "6138000000000000",
+          "actual": "6138000000000000"
         },
         {
           "kind": "chain",
@@ -3005,8 +3005,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the player's balance changed by exactly the payout",
-          "expected": "9999993722895795555575",
-          "actual": "9999993722895795555575"
+          "expected": "9999995880895795555575",
+          "actual": "9999995880895795555575"
         },
         {
           "kind": "chain",
@@ -3019,8 +3019,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the settled server seed is the one the route was planned with",
-          "expected": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7",
-          "actual": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7"
+          "expected": "0xdc8f282cf3aa8c6e100ec5d2c2aa0c3b680ff6c159b95f95a3e0a7ccd6b0f25d",
+          "actual": "0xdc8f282cf3aa8c6e100ec5d2c2aa0c3b680ff6c159b95f95a3e0a7ccd6b0f25d"
         },
         {
           "kind": "http",
@@ -3040,15 +3040,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "terminal.payoutWei is the settled payout",
-          "expected": "3980000000000000",
-          "actual": "3980000000000000"
+          "expected": "6138000000000000",
+          "actual": "6138000000000000"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "terminal.settleTxHash is the settlement transaction",
-          "expected": "0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28",
-          "actual": "0xc6a6a1f9a7e7843e3e9a8dcb92d94540b4317cdbb282e4220942882773bddf28"
+          "expected": "0x56c506551ab8bc417e29e04694da2b41da54a88202c12a399cf91064c40da811",
+          "actual": "0x56c506551ab8bc417e29e04694da2b41da54a88202c12a399cf91064c40da811"
         },
         {
           "kind": "http",
@@ -3061,22 +3061,22 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed server seed is the settled one",
-          "expected": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7",
-          "actual": "0xaf76f719b43e0dd8290d0af2102331c0d8c72bfc41839f845c67e7bb701e8cd7"
+          "expected": "0xdc8f282cf3aa8c6e100ec5d2c2aa0c3b680ff6c159b95f95a3e0a7ccd6b0f25d",
+          "actual": "0xdc8f282cf3aa8c6e100ec5d2c2aa0c3b680ff6c159b95f95a3e0a7ccd6b0f25d"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0x45f01eff350f8b6b95576c26da65a61a0f8d0e02e3ca77e5bad3a744ea7d81ee",
-          "actual": "0x45f01eff350f8b6b95576c26da65a61a0f8d0e02e3ca77e5bad3a744ea7d81ee"
+          "expected": "0x469f34a0bf728100fad8080fffccf3e5da398049d0ff9d4bb3eac2ecc8f2577f",
+          "actual": "0x469f34a0bf728100fad8080fffccf3e5da398049d0ff9d4bb3eac2ecc8f2577f"
         },
         {
           "kind": "chain",
           "status": "PASS",
           "label": "accounting: contract balance = funded + bets - payouts - reclaims + pending (1 game(s))",
-          "expected": "100006020000000000000",
-          "actual": "100006020000000000000"
+          "expected": "100003862000000000000",
+          "actual": "100003862000000000000"
         },
         {
           "kind": "chain",
@@ -3090,7 +3090,7 @@
           "status": "PASS",
           "label": "accounting: the balance covers totalReserved + totalPending",
           "expected": ">= 0",
-          "actual": "100006020000000000000"
+          "actual": "100003862000000000000"
         },
         {
           "kind": "chain",
@@ -3111,15 +3111,15 @@
       "scenario": "09",
       "name": "exploratory-agent",
       "proves": "advisory: after a model-driven agent has tried to cheat, the contract's accounting and the server's access rules still hold",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "NOT-RUN",
       "reason": "advisory and on request only: aside exec is model-driven and billed to the user's model account (scripts/e2e-aside.sh --with-exec)",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/09",
-      "startedAt": "2026-10-02T11:52:42Z",
-      "finishedAt": "2026-10-02T11:52:42Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/09",
+      "startedAt": "2026-10-02T14:24:45Z",
+      "finishedAt": "2026-10-02T14:24:45Z",
       "seconds": 0,
       "evidence": {},
       "assertions": [],
@@ -3130,16 +3130,16 @@
       "scenario": "11",
       "name": "dev-wallet-gating",
       "proves": "the dev wallet is offered only when /api/config says devWallet, with the same build",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 2, http 4, dom 8 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/11",
-      "startedAt": "2026-10-02T11:52:42Z",
-      "finishedAt": "2026-10-02T11:52:50Z",
-      "seconds": 8,
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/11",
+      "startedAt": "2026-10-02T14:24:45Z",
+      "finishedAt": "2026-10-02T14:24:56Z",
+      "seconds": 11,
       "evidence": {},
       "assertions": [
         {
@@ -3252,19 +3252,19 @@
       "scenario": "10",
       "name": "cli-reclaim",
       "proves": "with the server dead, anyone reclaims the bet for the player with scripts/reclaim.sh after the settle deadline",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 26, http 9, dom 8 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/10",
-      "startedAt": "2026-10-02T11:52:50Z",
-      "finishedAt": "2026-10-02T11:53:13Z",
-      "seconds": 23,
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/10",
+      "startedAt": "2026-10-02T14:24:56Z",
+      "finishedAt": "2026-10-02T14:25:21Z",
+      "seconds": 25,
       "evidence": {
-        "gameId": "0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15",
-        "reclaimTx": "0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4"
+        "gameId": "0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce",
+        "reclaimTx": "0x0fd7a7b3c5a7cfa11a3fda2243d7122109a5114144050e348b7ffba584ced38c"
       },
       "assertions": [
         {
@@ -3356,7 +3356,7 @@
           "status": "PASS",
           "label": "scripts/reclaim.sh names the refusal DeadlineNotReached",
           "expected": "DeadlineNotReached",
-          "actual": "reclaim.sh: DeadlineNotReached: the settle deadline of 0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15 has not passed yet"
+          "actual": "reclaim.sh: DeadlineNotReached: the settle deadline of 0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce has not passed yet"
         },
         {
           "kind": "chain",
@@ -3418,8 +3418,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "scripts/reclaim.sh printed the transaction it sent",
-          "expected": "0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4",
-          "actual": "reclaimed 0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15 tx 0x75bc1c6065de9d28cc69a8c8c1a43c6c7be89852b72cec84354134bf9c9049d4"
+          "expected": "0x0fd7a7b3c5a7cfa11a3fda2243d7122109a5114144050e348b7ffba584ced38c",
+          "actual": "reclaimed 0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce tx 0x0fd7a7b3c5a7cfa11a3fda2243d7122109a5114144050e348b7ffba584ced38c"
         },
         {
           "kind": "chain",
@@ -3433,7 +3433,7 @@
           "status": "PASS",
           "label": "the second refusal is GameNotActive",
           "expected": "GameNotActive",
-          "actual": "reclaim.sh: GameNotActive: 0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15 is not an active game (never created, settled, or already reclaimed)"
+          "actual": "reclaim.sh: GameNotActive: 0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce is not an active game (never created, settled, or already reclaimed)"
         },
         {
           "kind": "dom",
@@ -3467,15 +3467,15 @@
           "kind": "http",
           "status": "PASS",
           "label": "the revealed seed is the one the route was planned with",
-          "expected": "0x7f4bfd40c6ffdaa25427ba571538ff99c55261a5a1f48ffe8c0496e85de3af67",
-          "actual": "0x7f4bfd40c6ffdaa25427ba571538ff99c55261a5a1f48ffe8c0496e85de3af67"
+          "expected": "0x2d296bdfefb103f733fccc454f087a3a1fea87c8ace53b038abc24865ba22b5b",
+          "actual": "0x2d296bdfefb103f733fccc454f087a3a1fea87c8ace53b038abc24865ba22b5b"
         },
         {
           "kind": "http",
           "status": "PASS",
           "label": "the revealed commitment is the one on chain",
-          "expected": "0x57d6c45bb0e5ee5102b25717b9350a66d4cad2f46a745058327782b61ca49575",
-          "actual": "0x57d6c45bb0e5ee5102b25717b9350a66d4cad2f46a745058327782b61ca49575"
+          "expected": "0x32af8e6f3cc485ca6a7aa52fe3cf83436182a97727bc4b295f5bb7c745c79b6c",
+          "actual": "0x32af8e6f3cc485ca6a7aa52fe3cf83436182a97727bc4b295f5bb7c745c79b6c"
         },
         {
           "kind": "http",
@@ -3537,8 +3537,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "verify-link points at /verify/<gameId>",
-          "expected": "/verify/0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15",
-          "actual": "/verify/0x2c85419c679d0dda1943f4b20548d353fa7e360578b16de432827784cd7fab15"
+          "expected": "/verify/0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce",
+          "actual": "/verify/0x5d22f3e0068566516b0cc87490e95645f30658f75f8922bcb18d3b8798b76bce"
         },
         {
           "kind": "dom",
@@ -3580,19 +3580,19 @@
       "scenario": "05",
       "name": "server-down-reclaim",
       "proves": "with the server dead, the page that was open reclaims the bet itself after the settle deadline",
-      "runId": "20261002T115029Z-80672",
+      "runId": "20261002T142231Z-60984",
       "result": "PASS",
       "reason": "chain 20, http 6, dom 11 assertions passed",
       "tableMode": "production",
       "inputPath": "repl",
       "readPath": "repl",
-      "logs": ".data/e2e-aside/20261002T115029Z-80672/05",
-      "startedAt": "2026-10-02T11:53:13Z",
-      "finishedAt": "2026-10-02T11:53:28Z",
+      "logs": ".data/e2e-aside/20261002T142231Z-60984/05",
+      "startedAt": "2026-10-02T14:25:21Z",
+      "finishedAt": "2026-10-02T14:25:36Z",
       "seconds": 15,
       "evidence": {
-        "gameId": "0x7d70295783aadb2d9edf8fbd0716b50720f452a154bfdc9328d2c73eedab352b",
-        "reclaimTx": "0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d"
+        "gameId": "0x60cd30168b991f5fa937634577c6895d52b7ec008c6f14a3c67f3d098b7164a2",
+        "reclaimTx": "0x96fa6758cb8d9b92eab1ef4ec04009577db1e1168aeb365bbfb90d46009aef4b"
       },
       "assertions": [
         {
@@ -3669,8 +3669,8 @@
           "kind": "http",
           "status": "PASS",
           "label": "the server's settleDeadlineSec is the contract's settleDeadline",
-          "expected": "1790943800",
-          "actual": "1790943800"
+          "expected": "1790952928",
+          "actual": "1790952928"
         },
         {
           "kind": "http",
@@ -3704,8 +3704,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "reclaim-countdown carries the contract's settle deadline",
-          "expected": "1790943800",
-          "actual": "1790943800"
+          "expected": "1790952928",
+          "actual": "1790952928"
         },
         {
           "kind": "dom",
@@ -3718,8 +3718,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "the remaining seconds are deadline + 1 - block time",
-          "expected": "1798",
-          "actual": "1798"
+          "expected": "1797",
+          "actual": "1797"
         },
         {
           "kind": "dom",
@@ -3739,8 +3739,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the chain clock is past the settle deadline",
-          "expected": "> 1790943800",
-          "actual": "1790943802"
+          "expected": "> 1790952928",
+          "actual": "1790952931"
         },
         {
           "kind": "dom",
@@ -3802,8 +3802,8 @@
           "kind": "chain",
           "status": "PASS",
           "label": "the player's balance grew by the bet minus the transaction fee",
-          "expected": "9999999693436684353845",
-          "actual": "9999999693436684353845"
+          "expected": "9999999694521403034755",
+          "actual": "9999999694521403034755"
         },
         {
           "kind": "chain",
@@ -3851,8 +3851,8 @@
           "kind": "dom",
           "status": "PASS",
           "label": "settle-tx names the reclaim transaction",
-          "expected": "0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d",
-          "actual": "0x1eff2540f1c4969cc90667a0c089fa2fc1bee349509342aabca577976dfeb61d"
+          "expected": "0x96fa6758cb8d9b92eab1ef4ec04009577db1e1168aeb365bbfb90d46009aef4b",
+          "actual": "0x96fa6758cb8d9b92eab1ef4ec04009577db1e1168aeb365bbfb90d46009aef4b"
         }
       ],
       "counts": {

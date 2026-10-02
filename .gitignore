@@ -37,3 +37,7 @@ e2e/aside/out/production/scenarios/
 # rewritten by every fixture-table scenario run (verify:all); the production-table run stays tracked
 e2e/aside/out/results.json
 e2e/aside/out/report.md
+
+# hook state written when a shell happens to sit in a subdirectory
+**/.omc/
+!/.omc/

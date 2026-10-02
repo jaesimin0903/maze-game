@@ -1,7 +1,5 @@
+import { GameApp } from '../src/client/GameApp';
+
 export default function HomePage() {
-  return (
-    <main>
-      <h1>Maze Bet</h1>
-    </main>
-  );
+  return <GameApp />;
 }

@@ -29,3 +29,6 @@ coverage/
 
 # forge writes fuzz/invariant failure records relative to the cwd, not --root
 /cache/
+
+# aside scenario run logs and screenshots (results.json and report.md stay tracked)
+e2e/aside/out/scenarios/

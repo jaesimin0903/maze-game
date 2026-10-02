@@ -1,0 +1,372 @@
+{
+  "schema": 1,
+  "probedAt": "2026-10-02T05:12:50Z",
+  "aside": {
+    "path": "/Users/jaemin/.local/bin/aside",
+    "version": "1.26.810.1915",
+    "usable": true,
+    "reason": null,
+    "output": null,
+    "browserProcessSeen": true,
+    "signedInAccountShown": true,
+    "needsRunningBrowser": "not tested: testing it would mean quitting the real browser of the user. The browser was running and an account was signed in when every check below was made.",
+    "whenAccountUnknown": "Account not found: u999 Run 'aside account list' to see available accounts.",
+    "exitCodeWhenCodeThrows": "0 (status line: [error])"
+  },
+  "probePage": "http://127.0.0.1:3050",
+  "repl": {
+    "globals": {
+      "AggregateError": "function/2",
+      "Array": "function/1",
+      "ArrayBuffer": "function/1",
+      "BigInt": "function/1",
+      "BigInt64Array": "function/3",
+      "BigUint64Array": "function/3",
+      "Boolean": "function/1",
+      "Buffer": "function/3",
+      "DataView": "function/1",
+      "Date": "function/7",
+      "Error": "function/1",
+      "EvalError": "function/1",
+      "FinalizationRegistry": "function/1",
+      "Float16Array": "function/3",
+      "Float32Array": "function/3",
+      "Float64Array": "function/3",
+      "Function": "function/1",
+      "Infinity": "number",
+      "Int16Array": "function/3",
+      "Int32Array": "function/3",
+      "Int8Array": "function/3",
+      "InternalError": "function/1",
+      "Intl": "object",
+      "Iterator": "function/0",
+      "JSON": "object",
+      "Map": "function/0",
+      "Math": "object",
+      "NaN": "number",
+      "Number": "function/1",
+      "Object": "function/1",
+      "Promise": "function/1",
+      "Proxy": "function/2",
+      "RangeError": "function/1",
+      "ReferenceError": "function/1",
+      "Reflect": "object",
+      "RegExp": "function/2",
+      "Set": "function/0",
+      "SharedArrayBuffer": "function/1",
+      "String": "function/1",
+      "Symbol": "function/0",
+      "SyntaxError": "function/1",
+      "TextDecoder": "function/0",
+      "TextEncoder": "function/0",
+      "TypeError": "function/1",
+      "URIError": "function/1",
+      "URL": "function/1",
+      "URLSearchParams": "function/0",
+      "Uint16Array": "function/3",
+      "Uint32Array": "function/3",
+      "Uint8Array": "function/3",
+      "Uint8ClampedArray": "function/3",
+      "WeakMap": "function/0",
+      "WeakRef": "function/1",
+      "WeakSet": "function/0",
+      "__aside": "object",
+      "__asideBufferModule": "object",
+      "annotatedScreenshot": "function/1",
+      "applePasswords": "object",
+      "aside": "object",
+      "atob": "function/1",
+      "attachActiveBrowserTab": "function/0",
+      "attachBrowserTab": "function/1",
+      "blockToMarkdown": "function/1",
+      "btoa": "function/1",
+      "captcha": "object",
+      "chrome": "object",
+      "clearInterval": "function/1",
+      "clearTimeout": "function/1",
+      "closeTab": "function/1",
+      "console": "object",
+      "cua": "object",
+      "decodeURI": "function/1",
+      "decodeURIComponent": "function/1",
+      "display": "function/1",
+      "encodeURI": "function/1",
+      "encodeURIComponent": "function/1",
+      "escape": "function/1",
+      "eval": "function/1",
+      "fetch": "function/1",
+      "fs": "object",
+      "getTabByTargetId": "function/1",
+      "globalThis": "object",
+      "gmail": "object",
+      "googleAccounts": "object",
+      "googleDocs": "object",
+      "googlePeople": "object",
+      "googleSearch": "object",
+      "googleSheets": "object",
+      "imageSearch": "object",
+      "imagegen": "object",
+      "installPageScript": "function/3",
+      "isFinite": "function/1",
+      "isNaN": "function/1",
+      "linkedin": "object",
+      "listBrowserTabs": "function/0",
+      "markdownToBlockSpecs": "function/1",
+      "notion": "object",
+      "openTab": "function/1",
+      "page": "object",
+      "parseFloat": "function/1",
+      "parseInt": "function/2",
+      "path": "object",
+      "performance": "object",
+      "pwd": "string",
+      "queueMicrotask": "function/1",
+      "setInterval": "function/0",
+      "setTimeout": "function/0",
+      "slack": "object",
+      "sleep": "function/1",
+      "snapshot": "function/1",
+      "structuredClone": "function/2",
+      "tabs": "object",
+      "twitter": "object",
+      "undefined": "undefined",
+      "unescape": "function/1",
+      "youtube": "object"
+    },
+    "page": {
+      "tag": "[object AsidePage]",
+      "ownKeys": [
+        "cdp",
+        "frameManager",
+        "targetId",
+        "modifierState",
+        "mouse",
+        "keyboard",
+        "events",
+        "browser"
+      ],
+      "targetIdType": "string",
+      "isTheGlobalPage": true,
+      "trackedInTabs": 1,
+      "methods": [
+        "goto",
+        "reload",
+        "goBack",
+        "goForward",
+        "url",
+        "title",
+        "content",
+        "close",
+        "evaluate",
+        "$",
+        "$$",
+        "$$eval",
+        "locator",
+        "getByText",
+        "getByRole",
+        "waitForSelector",
+        "waitForLoadState",
+        "click",
+        "fill",
+        "screenshot",
+        "pdf",
+        "bringToFront",
+        "mainFrame",
+        "frames",
+        "snapshot",
+        "on",
+        "off"
+      ]
+    },
+    "locator": {
+      "methods": [
+        "click",
+        "dblclick",
+        "fill",
+        "type",
+        "press",
+        "pressSequentially",
+        "textContent",
+        "innerText",
+        "innerHTML",
+        "getAttribute",
+        "inputValue",
+        "isVisible",
+        "isEnabled",
+        "isDisabled",
+        "count",
+        "first",
+        "nth",
+        "all",
+        "waitFor",
+        "evaluate",
+        "hover",
+        "focus",
+        "selectOption",
+        "check",
+        "dispatchEvent",
+        "boundingBox",
+        "scrollIntoViewIfNeeded",
+        "screenshot"
+      ]
+    },
+    "keyboard": {
+      "methods": [
+        "press",
+        "type",
+        "down",
+        "up",
+        "insertText"
+      ]
+    },
+    "mouse": {
+      "methods": [
+        "click",
+        "dblclick",
+        "move",
+        "down",
+        "up",
+        "wheel"
+      ]
+    },
+    "tabsIsArray": true,
+    "pageGlobalBefore": "null"
+  },
+  "capabilities": {
+    "introspect": {
+      "ok": true,
+      "call": "Object.getOwnPropertyNames(globalThis); typeof page[name] over a list of candidate names",
+      "evidence": "116 globals; openTab returns [object AsidePage] with 27 of the candidate methods"
+    },
+    "session": {
+      "ok": true,
+      "call": "aside repl < fifo, one statement per line",
+      "evidence": "a global set by one statement was read by the next; lib/prelude.js loaded"
+    },
+    "openTab": {
+      "ok": true,
+      "call": "openTab(url)",
+      "evidence": "the page server received GET / after the call"
+    },
+    "waitForSelector": {
+      "ok": true,
+      "call": "poll page.evaluate(querySelector) until present",
+      "evidence": "an element added 700 ms after load was found after 4 ms"
+    },
+    "readDom": {
+      "ok": true,
+      "call": "page.evaluate(fn, arg) returning text and attributes",
+      "evidence": "text \"known text 0.95\" and data-wei 950000000000000000 came back to the shell"
+    },
+    "evalInPage": {
+      "ok": true,
+      "call": "page.evaluate(fn, arg)",
+      "evidence": "an argument went in and an object with document.title came back"
+    },
+    "localStorage": {
+      "ok": true,
+      "call": "page.evaluate reading and removing localStorage keys that start with maze:",
+      "evidence": "a key was written, listed, removed and gone"
+    },
+    "click": {
+      "ok": true,
+      "call": "page.locator('[data-testid=\"...\"]').click()",
+      "evidence": "the page server received one trusted click"
+    },
+    "clickRefusedWhenDisabled": {
+      "ok": true,
+      "call": "M.click waits for an enabled element",
+      "evidence": "a disabled button was reported as disabled and received no click"
+    },
+    "fill": {
+      "ok": true,
+      "call": "page.locator(sel).fill(value)",
+      "evidence": "a native input listener saw \"0.05\" (events: input)"
+    },
+    "select": {
+      "ok": true,
+      "call": "page.locator(sel).selectOption(value)",
+      "evidence": "the page's change listener saw \"3\""
+    },
+    "pressKey": {
+      "ok": true,
+      "call": "page.keyboard.press('ArrowRight')",
+      "evidence": "a window keydown listener saw code ArrowRight"
+    },
+    "reload": {
+      "ok": true,
+      "call": "page.reload(), then wait for an element",
+      "evidence": "the page server received one more GET / and the page came back as a new load"
+    },
+    "navigate": {
+      "ok": true,
+      "call": "page.goto(url, { waitUntil: 'load' })",
+      "evidence": "the tab went from / to /second and the second page was read"
+    },
+    "multiTab": {
+      "ok": true,
+      "call": "openTab twice; each returned object addresses its own tab",
+      "evidence": "two tabs with different page ids were read one after the other"
+    },
+    "parallelClicks": {
+      "ok": true,
+      "call": "Promise.all of locator.click() in two tabs",
+      "evidence": "each tab's page reported one click, the background tab included"
+    },
+    "screenshot": {
+      "ok": true,
+      "call": "page.screenshot({ path }) inside the session directory",
+      "evidence": "a PNG of 42358 bytes was written and copied to .data/e2e-aside/probe/probe-shot.png"
+    },
+    "closeTab": {
+      "ok": true,
+      "call": "closeTab(page)",
+      "evidence": "the closed tab's page stopped reporting to the page server; the other tab kept reporting"
+    },
+    "tabsClosedWhenSessionEnds": {
+      "ok": true,
+      "call": "exit with a tab open",
+      "evidence": "the tab stopped reporting once the session had quit"
+    },
+    "tabSurvivesInvocation": {
+      "ok": false,
+      "call": "aside repl \"await openTab(url)\"",
+      "evidence": "the tab stopped reporting when the command returned: a scenario must stay inside one session"
+    },
+    "tabsClosedWhenStdinCloses": {
+      "ok": false,
+      "call": "end of input without exit",
+      "evidence": "the tab kept reporting after the input of its session had ended"
+    },
+    "tabsClosedWhenSessionKilled": {
+      "ok": false,
+      "call": "SIGTERM to the aside repl process",
+      "evidence": "the tab kept reporting after the process of its session was stopped"
+    },
+    "leftoverTabClosable": {
+      "ok": true,
+      "call": "attachBrowserTab(targetId), then window.close() in the page",
+      "evidence": "every tab a dead session had left open was closed this way (states: closed closed); it works only for a tab that never navigated"
+    },
+    "execClick": {
+      "ok": null,
+      "call": "aside exec \"<explicit step>\"",
+      "evidence": "not run: model-driven, non-deterministic and billed to the user's model account; the REPL covers every step. MAZE_E2E_PROBE_EXEC=1 runs it"
+    }
+  },
+  "paths": {
+    "input": "repl",
+    "read": "repl",
+    "inputRule": "repl when session, openTab, click, fill and evalInPage are verified; otherwise the scenario is BLOCKED (aside exec is not automated)",
+    "readRule": "A = repl reads the DOM when readDom is verified; otherwise B = TestBeacon and GET /api/test/ui-snapshot"
+  },
+  "notes": [
+    "A scenario is one aside repl session fed over stdin: a tab does not outlive the invocation that opened it.",
+    "aside repl exits 0 even when the code threw; only the status line [ok | Nms] or [error | Nms] tells.",
+    "page.goto with its default wait can time out on a page without interactive elements; { waitUntil: \"load\" } does not.",
+    "locator.waitFor waits for visibility by default, so an empty element never satisfies it; the suite polls page.evaluate instead.",
+    "page.screenshot may only write inside the session directory the REPL reports as pwd.",
+    "Only a session that quits with exit closes its tabs. A tab left by a dead session can be closed from outside only with window.close() in the page, which works only while the tab has never navigated; closeTab and page.close on an attached tab only detach it, and chrome.tabs.remove is refused in the REPL.",
+    "The REPL also exposes globals connected to the accounts of the user (mail, chat, documents, passwords). The suite calls none of them."
+  ]
+}

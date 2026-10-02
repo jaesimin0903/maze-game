@@ -397,30 +397,35 @@ describe('a game the server could not end in time', () => {
 });
 
 describe('ticket policy', () => {
-  it('X3: one address gets at most 10 tickets per 60 chain seconds', async () => {
-    for (let i = 0; i < 10; i++) await requestTicket();
+  it('X3: at most 10 ticket requests per address per 60 chain seconds', async () => {
     const body = { player: PLAYERS[0], tier: 0, sessionTokenHash: newToken().sessionTokenHash };
+    // The first request issues a ticket; while it is outstanding the rest are ALREADY_ACTIVE
+    // (one live ticket per address, plan §7.3), but every request still counts toward the limit.
+    expect((await api.ticket(body)).status).toBe(201);
+    for (let i = 1; i < 10; i++) expectError(await api.ticket(body), 409, 'ALREADY_ACTIVE');
     expectError(await api.ticket(body), 429, 'RATE_LIMITED');
     // Another address is not affected.
     expect((await api.ticket({ ...body, player: PLAYERS[1] })).status).toBe(201);
 
-    env.advance(60);
+    // Once the ticket has expired and the window has passed, the address may request again.
+    env.advance(env.table.timing.ticketExpirySec + 1);
     expect((await api.ticket(body)).status).toBe(201);
   });
 
   it('X3 / X4: tickets reveal only hashes of fresh random seeds', async () => {
     const seeds = new Set<Hex>();
     const commitments = new Set<Hex>();
-    for (let i = 0; i < 10; i++) {
-      const { ticket } = await requestTicket();
+    // One live ticket per address, so each ticket is for a distinct player.
+    for (const player of PLAYERS) {
+      const { ticket } = await requestTicket({ player });
       seeds.add(env.container.service.get(ticket.gameId)!.serverSeed);
       commitments.add(ticket.commitment);
       expect(JSON.stringify(ticket)).not.toContain(
         env.container.service.get(ticket.gameId)!.serverSeed.slice(2),
       );
     }
-    expect(seeds.size).toBe(10);
-    expect(commitments.size).toBe(10);
+    expect(seeds.size).toBe(PLAYERS.length);
+    expect(commitments.size).toBe(PLAYERS.length);
   });
 
   it('ALREADY_ACTIVE while the address has a game that is active on chain', async () => {

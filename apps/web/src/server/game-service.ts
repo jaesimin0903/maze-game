@@ -157,8 +157,12 @@ export class GameService {
   private readonly unsettled = new Set<Hex>();
   /** Games the server knows to be `Active` on chain, by lower-cased player address. */
   private readonly activeByPlayer = new Map<string, Set<Hex>>();
+  /** Game ids of tickets issued to each lower-cased player address, for the live-entry check. */
+  private readonly ticketsByPlayer = new Map<string, Set<Hex>>();
   private readonly ticketTimes = new Map<string, number[]>();
   private readonly locks = new KeyedMutex();
+  /** Serializes ticket issuance per address so the live-entry check and its reservation are atomic. */
+  private readonly ticketLocks = new KeyedMutex();
   private readonly missedWindow = new Set<Hex>();
   private hooks: GameServiceHooks = {};
 
@@ -226,50 +230,56 @@ export class GameService {
     const player = getAddress(body.player);
     const playerKey = player.toLowerCase();
 
-    const now = await this.clock.chainNow();
-    this.countTicket(playerKey, now);
-    // Checked here only; the contract does not enforce it (plan §7.3). The answer follows the
-    // chain rather than the worker's last pass: when the address still looks busy, one scan is
-    // made on the spot, so a player whose game was settled a moment ago is not turned away.
-    const busy = (): boolean => (this.activeByPlayer.get(playerKey)?.size ?? 0) > 0;
-    if (busy()) {
-      await this.hooks.syncChain?.();
-      if (busy()) throw new ApiError('ALREADY_ACTIVE');
-    }
+    // Serialized per address: without this, two concurrent requests could both pass the
+    // live-entry check and each reserve house liquidity. Different addresses do not contend.
+    return this.ticketLocks.run(playerKey, async () => {
+      const now = await this.clock.chainNow();
+      this.countTicket(playerKey, now);
+      // Checked here only; the contract does not enforce it (plan §7.3). "Live" is an on-chain
+      // active game OR a ticket that has not expired and has not yet created a game: counting
+      // only on-chain active games let an address pre-issue several tickets while none was
+      // active and then create several games at once, each reserving `max(bet, maxPayout)` of
+      // the house balance. When the address still looks busy one chain scan is made on the spot,
+      // so a game settled a moment ago is not held against it.
+      if (this.hasLiveEntry(playerKey, now)) {
+        await this.hooks.syncChain?.();
+        if (this.hasLiveEntry(playerKey, now)) throw new ApiError('ALREADY_ACTIVE');
+      }
 
-    let gameId = this.random32();
-    while (this.games.has(gameId)) gameId = this.random32();
-    const secret = this.deps.testSeedSecret;
-    const serverSeed =
-      secret === undefined || secret === null ? this.random32() : testServerSeed(secret, gameId);
-    const n = this.table.tiers[tier].n;
-    const commitment = commitmentOf({ mazeVersion: this.table.mazeVersion, n, serverSeed });
-    const expirySec = now + this.table.timing.ticketExpirySec;
-    const signature = await this.signer.signTicket({
-      gameId,
-      player,
-      tier,
-      commitment,
-      expiry: BigInt(expirySec),
-    });
-
-    await this.persist([
-      {
-        type: 'ticket-issued',
+      let gameId = this.random32();
+      while (this.games.has(gameId)) gameId = this.random32();
+      const secret = this.deps.testSeedSecret;
+      const serverSeed =
+        secret === undefined || secret === null ? this.random32() : testServerSeed(secret, gameId);
+      const n = this.table.tiers[tier].n;
+      const commitment = commitmentOf({ mazeVersion: this.table.mazeVersion, n, serverSeed });
+      const expirySec = now + this.table.timing.ticketExpirySec;
+      const signature = await this.signer.signTicket({
         gameId,
         player,
         tier,
-        n,
-        serverSeed,
         commitment,
-        sessionTokenHash: sessionTokenHash.toLowerCase() as Hex,
-        expirySec,
-        signature,
-        atSec: now,
-      },
-    ]);
-    this.log.event({ event: 'ticket-issued', chainSec: now, gameId, detail: { player, tier } });
-    return toTicketResponse(this.games.get(gameId)!, signature);
+        expiry: BigInt(expirySec),
+      });
+
+      await this.persist([
+        {
+          type: 'ticket-issued',
+          gameId,
+          player,
+          tier,
+          n,
+          serverSeed,
+          commitment,
+          sessionTokenHash: sessionTokenHash.toLowerCase() as Hex,
+          expirySec,
+          signature,
+          atSec: now,
+        },
+      ]);
+      this.log.event({ event: 'ticket-issued', chainSec: now, gameId, detail: { player, tier } });
+      return toTicketResponse(this.games.get(gameId)!, signature);
+    });
   }
 
   /** `POST /api/games/:id/start` */
@@ -730,6 +740,7 @@ export class GameService {
         settle: { lastSentSec: null, lastTxHash: null, sends: 0, minedTxHash: null },
         final: null,
       });
+      this.indexTicket(event.player, event.gameId);
       return;
     }
 
@@ -804,6 +815,46 @@ export class GameService {
         return;
       }
     }
+  }
+
+  /** Records a ticket under its player for the live-entry check (`apply`, live and on replay). */
+  private indexTicket(player: Hex, gameId: Hex): void {
+    const key = player.toLowerCase();
+    let set = this.ticketsByPlayer.get(key);
+    if (set === undefined) {
+      set = new Set();
+      this.ticketsByPlayer.set(key, set);
+    }
+    set.add(gameId);
+  }
+
+  /**
+   * True when the address holds something that could still cost the house: an on-chain active
+   * game, or a ticket that has not expired and has not yet created a game. Synchronous, so the
+   * check and the ticket reservation that follows it stay atomic under `ticketLocks`. Entries
+   * that are no longer outstanding (created on chain, ended, or expired) are dropped as seen.
+   */
+  private hasLiveEntry(playerKey: string, now: number): boolean {
+    if ((this.activeByPlayer.get(playerKey)?.size ?? 0) > 0) return true;
+    const tickets = this.ticketsByPlayer.get(playerKey);
+    if (tickets === undefined) return false;
+    let live = false;
+    for (const gameId of [...tickets]) {
+      const game = this.games.get(gameId);
+      if (
+        game !== undefined &&
+        game.chain === null &&
+        game.ended === null &&
+        game.final === null &&
+        now <= game.expirySec
+      ) {
+        live = true;
+      } else {
+        tickets.delete(gameId);
+      }
+    }
+    if (tickets.size === 0) this.ticketsByPlayer.delete(playerKey);
+    return live;
   }
 
   private activeGamesOf(player: Hex): Set<Hex> {

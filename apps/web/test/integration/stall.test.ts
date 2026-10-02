@@ -114,8 +114,11 @@ describe('AC-X4: stalling never reaches a full refund', () => {
     let lastMoveAt = game.createdAtSec;
     let refusal = '';
     while (refusal === '') {
-      // Well inside the 5 s idle timeout, so only the game deadline can stop the player.
-      await waitChainTime(h, lastMoveAt + 2);
+      // Just inside the idle timeout, so only the game deadline can stop the player. Pacing close
+      // to the idle limit (rather than well under it) keeps the number of moves before the game
+      // deadline small, so the player cannot walk the whole exit route — which would end the game
+      // as a win — even when the server's cached clock makes each wait a little short.
+      await waitChainTime(h, lastMoveAt + (IDLE_SEC - 1));
       const reply = await api.move<GameView>(game.gameId, game.token, {
         step: accepted,
         dir: route[accepted],

@@ -10,7 +10,7 @@ import fixtureJson from '@maze/shared/fixtures/tuning.fixture.json';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/server/config';
 import { testServerSeed } from '../../src/server/test-hooks';
-import { api, CONTRACT, FakeChain, makeEnv, requestTicket, SIGNER_KEY, type TestEnv } from './helpers';
+import { api, CONTRACT, FakeChain, makeEnv, PLAYERS, requestTicket, SIGNER_KEY, type TestEnv } from './helpers';
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 
@@ -121,8 +121,9 @@ describe('with test hooks on', () => {
 
   it('the seed hook derives the server seed from the game id', async () => {
     const booted = (env = await makeEnv({ config: { testSeedSecret: 'scenario-secret' } }));
-    const a = await requestTicket();
-    const b = await requestTicket();
+    // Distinct addresses: one address may hold only one live ticket at a time (plan §7.3).
+    const a = await requestTicket({ player: PLAYERS[0] });
+    const b = await requestTicket({ player: PLAYERS[1] });
     for (const { ticket } of [a, b]) {
       const seed = booted.container.service.get(ticket.gameId)!.serverSeed;
       expect(seed).toBe(testServerSeed('scenario-secret', ticket.gameId));

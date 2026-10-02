@@ -26,3 +26,6 @@ coverage/
 .DS_Store
 .omc/*
 !.omc/skills/
+
+# forge writes fuzz/invariant failure records relative to the cwd, not --root
+/cache/

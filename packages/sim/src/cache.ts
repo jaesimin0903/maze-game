@@ -4,7 +4,7 @@
 //   <root>/<key>/chunk-<i>.json    sufficient statistics of chunk i of that cell
 //   <root>/artifacts/<key>.json    trained tables and recorded trajectories (layout)
 //   <root>/artifacts/<key>.bin     … and their raw arrays
-//   <root>/ledger.json             accumulated run time per cell and per campaign, in seconds
+//   <root>/ledger.json             accumulated run time per cell and per campaign (seconds), and games simulated by kind
 //
 //   key = sha256( tierHash ‖ simulator code hash ‖ canonical JSON of the cell definition )
 //
@@ -106,6 +106,8 @@ const BYTES: Record<ArrayType, number> = { f64: 8, u8: 1, u16: 2 };
 interface Ledger {
   cells: Record<string, number>;
   campaigns: Record<string, number>;
+  /** Games simulated, by kind of work (`eval:B`, `pair:D`, `train:C`, …). Counted once, when the unit is computed. */
+  games: Record<string, number>;
 }
 
 export class CacheStore {
@@ -192,7 +194,7 @@ export class CacheStore {
   private loadLedger(): Ledger {
     if (this.ledger === null) {
       const raw = readJson(join(this.root, 'ledger.json')) as Partial<Ledger> | null;
-      this.ledger = { cells: { ...(raw?.cells ?? {}) }, campaigns: { ...(raw?.campaigns ?? {}) } };
+      this.ledger = { cells: { ...(raw?.cells ?? {}) }, campaigns: { ...(raw?.campaigns ?? {}) }, games: { ...(raw?.games ?? {}) } };
     }
     return this.ledger;
   }
@@ -210,6 +212,21 @@ export class CacheStore {
     const ledger = this.loadLedger();
     ledger.cells[key] = (ledger.cells[key] ?? 0) + seconds;
     this.saveLedger();
+  }
+
+  /** Seconds accumulated under every campaign name. */
+  campaignTimes(): Record<string, number> {
+    return { ...this.loadLedger().campaigns };
+  }
+
+  addGames(kind: string, games: number): void {
+    const ledger = this.loadLedger();
+    ledger.games[kind] = (ledger.games[kind] ?? 0) + games;
+    this.saveLedger();
+  }
+
+  gamesByKind(): Record<string, number> {
+    return { ...this.loadLedger().games };
   }
 
   campaignSeconds(name: string): number {

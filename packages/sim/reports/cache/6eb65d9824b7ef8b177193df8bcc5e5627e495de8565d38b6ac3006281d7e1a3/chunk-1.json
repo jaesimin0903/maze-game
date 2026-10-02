@@ -1,0 +1,1 @@
+{"schema":1,"key":"6eb65d9824b7ef8b177193df8bcc5e5627e495de8565d38b6ac3006281d7e1a3","chunk":1,"from":2000000,"to":3000000,"seconds":0.799,"stats":{"n":1000000,"sum":5369651298,"sumSq":32958919667124,"wins":0,"losses":125179,"cash":[0,0,0,874821,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"steps":2971791,"nearMiss":0,"startE":500325,"winsE":0,"m1N":0,"m1Sum":0,"expected":false}}

@@ -2,13 +2,13 @@
   "schema": 1,
   "profile": "production",
   "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
-  "generatedAt": "2026-10-02T03:54:41.930Z",
+  "generatedAt": "2026-10-02T10:24:45.492Z",
   "cores": 12,
   "workers": 8,
   "loadAverage": [
-    18.30517578125,
-    10.3876953125,
-    8.96826171875
+    9.31005859375,
+    8.015625,
+    9.029296875
   ],
   "tiers": [
     {
@@ -292,6 +292,946 @@
         }
       ],
       "referenceSd": 5.0376072590564185
+    },
+    {
+      "n": 5,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 23597,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.19580212500000016,
+          "gamesPerSecondPerThread": 255359.84351548768,
+          "gamesPerSecondTotal": 2042878.7481239014,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.25255825000000004,
+          "gamesPerSecondPerThread": 197974.13072033876,
+          "gamesPerSecondTotal": 1583793.04576271,
+          "rtp": 0.7906351827500001,
+          "sd": 1.1138047180432593
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.24606058299999994,
+          "gamesPerSecondPerThread": 81280.79579491203,
+          "gamesPerSecondTotal": 650246.3663592963,
+          "rtp": 0.8023864887500001,
+          "sd": 1.1178439649697913
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 0.32140345799999975,
+          "gamesPerSecondPerThread": 62227.08406578505,
+          "gamesPerSecondTotal": 497816.6725262804,
+          "rtp": 0.9592594543750002,
+          "sd": 0.818388004172546
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 0.35294850000000044,
+          "gamesPerSecondPerThread": 56665.490857731296,
+          "gamesPerSecondTotal": 453323.92686185037,
+          "rtp": 0.9629898368750001,
+          "sd": 0.8185847206013123
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 0.3640394160000005,
+          "gamesPerSecondPerThread": 54939.10582473842,
+          "gamesPerSecondTotal": 439512.84659790737,
+          "rtp": 0.9631541100000001,
+          "sd": 0.8164267726800135
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.14453479199999947,
+          "gamesPerSecondPerThread": 34593.74681218636,
+          "gamesPerSecondTotal": 276749.97449749085,
+          "rtp": 0.9647161175000001,
+          "sd": 0.8015609665721345
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.0724234580000002,
+          "gamesPerSecondPerThread": 1380.7680931225311,
+          "gamesPerSecondTotal": 11046.144744980249,
+          "rtp": 0.9246875,
+          "sd": 0.025013685240517655
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 0.5055351249999994,
+          "gamesPerSecondPerThread": 39562.038345011184,
+          "gamesPerSecondTotal": 316496.3067600895,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 0.8164267726800135
+    },
+    {
+      "n": 7,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 58821,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.22597245799999838,
+          "gamesPerSecondPerThread": 221265.90312169972,
+          "gamesPerSecondTotal": 1770127.2249735978,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.31388637500000005,
+          "gamesPerSecondPerThread": 159293.3111543946,
+          "gamesPerSecondTotal": 1274346.489235157,
+          "rtp": 0.7659523567500001,
+          "sd": 1.9795795365850168
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.4359592920000014,
+          "gamesPerSecondPerThread": 45875.842921590796,
+          "gamesPerSecondTotal": 367006.74337272637,
+          "rtp": 0.79224534375,
+          "sd": 2.0080933380998904
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 0.5698542079999989,
+          "gamesPerSecondPerThread": 35096.696171102136,
+          "gamesPerSecondTotal": 280773.5693688171,
+          "rtp": 0.9572669018750001,
+          "sd": 1.397397960595452
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 0.6035764579999996,
+          "gamesPerSecondPerThread": 33135.81856103476,
+          "gamesPerSecondTotal": 265086.54848827806,
+          "rtp": 0.9616877875000001,
+          "sd": 1.4075276086585433
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 0.7408282909999998,
+          "gamesPerSecondPerThread": 26996.80917018328,
+          "gamesPerSecondTotal": 215974.47336146623,
+          "rtp": 0.9603589981250001,
+          "sd": 1.4016191609373998
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.285424583,
+          "gamesPerSecondPerThread": 17517.76230150435,
+          "gamesPerSecondTotal": 140142.0984120348,
+          "rtp": 0.9574209850000001,
+          "sd": 1.4150486693192015
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.19044654099999933,
+          "gamesPerSecondPerThread": 525.0817340914601,
+          "gamesPerSecondTotal": 4200.653872731681,
+          "rtp": 0.9124556250000001,
+          "sd": 0.3810140223468034
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 1.0924209169999994,
+          "gamesPerSecondPerThread": 18307.961417403007,
+          "gamesPerSecondTotal": 146463.69133922405,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 1.4016191609373998
+    },
+    {
+      "n": 10,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 276753,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.49706625000000165,
+          "gamesPerSecondPerThread": 100590.21307521852,
+          "gamesPerSecondTotal": 804721.7046017481,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.7997230830000007,
+          "gamesPerSecondPerThread": 62521.641631794635,
+          "gamesPerSecondTotal": 500173.1330543571,
+          "rtp": 0.7387921335000001,
+          "sd": 4.4610009938415995
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 1.5178388329999999,
+          "gamesPerSecondPerThread": 13176.629537452347,
+          "gamesPerSecondTotal": 105413.03629961878,
+          "rtp": 0.7935892275,
+          "sd": 4.618784409142255
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 2.1322973330000004,
+          "gamesPerSecondPerThread": 9379.554947837098,
+          "gamesPerSecondTotal": 75036.43958269678,
+          "rtp": 0.9525871987500001,
+          "sd": 3.218938728310094
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 2.2704499160000013,
+          "gamesPerSecondPerThread": 8808.82676999777,
+          "gamesPerSecondTotal": 70470.61415998216,
+          "rtp": 0.9439192793750001,
+          "sd": 3.3321058719629364
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 2.559099624999999,
+          "gamesPerSecondPerThread": 7815.24869318052,
+          "gamesPerSecondTotal": 62521.98954544416,
+          "rtp": 0.9619277868750001,
+          "sd": 3.255337435846027
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 1.2015852090000008,
+          "gamesPerSecondPerThread": 4161.169730244238,
+          "gamesPerSecondTotal": 33289.357841953904,
+          "rtp": 0.9555094650000001,
+          "sd": 3.2985326176560927
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.9006244169999991,
+          "gamesPerSecondPerThread": 111.03407603926877,
+          "gamesPerSecondTotal": 888.2726083141501,
+          "rtp": 0.750253125,
+          "sd": 1.017936280436561
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 3.9335998340000007,
+          "gamesPerSecondPerThread": 5084.401272119841,
+          "gamesPerSecondTotal": 40675.21017695873,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 3.255337435846027
+    },
+    {
+      "n": 5,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 2000,
+        "aBps": 7340,
+        "phi": 0.5
+      },
+      "multiplierBps": 26309,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.12646212500054388,
+          "gamesPerSecondPerThread": 395375.2951706684,
+          "gamesPerSecondTotal": 3163002.361365347,
+          "rtp": 0.8,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.17083545899949967,
+          "gamesPerSecondPerThread": 292679.2850431972,
+          "gamesPerSecondTotal": 2341434.2803455777,
+          "rtp": 0.88150277675,
+          "sd": 1.2418141427723908
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.15174620799999683,
+          "gamesPerSecondPerThread": 131799.01009454165,
+          "gamesPerSecondTotal": 1054392.0807563332,
+          "rtp": 0.8946046587500001,
+          "sd": 1.2463176197987131
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 0.26988233300019054,
+          "gamesPerSecondPerThread": 74106.36990449419,
+          "gamesPerSecondTotal": 592850.9592359535,
+          "rtp": 0.96146240125,
+          "sd": 1.15608964517101
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 0.27650454200059177,
+          "gamesPerSecondPerThread": 72331.54238731165,
+          "gamesPerSecondTotal": 578652.3390984932,
+          "rtp": 0.9658122525,
+          "sd": 1.154158993325232
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 0.3363198330001906,
+          "gamesPerSecondPerThread": 59467.20364834585,
+          "gamesPerSecondTotal": 475737.6291867668,
+          "rtp": 0.9663645812500001,
+          "sd": 1.1494133056638862
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.1469580830000341,
+          "gamesPerSecondPerThread": 34023.30717663784,
+          "gamesPerSecondTotal": 272186.45741310273,
+          "rtp": 0.9711275925,
+          "sd": 1.155521003826266
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.15756870900001377,
+          "gamesPerSecondPerThread": 634.6437730856275,
+          "gamesPerSecondTotal": 5077.15018468502,
+          "rtp": 0.8856931250000001,
+          "sd": 1.0922575807329378
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 0.36915049999952315,
+          "gamesPerSecondPerThread": 54178.44483490023,
+          "gamesPerSecondTotal": 433427.5586792018,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 1.1494133056638862
+    },
+    {
+      "n": 7,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 2000,
+        "aBps": 7550,
+        "phi": 0.5
+      },
+      "multiplierBps": 66191,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.2740097079994157,
+          "gamesPerSecondPerThread": 182475.28660592792,
+          "gamesPerSecondTotal": 1459802.2928474233,
+          "rtp": 0.8,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.41214162500016394,
+          "gamesPerSecondPerThread": 121317.52040328397,
+          "gamesPerSecondTotal": 970540.1632262717,
+          "rtp": 0.86192265425,
+          "sd": 2.227611722107731
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.40183754099998625,
+          "gamesPerSecondPerThread": 49771.35772389341,
+          "gamesPerSecondTotal": 398170.86179114727,
+          "rtp": 0.8915100312500001,
+          "sd": 2.2596981714382594
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 0.7257421250008047,
+          "gamesPerSecondPerThread": 27557.99795964417,
+          "gamesPerSecondTotal": 220463.98367715336,
+          "rtp": 0.958199848125,
+          "sd": 1.85112896047158
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 0.7043468750007451,
+          "gamesPerSecondPerThread": 28395.10007051404,
+          "gamesPerSecondTotal": 227160.80056411232,
+          "rtp": 0.96298995875,
+          "sd": 1.836225839179103
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 0.7819722500005737,
+          "gamesPerSecondPerThread": 25576.35517115259,
+          "gamesPerSecondTotal": 204610.84136922073,
+          "rtp": 0.960901041875,
+          "sd": 1.8298046551711684
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.2738047919999808,
+          "gamesPerSecondPerThread": 18261.185143904822,
+          "gamesPerSecondTotal": 146089.48115123858,
+          "rtp": 0.96574712,
+          "sd": 1.8616265253087687
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.20400633399933576,
+          "gamesPerSecondPerThread": 490.1808587978724,
+          "gamesPerSecondTotal": 3921.4468703829793,
+          "rtp": 0.800043625,
+          "sd": 0.8653095155818842
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 0.9855825000004843,
+          "gamesPerSecondPerThread": 20292.568100580287,
+          "gamesPerSecondTotal": 162340.5448046423,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 1.8298046551711684
+    },
+    {
+      "n": 10,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 2000,
+        "aBps": 7700,
+        "phi": 0.5
+      },
+      "multiplierBps": 308499,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.46727095799986273,
+          "gamesPerSecondPerThread": 107004.29620968373,
+          "gamesPerSecondTotal": 856034.3696774698,
+          "rtp": 0.8,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.5742061660001054,
+          "gamesPerSecondPerThread": 87076.7382180825,
+          "gamesPerSecondTotal": 696613.90574466,
+          "rtp": 0.8235380805000001,
+          "sd": 4.972716991682618
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 1.3072380840005353,
+          "gamesPerSecondPerThread": 15299.431866912937,
+          "gamesPerSecondTotal": 122395.4549353035,
+          "rtp": 0.8846208824999999,
+          "sd": 5.148599550631706
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 2.0495580420000477,
+          "gamesPerSecondPerThread": 9758.201324458776,
+          "gamesPerSecondTotal": 78065.61059567021,
+          "rtp": 0.951296764375,
+          "sd": 4.197043789009058
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 2.002755916999653,
+          "gamesPerSecondPerThread": 9986.239376569752,
+          "gamesPerSecondTotal": 79889.91501255802,
+          "rtp": 0.9364235706249999,
+          "sd": 4.140594097304469
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 2.518308000000194,
+          "gamesPerSecondPerThread": 7941.840315004543,
+          "gamesPerSecondTotal": 63534.72252003635,
+          "rtp": 0.9641703150000002,
+          "sd": 4.233088623791354
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.8573747500004247,
+          "gamesPerSecondPerThread": 5831.755600450705,
+          "gamesPerSecondTotal": 46654.04480360564,
+          "rtp": 0.9555008750000001,
+          "sd": 4.251528694860334
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.819456750000827,
+          "gamesPerSecondPerThread": 122.03206575563516,
+          "gamesPerSecondTotal": 976.2565260450813,
+          "rtp": 0.6550212500000001,
+          "sd": 1.1114644968275291
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 3.1609830000000074,
+          "gamesPerSecondPerThread": 6327.145701194835,
+          "gamesPerSecondTotal": 50617.16560955868,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 4.233088623791354
+    },
+    {
+      "n": 9,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7300,
+        "phi": 0.5
+      },
+      "multiplierBps": 186303,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.3936215000000084,
+          "gamesPerSecondPerThread": 127025.5816818922,
+          "gamesPerSecondTotal": 1016204.6534551376,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.4063577919999952,
+          "gamesPerSecondPerThread": 123044.27522827122,
+          "gamesPerSecondTotal": 984354.2018261697,
+          "rtp": 0.8516841645000001,
+          "sd": 3.8912470274107323
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.7039743749999907,
+          "gamesPerSecondPerThread": 28410.1250134286,
+          "gamesPerSecondTotal": 227281.0001074288,
+          "rtp": 0.9027544743750001,
+          "sd": 4.000465106234667
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 1.663232458000013,
+          "gamesPerSecondPerThread": 12024.777356767916,
+          "gamesPerSecondTotal": 96198.21885414333,
+          "rtp": 0.94871592375,
+          "sd": 3.786251876079874
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 1.6579688329999918,
+          "gamesPerSecondPerThread": 12062.952934893981,
+          "gamesPerSecondTotal": 96503.62347915185,
+          "rtp": 0.9458452487500001,
+          "sd": 3.7564082301889132
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 2.135322916999983,
+          "gamesPerSecondPerThread": 9366.264858946464,
+          "gamesPerSecondTotal": 74930.11887157171,
+          "rtp": 0.9569070093750001,
+          "sd": 3.7803919407052513
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.6893541250000126,
+          "gamesPerSecondPerThread": 7253.16614301816,
+          "gamesPerSecondTotal": 58025.32914414528,
+          "rtp": 0.9708085774999999,
+          "sd": 3.846761901656558
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.20915533399995184,
+          "gamesPerSecondPerThread": 478.113553632933,
+          "gamesPerSecondTotal": 3824.908429063464,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 2.2052037500000443,
+          "gamesPerSecondPerThread": 9069.456733873049,
+          "gamesPerSecondTotal": 72555.65387098439,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 3.7803919407052513
+    },
+    {
+      "n": 9,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7300,
+        "phi": 0.4
+      },
+      "multiplierBps": 187072,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.3998994170000078,
+          "gamesPerSecondPerThread": 125031.44009334483,
+          "gamesPerSecondTotal": 1000251.5207467587,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.41138233299995774,
+          "gamesPerSecondPerThread": 121541.43722065268,
+          "gamesPerSecondTotal": 972331.4977652214,
+          "rtp": 0.855199648,
+          "sd": 3.9073088673385854
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.8588909170000115,
+          "gamesPerSecondPerThread": 23285.844109118378,
+          "gamesPerSecondTotal": 186286.75287294702,
+          "rtp": 0.90648076,
+          "sd": 4.016977763930434
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 1.8048724159999983,
+          "gamesPerSecondPerThread": 11081.11566374563,
+          "gamesPerSecondTotal": 88648.92530996504,
+          "rtp": 0.9494171,
+          "sd": 3.857160027022447
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 1.6855945829999983,
+          "gamesPerSecondPerThread": 11865.249332021625,
+          "gamesPerSecondTotal": 94921.994656173,
+          "rtp": 0.9393929725,
+          "sd": 3.787837262509031
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 2.1243374579999945,
+          "gamesPerSecondPerThread": 9414.700063157316,
+          "gamesPerSecondTotal": 75317.60050525852,
+          "rtp": 0.9564814749999999,
+          "sd": 3.82329905894424
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.6897508340000058,
+          "gamesPerSecondPerThread": 7248.99449704755,
+          "gamesPerSecondTotal": 57991.9559763804,
+          "rtp": 0.96713747,
+          "sd": 3.8603447614965614
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.22837866599997506,
+          "gamesPerSecondPerThread": 437.86927102906765,
+          "gamesPerSecondTotal": 3502.954168232541,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 2.238253249999951,
+          "gamesPerSecondPerThread": 8935.539354181856,
+          "gamesPerSecondTotal": 71484.31483345485,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 3.82329905894424
+    },
+    {
+      "n": 9,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7000,
+        "phi": 0.5
+      },
+      "multiplierBps": 187251,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.407629416000098,
+          "gamesPerSecondPerThread": 122660.43135608245,
+          "gamesPerSecondTotal": 981283.4508486596,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.446787208000198,
+          "gamesPerSecondPerThread": 111910.09747973322,
+          "gamesPerSecondTotal": 895280.7798378657,
+          "rtp": 0.8560179465000001,
+          "sd": 3.9110475791033266
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.8689426249996759,
+          "gamesPerSecondPerThread": 23016.479367676846,
+          "gamesPerSecondTotal": 184131.83494141477,
+          "rtp": 0.907348126875,
+          "sd": 4.0208214124708
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 1.7610471670003607,
+          "gamesPerSecondPerThread": 11356.87923343163,
+          "gamesPerSecondTotal": 90855.03386745304,
+          "rtp": 0.9494713025000001,
+          "sd": 3.859173040860885
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 1.693277499999851,
+          "gamesPerSecondPerThread": 11811.413073168314,
+          "gamesPerSecondTotal": 94491.30458534652,
+          "rtp": 0.95277755375,
+          "sd": 3.8460413469039736
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 2.073733874999918,
+          "gamesPerSecondPerThread": 9644.439067670044,
+          "gamesPerSecondTotal": 77155.51254136035,
+          "rtp": 0.961799041875,
+          "sd": 3.865947477328295
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.7435929169999436,
+          "gamesPerSecondPerThread": 6724.109234623572,
+          "gamesPerSecondTotal": 53792.873876988575,
+          "rtp": 0.9665525375000001,
+          "sd": 3.8630057472950585
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.24818366699991748,
+          "gamesPerSecondPerThread": 402.9274013427856,
+          "gamesPerSecondTotal": 3223.4192107422846,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 2.3353492910000497,
+          "gamesPerSecondPerThread": 8564.029405398087,
+          "gamesPerSecondTotal": 68512.2352431847,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 3.865947477328295
+    },
+    {
+      "n": 9,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7300,
+        "phi": 0.3
+      },
+      "multiplierBps": 188000,
+      "bots": [
+        {
+          "label": "immediate-cashout",
+          "games": 400000,
+          "seconds": 0.4099890829999931,
+          "gamesPerSecondPerThread": 121954.46677296245,
+          "gamesPerSecondTotal": 975635.7341836996,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "naive-greedy",
+          "games": 400000,
+          "seconds": 0.43604220799962057,
+          "gamesPerSecondPerThread": 114667.79839818513,
+          "gamesPerSecondTotal": 917342.387185481,
+          "rtp": 0.8594419999999999,
+          "sd": 3.9266916858731076
+        },
+        {
+          "label": "harmonic",
+          "games": 160000,
+          "seconds": 0.7960420840000734,
+          "gamesPerSecondPerThread": 25124.299835381764,
+          "gamesPerSecondTotal": 200994.3986830541,
+          "rtp": 0.9109775,
+          "sd": 4.036904612229097
+        },
+        {
+          "label": "harmonic-lsm",
+          "games": 160000,
+          "seconds": 1.7825978339998982,
+          "gamesPerSecondPerThread": 11219.58055739517,
+          "gamesPerSecondTotal": 89756.64445916135,
+          "rtp": 0.94903442125,
+          "sd": 3.879338280943967
+        },
+        {
+          "label": "value-table",
+          "games": 160000,
+          "seconds": 1.759370792000089,
+          "gamesPerSecondPerThread": 11367.700368188782,
+          "gamesPerSecondTotal": 90941.60294551025,
+          "rtp": 0.9456357443750001,
+          "sd": 3.8581706000710714
+        },
+        {
+          "label": "value-lsm",
+          "games": 160000,
+          "seconds": 2.129778125000186,
+          "gamesPerSecondPerThread": 9390.64955416342,
+          "gamesPerSecondTotal": 75125.19643330736,
+          "rtp": 0.9622033418750001,
+          "sd": 3.8923312031498862
+        },
+        {
+          "label": "value-lookahead-all",
+          "games": 40000,
+          "seconds": 0.8118146250001155,
+          "gamesPerSecondPerThread": 6159.041542272398,
+          "gamesPerSecondTotal": 49272.332338179185,
+          "rtp": 0.9655069900000001,
+          "sd": 3.9077018380457353
+        },
+        {
+          "label": "rollout(32)",
+          "games": 800,
+          "seconds": 0.2505545419999398,
+          "gamesPerSecondPerThread": 399.114696551875,
+          "gamesPerSecondTotal": 3192.917572415,
+          "rtp": 0.95,
+          "sd": 0
+        },
+        {
+          "label": "value-lsm training pass",
+          "games": 160000,
+          "seconds": 2.6373145000003277,
+          "gamesPerSecondPerThread": 7583.471747490682,
+          "gamesPerSecondTotal": 60667.773979925456,
+          "rtp": null,
+          "sd": null
+        }
+      ],
+      "referenceSd": 3.8923312031498862
     }
   ]
 }

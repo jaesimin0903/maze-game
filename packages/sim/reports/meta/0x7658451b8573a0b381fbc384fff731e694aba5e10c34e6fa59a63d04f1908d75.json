@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "tableHash": "0x7658451b8573a0b381fbc384fff731e694aba5e10c34e6fa59a63d04f1908d75",
+  "name": "point-2-7300-40",
+  "profile": "production",
+  "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+  "variantLevel": 0,
+  "tiers": [
+    {
+      "tier": 0,
+      "n": 5,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7300,
+        "phi": 0.5
+      },
+      "multiplierBps": 26088,
+      "ceilingBps": 9600,
+      "games": 3000000,
+      "screened": false,
+      "coarseGames": 187500,
+      "theta": [
+        -2.4438895015046,
+        3.9787739077582955,
+        -2.1490266108885407,
+        2.3417743081226945,
+        -2.85346504393965,
+        -3.434536593966186
+      ],
+      "thetaMultiplierBps": 26088,
+      "initialMultiplierBps": 26324,
+      "coarse": [
+        {
+          "multiplierBps": 26324,
+          "point": 0.9662424208000001,
+          "target": 0.9586963715140506
+        },
+        {
+          "multiplierBps": 25534,
+          "point": 0.95,
+          "target": 0.96
+        },
+        {
+          "multiplierBps": 25929,
+          "point": 0.9532266026666667,
+          "target": 0.9587192859039807
+        },
+        {
+          "multiplierBps": 26126,
+          "point": 0.9600133936,
+          "target": 0.9587065641977665
+        }
+      ],
+      "contenders": [
+        "immediate-cashout",
+        "region-heuristic",
+        "param-search",
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 26088,
+          "u": 0.9593943983774974,
+          "best": "value-lsm",
+          "bestRtp": 0.9581029812666667,
+          "slope": 0.31440666666666667,
+          "pass": true
+        }
+      ],
+      "windowMissed": false,
+      "discontinuities": []
+    },
+    {
+      "tier": 1,
+      "n": 7,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7300,
+        "phi": 0.5
+      },
+      "multiplierBps": 66112,
+      "ceilingBps": 9600,
+      "games": 5000000,
+      "screened": false,
+      "coarseGames": 312500,
+      "theta": [
+        -2.4438895015046,
+        3.9787739077582955,
+        -2.1490266108885407,
+        2.3417743081226945,
+        -2.85346504393965,
+        -3.434536593966186
+      ],
+      "thetaMultiplierBps": 66112,
+      "initialMultiplierBps": 67198,
+      "coarse": [
+        {
+          "multiplierBps": 67198,
+          "point": 0.97167024,
+          "target": 0.9580872812790798
+        },
+        {
+          "multiplierBps": 65182,
+          "point": 0.95,
+          "target": 0.96
+        },
+        {
+          "multiplierBps": 66190,
+          "point": 0.95952258016,
+          "target": 0.9581434885149015
+        },
+        {
+          "multiplierBps": 65686,
+          "point": 0.950769968,
+          "target": 0.9583966544575581
+        }
+      ],
+      "contenders": [
+        "immediate-cashout",
+        "region-heuristic",
+        "param-search",
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 66112,
+          "u": 0.9542596191804384,
+          "best": "value-lsm",
+          "bestRtp": 0.9526410103,
+          "slope": 0.093364,
+          "pass": true
+        }
+      ],
+      "windowMissed": true,
+      "discontinuities": []
+    },
+    {
+      "tier": 2,
+      "n": 9,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 7300,
+        "phi": 0.4
+      },
+      "multiplierBps": 183776,
+      "ceilingBps": 9600,
+      "games": 11000000,
+      "screened": false,
+      "coarseGames": 1375000,
+      "theta": [
+        -2.4438895015046,
+        3.9787739077582955,
+        -2.1490266108885407,
+        2.3417743081226945,
+        -2.85346504393965,
+        -3.434536593966186
+      ],
+      "thetaMultiplierBps": 183776,
+      "initialMultiplierBps": 186855,
+      "coarse": [
+        {
+          "multiplierBps": 186855,
+          "point": 0.9723795620363638,
+          "target": 0.9576964427783734
+        },
+        {
+          "multiplierBps": 181249,
+          "point": 0.95,
+          "target": 0.96
+        },
+        {
+          "multiplierBps": 184052,
+          "point": 0.9593001280727274,
+          "target": 0.957737650258476
+        },
+        {
+          "multiplierBps": 182650,
+          "point": 0.9513782648000001,
+          "target": 0.9577724246987391
+        }
+      ],
+      "contenders": [
+        "immediate-cashout",
+        "region-heuristic",
+        "param-search",
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 183776,
+          "u": 0.9572672578990598,
+          "best": "value-lsm",
+          "bestRtp": 0.9550282408,
+          "slope": 0.044960181818181816,
+          "pass": true
+        }
+      ],
+      "windowMissed": true,
+      "discontinuities": []
+    }
+  ]
+}

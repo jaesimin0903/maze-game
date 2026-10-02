@@ -381,6 +381,8 @@ export interface PointOutcome {
   reason: string;
   deltaH: number | null;
   deltaHLcb: number | null;
+  /** What the point's own tier measured once calibrated and certified; null when it failed before that. */
+  certified: { level: number; multiplierBps: number; bestRtp: number; naiveRtp: number; sloppyRtp: number; windowMissed: boolean } | null;
 }
 
 /** ΔH of a point against the baseline (positive = more house revenue) and its 95% lower bound. Only the point's tier differs. */
@@ -590,9 +592,18 @@ async function runTune(backend: TuneBackend, input: TuneInput, result: TuneResul
     });
     pointRuns.push(run);
     if (run.status !== 'ok') {
-      result.points.push({ estimate, name, status: 'rejected', reason: `fixed failure: ${run.reason}`, deltaH: null, deltaHLcb: null });
+      result.points.push({ estimate, name, status: 'rejected', reason: `fixed failure: ${run.reason}`, deltaH: null, deltaHLcb: null, certified: null });
       continue;
     }
+    const measured = run.tiers[estimate.tier];
+    const certified = {
+      level: run.state.level,
+      multiplierBps: measured.multiplierBps,
+      bestRtp: measured.bestRtp,
+      naiveRtp: measured.population['naive-greedy'].rtp,
+      sloppyRtp: measured.population['sloppy-greedy'].rtp,
+      windowMissed: measured.windowMissed,
+    };
     const change = deltaH(baseline.tiers[estimate.tier], run.tiers[estimate.tier], assumptions);
     const ok = feasible(constraintStatus(run.tiers, assumptions), selection.relaxed);
     let reason: string;
@@ -607,7 +618,7 @@ async function runTune(backend: TuneBackend, input: TuneInput, result: TuneResul
       adopt = change.delta >= ADOPTION_THRESHOLD && change.lcb > 0;
       reason = adopt ? 'ΔH is at least 0.2 points and its lower bound is positive' : `ΔH ${pct(change.delta)} (lower bound ${pct(change.lcb)}) does not meet the adoption rule`;
     }
-    result.points.push({ estimate, name, status: adopt ? 'adopted' : 'rejected', reason, deltaH: change.delta, deltaHLcb: change.lcb });
+    result.points.push({ estimate, name, status: adopt ? 'adopted' : 'rejected', reason, deltaH: change.delta, deltaHLcb: change.lcb, certified });
     if (adopt) {
       final = run;
       break;

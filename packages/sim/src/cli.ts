@@ -260,18 +260,29 @@ function certificationOf(context: Context, hash: string | null): CertifyFile['ta
   return readJsonFile<CertifyFile>(context.paths.certifyJson)?.tables[hash] ?? null;
 }
 
-function writeReport(context: Context, result: TuneResult): void {
+function reportPath(context: Context): string {
+  return context.options.get('report-out') ? resolve(context.options.get('report-out')!) : context.paths.tuningReport;
+}
+
+function writeReport(context: Context, result: TuneResult, secondsThisCall: number): void {
   const analysis = result.candidates.length > 0 ? sensitivity(result) : null;
   if (analysis !== null) writeJsonFile(context.paths.sensitivityJson, analysis);
+  const repoRoot = resolve(simPackageRoot(), '..', '..');
+  const shown = (path: string): string => (path.startsWith(`${repoRoot}/`) ? path.slice(repoRoot.length + 1) : path);
+  const times = context.runner.store.campaignTimes();
   const text = renderTuningReport({
     result,
     sensitivity: analysis,
     finalCertification: certificationOf(context, result.final?.tableHash ?? null),
     houseMaxCertification: certificationOf(context, result.houseMax?.run?.tableHash ?? null),
-    candidateTablePath: context.paths.candidateTable,
-    houseMaxTablePath: context.paths.houseMaxTable,
+    candidateTablePath: shown(context.paths.candidateTable),
+    houseMaxTablePath: shown(context.paths.houseMaxTable),
+    games: context.runner.store.gamesByKind(),
+    // The ledger gets this call's seconds when the command ends; add them here.
+    stageSeconds: { ...times, tune: (times.tune ?? 0) + secondsThisCall },
+    trainPasses: context.profile.trainPasses,
   });
-  writeTextFile(context.options.get('report-out') ? resolve(context.options.get('report-out')!) : context.paths.tuningReport, text);
+  writeTextFile(reportPath(context), text);
 }
 
 async function commandTune(context: Context): Promise<number> {
@@ -285,7 +296,7 @@ async function commandTune(context: Context): Promise<number> {
     if (partial !== null) {
       const blocked: TuneResult = { ...partial, outcome: 'blocked', blocked: { kind: 'economic', message } };
       writeJsonFile(paths.tuneJson, blocked);
-      writeReport(context, blocked);
+      writeReport(context, blocked, 0);
     }
     console.log(`tune RESULT exit=${EXIT_BLOCKED} BLOCKED(economic): ${message}`);
     return EXIT_BLOCKED;
@@ -300,14 +311,14 @@ async function commandTune(context: Context): Promise<number> {
       assumptions: ASSUMPTIONS,
     });
     writeJsonFile(paths.tuneJson, result);
-    writeReport(context, result);
+    writeReport(context, result, (Date.now() - started) / 1000);
     if (result.blocked !== null) {
       console.log(`tune RESULT exit=${EXIT_BLOCKED} BLOCKED(${result.blocked.kind}): ${result.blocked.message}`);
       return EXIT_BLOCKED;
     }
     console.log(
       `tune RESULT exit=0 outcome=${result.outcome} table=${paths.candidateTable} final=${result.final?.name} ` +
-        `houseMax=${result.houseMax?.same === false ? paths.houseMaxTable : 'same as the selected table'} report=${paths.tuningReport}`,
+        `houseMax=${result.houseMax?.same === false ? paths.houseMaxTable : 'same as the selected table'} report=${reportPath(context)}`,
     );
     return EXIT_OK;
   } finally {

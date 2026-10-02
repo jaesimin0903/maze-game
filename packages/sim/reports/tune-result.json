@@ -1,0 +1,5695 @@
+{
+  "schema": 1,
+  "profile": "production",
+  "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+  "generatedAt": "2026-10-02T11:13:44.624Z",
+  "assumptions": {
+    "population": {
+      "naive-greedy": 0.35,
+      "sloppy-greedy": 0.25,
+      "nervous": 0.2,
+      "random-walk": 0.05,
+      "best": 0.15
+    },
+    "tierShare": [
+      0.5,
+      0.35,
+      0.15
+    ],
+    "e1WinRate": [
+      [
+        0.25,
+        0.45
+      ],
+      [
+        0.08,
+        0.2
+      ],
+      [
+        0.02,
+        0.06
+      ]
+    ],
+    "e2NaiveRtpMin": 0.85,
+    "e8MultiplierMin": [
+      2,
+      5,
+      20
+    ],
+    "e9Refund1MinBps": 6000,
+    "e9RefundAtShortestMinBps": 2000,
+    "e10SloppyRtpMin": 0.5,
+    "e11Bankroll": 50,
+    "e11GameCap": 2000,
+    "e11MedianMin": [
+      200,
+      150,
+      50
+    ]
+  },
+  "candidates": [
+    {
+      "name": "i",
+      "sizes": [
+        5,
+        7,
+        10
+      ],
+      "status": "ok",
+      "reason": null,
+      "exact": {
+        "schema": 1,
+        "profile": "production",
+        "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+        "variant": {
+          "level": 0,
+          "label": "production (lookahead on near-ties within 0.2)",
+          "hyper": {
+            "lookahead": "near-tie",
+            "threshold": 0.2
+          },
+          "rBins": 1
+        },
+        "targetBps": 9600,
+        "grids": [
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 9000,
+              "phi": 0.3
+            },
+            "multiplierBps": 10918,
+            "botRtp": 0.9599714285714286,
+            "optimalRtp": 0.9599714285714286,
+            "gap": -0.000028571428571377844,
+            "gapToBot": 0,
+            "optimalEast": 0.9599714285714286,
+            "optimalSouth": 0.9599714285714286,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.061882142857143
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 1.000967857142857
+              },
+              {
+                "multiplierBps": 10620,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 10852,
+                "botRtp": 0.956907142857143
+              },
+              {
+                "multiplierBps": 11326,
+                "botRtp": 0.9789142857142857
+              },
+              {
+                "multiplierBps": 10919,
+                "botRtp": 0.960017857142857
+              },
+              {
+                "multiplierBps": 10885,
+                "botRtp": 0.9584392857142857
+              },
+              {
+                "multiplierBps": 10918,
+                "botRtp": 0.9599714285714286
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 9000,
+              "phi": 0.3
+            },
+            "multiplierBps": 15616,
+            "botRtp": 0.9599808735341152,
+            "optimalRtp": 0.9599808735341152,
+            "gap": -0.00001912646588475564,
+            "gapToBot": 0,
+            "optimalEast": 0.9599808735341152,
+            "optimalSouth": 0.9599808735341152,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0713944596215352
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 1.0049634894722814
+              },
+              {
+                "multiplierBps": 15210,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 15517,
+                "botRtp": 0.956808295575693
+              },
+              {
+                "multiplierBps": 16208,
+                "botRtp": 0.9804981909648188
+              },
+              {
+                "multiplierBps": 15610,
+                "botRtp": 0.9597885960820896
+              },
+              {
+                "multiplierBps": 15909,
+                "botRtp": 0.9693704224413646
+              },
+              {
+                "multiplierBps": 15617,
+                "botRtp": 0.9600129197761195
+              },
+              {
+                "multiplierBps": 15613,
+                "botRtp": 0.9598847348081022
+              },
+              {
+                "multiplierBps": 15616,
+                "botRtp": 0.9599808735341152
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 9000,
+              "phi": 0.3
+            },
+            "multiplierBps": 18946,
+            "botRtp": 0.9599986050180216,
+            "optimalRtp": 0.9601133957646855,
+            "gap": 0.00011339576468549772,
+            "gapToBot": 0.00011479074666387312,
+            "optimalEast": 0.964202092774938,
+            "optimalSouth": 0.956024698754433,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0700988268252696
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 1.004503280283192
+              },
+              {
+                "multiplierBps": 18494,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 18871,
+                "botRtp": 0.9574579247473918
+              },
+              {
+                "multiplierBps": 19710,
+                "botRtp": 0.9811451456463129
+              },
+              {
+                "multiplierBps": 18961,
+                "botRtp": 0.9604137857895195
+              },
+              {
+                "multiplierBps": 18916,
+                "botRtp": 0.9591682434750259
+              },
+              {
+                "multiplierBps": 18946,
+                "botRtp": 0.9599986050180216
+              }
+            ]
+          }
+        ],
+        "gaps": {
+          "3x3": -0.000028571428571377844,
+          "4x4": -0.00001912646588475564,
+          "5x4": 0.00011339576468549772
+        },
+        "gapMax": 0.00011339576468549772,
+        "pass": true,
+        "branch": "pass",
+        "ceilingBps": 9600,
+        "e0Bps": 500,
+        "symmetry": {
+          "pass": true,
+          "squareMaxDifference": 0,
+          "rectangleMinDifference": 0.008177394020504991
+        }
+      },
+      "spec": {
+        "name": "i",
+        "sizes": [
+          5,
+          7,
+          10
+        ],
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          }
+        ],
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "variantLevel": 0,
+        "screenLast": true
+      },
+      "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/i.json",
+      "tableHash": "0x6cb336f015132c21956c6bc75466a654e213ad474a74309d0668bf7679791563",
+      "tiers": [
+        {
+          "tier": 0,
+          "n": 5,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          "multiplierBps": 23408,
+          "ceilingBps": 9600,
+          "games": 3000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 3000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.7831341466666667,
+              "se": 0.0006376680760036476
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6910985722666667,
+              "se": 0.0006164702429715887
+            },
+            "nervous": {
+              "rtp": 0.5791985583333333,
+              "se": 0.0003937968185519121
+            },
+            "random-walk": {
+              "rtp": 0.20256978719706042,
+              "se": 0.00011808979139585839
+            },
+            "best": {
+              "rtp": 0.9589734983000001,
+              "se": 0.0004541492247674136
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9589734983000001,
+          "bestHalfWidth": 0.0008901161241509081,
+          "bestUcb": 0.959863614424151,
+          "engagement": {
+            "n1PlayPremium": 0.008973498300000049,
+            "e1WinRate": 0.33455833333333335,
+            "e1Range": [
+              0.25,
+              0.45
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.7831341466666667,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.390932,
+            "e4CashOutRate": 0.5804633333333333,
+            "e6MeanSteps": 6.991029666666667,
+            "e7NearMissRate": 0.170015,
+            "e8Multiplier": 2.3408,
+            "e8Min": 2,
+            "e8Pass": true,
+            "e9Refund1Bps": 9000,
+            "e9RefundAtShortestBps": 3138,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6910985722666666,
+            "e10Pass": true,
+            "e11SessionMedian": 218,
+            "e11Min": 200,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.16667306543445307,
+            "m1JunctionRate": 0.390932
+          },
+          "windowMissed": false,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.959863614424151,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.9226195663000001,
+              "ucb975": 0.9275835447257101,
+              "meanDiff": -0.036353932,
+              "diffLcb": -0.04123745276850724,
+              "halfWidthDiff": 0.004883520768507238,
+              "pairs": 100000,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9594675163000002,
+              "ucb975": 0.9606791928142772,
+              "meanDiff": 0.000494018,
+              "diffLcb": -0.0003280849502300567,
+              "halfWidthDiff": 0.0008221029502300568,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.33455833333333335,
+            "sloppy": 0.2952403333333333,
+            "randomWalk": 0.0865386992468714,
+            "nervous": 0.10114966666666667
+          },
+          "nervousCashRate": [
+            0,
+            0.12519633333333333,
+            0.105772,
+            0.08288166666666667,
+            0.064218,
+            0.04909666666666666,
+            0.03592066666666666,
+            0.026155333333333333,
+            0.011269666666666667,
+            0.00792,
+            0.002781333333333333,
+            0.0019353333333333334,
+            0.0006153333333333333,
+            0.00038166666666666666,
+            0.000111,
+            0.00007,
+            0.00002,
+            0.00001,
+            0.0000036666666666666666,
+            0.000002,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 1,
+          "n": 7,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          "multiplierBps": 58113,
+          "ceilingBps": 9600,
+          "games": 5000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 5000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.75828980502,
+              "se": 0.0008754024082494671
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6270276474,
+              "se": 0.0008063104547093744
+            },
+            "nervous": {
+              "rtp": 0.49112553102,
+              "se": 0.00048229360067796186
+            },
+            "random-walk": {
+              "rtp": 0.09350075924904223,
+              "se": 0.00006620456299773904
+            },
+            "best": {
+              "rtp": 0.9579651919,
+              "se": 0.0006195136425289903
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9579651919,
+          "bestHalfWidth": 0.0012142244272880243,
+          "bestUcb": 0.959179416327288,
+          "engagement": {
+            "n1PlayPremium": 0.007965191900000002,
+            "e1WinRate": 0.1304854,
+            "e1Range": [
+              0.08,
+              0.2
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.75828980502,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.3856128,
+            "e4CashOutRate": 0.65741,
+            "e6MeanSteps": 8.0776762,
+            "e7NearMissRate": 0.0672866,
+            "e8Multiplier": 5.8113,
+            "e8Min": 5,
+            "e8Pass": true,
+            "e9Refund1Bps": 9000,
+            "e9RefundAtShortestBps": 2984,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6270276474,
+            "e10Pass": true,
+            "e11SessionMedian": 172,
+            "e11Min": 150,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.14182704599203474,
+            "m1JunctionRate": 0.3856128
+          },
+          "windowMissed": true,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.959179416327288,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.9138336582065344,
+              "ucb975": 0.918975593285507,
+              "meanDiff": -0.04413153369346554,
+              "diffLcb": -0.04912804801812689,
+              "halfWidthDiff": 0.004996514324661344,
+              "pairs": 293781,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9573100699,
+              "ucb975": 0.9591084115520756,
+              "meanDiff": -0.0006551220000000001,
+              "diffLcb": -0.001981655730354055,
+              "halfWidthDiff": 0.001326533730354055,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.1304854,
+            "sloppy": 0.107898,
+            "randomWalk": 0.01608947382668592,
+            "nervous": 0.0354282
+          },
+          "nervousCashRate": [
+            0,
+            0.08365,
+            0.0739232,
+            0.0602092,
+            0.0484556,
+            0.0377856,
+            0.0297048,
+            0.0229286,
+            0.0176538,
+            0.0136708,
+            0.010326,
+            0.0077346,
+            0.0045832,
+            0.0034102,
+            0.0017042,
+            0.0012454,
+            0.0005614,
+            0.0004136,
+            0.000173,
+            0.0001268,
+            0.000051,
+            0.0000392,
+            0.0000122,
+            0.000008,
+            0.0000042,
+            0.0000018,
+            6e-7,
+            8e-7,
+            6e-7,
+            2e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 2,
+          "n": 10,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          "multiplierBps": 266145,
+          "ceilingBps": 9600,
+          "games": 11000000,
+          "basis": "screened",
+          "stream": "A",
+          "sampleGames": 1375000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.716346204,
+              "se": 0.0036732009973742975
+            },
+            "sloppy-greedy": {
+              "rtp": 0.536238624,
+              "se": 0.0031890929080102973
+            },
+            "nervous": {
+              "rtp": 0.3981194438545455,
+              "se": 0.0018296678777003628
+            },
+            "random-walk": {
+              "rtp": 0.02965068229679322,
+              "se": 0.00007168195784917439
+            },
+            "best": {
+              "rtp": 0.9581808725818183,
+              "se": 0.002659938248810886
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9581808725818183,
+          "bestHalfWidth": 0.005213383168769878,
+          "bestUcb": 0.9633942557505881,
+          "engagement": {
+            "n1PlayPremium": 0.00818087258181821,
+            "e1WinRate": 0.026915636363636364,
+            "e1Range": [
+              0.02,
+              0.06
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.716346204,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.38475345454545457,
+            "e4CashOutRate": 0.6726,
+            "e6MeanSteps": 8.438542545454546,
+            "e7NearMissRate": 0.012830545454545454,
+            "e8Multiplier": 26.6145,
+            "e8Min": 20,
+            "e8Pass": true,
+            "e9Refund1Bps": 9000,
+            "e9RefundAtShortestBps": 2886,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.536238624,
+            "e10Pass": true,
+            "e11SessionMedian": 103,
+            "e11Min": 50,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.11922585805153349,
+            "m1JunctionRate": 0.38475345454545457
+          },
+          "windowMissed": false,
+          "pass": null,
+          "failedGates": [],
+          "gate1Value": null,
+          "gate1Limit": 0.965,
+          "adversaries": [],
+          "winRates": {
+            "naive": 0.026915636363636364,
+            "sloppy": 0.020148363636363638,
+            "randomWalk": 0.0011140800051397154,
+            "nervous": 0.006482909090909091
+          },
+          "nervousCashRate": [
+            0,
+            0.05540654545454545,
+            0.05063709090909091,
+            0.042568,
+            0.03531927272727273,
+            0.028385454545454547,
+            0.022632727272727273,
+            0.017904,
+            0.013986181818181818,
+            0.011017454545454546,
+            0.008516363636363636,
+            0.006620363636363636,
+            0.005210181818181818,
+            0.003994181818181819,
+            0.002997090909090909,
+            0.0024232727272727275,
+            0.0018363636363636364,
+            0.0014290909090909092,
+            0.000976,
+            0.0007803636363636363,
+            0.00046181818181818184,
+            0.00038763636363636366,
+            0.0002269090909090909,
+            0.00017163636363636364,
+            0.00009454545454545455,
+            0.00008290909090909091,
+            0.000034181818181818185,
+            0.000027636363636363636,
+            0.000014545454545454545,
+            0.000008,
+            0.0000058181818181818185,
+            0.0000058181818181818185,
+            7.272727272727273e-7,
+            7.272727272727273e-7,
+            0,
+            0,
+            7.272727272727273e-7,
+            7.272727272727273e-7,
+            0,
+            7.272727272727273e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "h": 0.31615128944282866,
+      "hSe": 0.00031284541629102364,
+      "state": {
+        "level": 0,
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          }
+        ],
+        "baseCeilingBps": 9600,
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "gate1Lowered": [],
+        "adversaryLowered": [],
+        "notes": []
+      }
+    },
+    {
+      "name": "ii",
+      "sizes": [
+        5,
+        7,
+        10
+      ],
+      "status": "ok",
+      "reason": null,
+      "exact": {
+        "schema": 1,
+        "profile": "production",
+        "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+        "variant": {
+          "level": 0,
+          "label": "production (lookahead on near-ties within 0.2)",
+          "hyper": {
+            "lookahead": "near-tie",
+            "threshold": 0.2
+          },
+          "rBins": 1
+        },
+        "targetBps": 9600,
+        "grids": [
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 7300,
+              "phi": 0.5
+            },
+            "multiplierBps": 11939,
+            "botRtp": 0.9599982142857143,
+            "optimalRtp": 0.9599982142857143,
+            "gap": -0.000001785714285662543,
+            "gapToBot": 0,
+            "optimalEast": 0.9599982142857143,
+            "optimalSouth": 0.9599982142857143,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.0417589285714286
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 0.9503875
+              },
+              {
+                "multiplierBps": 11939,
+                "botRtp": 0.9599982142857143
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 7300,
+              "phi": 0.5
+            },
+            "multiplierBps": 17206,
+            "botRtp": 0.9599897654584222,
+            "optimalRtp": 0.9604428304904051,
+            "gap": 0.0004428304904051661,
+            "gapToBot": 0.00045306503198294656,
+            "optimalEast": 0.9604428304904051,
+            "optimalSouth": 0.9604428304904051,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0355018523454158
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 17120,
+                "botRtp": 0.9558247268123666
+              },
+              {
+                "multiplierBps": 17949,
+                "botRtp": 0.9956896355277186
+              },
+              {
+                "multiplierBps": 17207,
+                "botRtp": 0.9600376832356076
+              },
+              {
+                "multiplierBps": 17163,
+                "botRtp": 0.9579293010394456
+              },
+              {
+                "multiplierBps": 17206,
+                "botRtp": 0.9599897654584222
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 7300,
+              "phi": 0.5
+            },
+            "multiplierBps": 20915,
+            "botRtp": 0.9599960478127687,
+            "optimalRtp": 0.9614438997973981,
+            "gap": 0.0014438997973981182,
+            "gapToBot": 0.001447851984629378,
+            "optimalEast": 0.9568296461552336,
+            "optimalSouth": 0.9660581534395624,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0328363870582777
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 20825,
+                "botRtp": 0.956834208644564
+              },
+              {
+                "multiplierBps": 21829,
+                "botRtp": 0.9921062811432032
+              },
+              {
+                "multiplierBps": 20915,
+                "botRtp": 0.9599960478127687
+              }
+            ]
+          }
+        ],
+        "gaps": {
+          "3x3": -0.000001785714285662543,
+          "4x4": 0.0004428304904051661,
+          "5x4": 0.0014438997973981182
+        },
+        "gapMax": 0.0014438997973981182,
+        "pass": true,
+        "branch": "pass",
+        "ceilingBps": 9600,
+        "e0Bps": 500,
+        "symmetry": {
+          "pass": true,
+          "squareMaxDifference": 0,
+          "rectangleMinDifference": 0.00922850728432878
+        }
+      },
+      "spec": {
+        "name": "ii",
+        "sizes": [
+          5,
+          7,
+          10
+        ],
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          }
+        ],
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "variantLevel": 0,
+        "screenLast": true
+      },
+      "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/ii.json",
+      "tableHash": "0xb48575a9a6e129e5f4047aa47f60d720f239349acaeb0a75ae9d32a47639a183",
+      "tiers": [
+        {
+          "tier": 0,
+          "n": 5,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 26088,
+          "ceilingBps": 9600,
+          "games": 3000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 3000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8727957800000001,
+              "se": 0.0007106751865508866
+            },
+            "sloppy-greedy": {
+              "rtp": 0.7702229816,
+              "se": 0.0006870503972420884
+            },
+            "nervous": {
+              "rtp": 0.5760096816333333,
+              "se": 0.0004288657975920343
+            },
+            "random-walk": {
+              "rtp": 0.22576215859526516,
+              "se": 0.00013160998282364471
+            },
+            "best": {
+              "rtp": 0.9580888912666666,
+              "se": 0.0006590213808289455
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9580888912666666,
+          "bestHalfWidth": 0.001291658171466592,
+          "bestUcb": 0.9593805494381332,
+          "engagement": {
+            "n1PlayPremium": 0.008088891266666787,
+            "e1WinRate": 0.33455833333333335,
+            "e1Range": [
+              0.25,
+              0.45
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.87279578,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0,
+            "e4CashOutRate": 0.243413,
+            "e6MeanSteps": 6.991029666666667,
+            "e7NearMissRate": 0.170015,
+            "e8Multiplier": 2.6088,
+            "e8Min": 2,
+            "e8Pass": true,
+            "e9Refund1Bps": 7300,
+            "e9RefundAtShortestBps": 3980,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.7702229816,
+            "e10Pass": true,
+            "e11SessionMedian": 347,
+            "e11Min": 200,
+            "e11Pass": true,
+            "m1ContinuationMargin": 0.006249795918841776,
+            "m1JunctionRate": 0.390932
+          },
+          "windowMissed": false,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.9593805494381332,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.9454521540699483,
+              "ucb975": 0.950627803268575,
+              "meanDiff": -0.012636737196718276,
+              "diffLcb": -0.01764861945743918,
+              "halfWidthDiff": 0.005011882260720906,
+              "pairs": 199773,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9582487892666667,
+              "ucb975": 0.9598587762976921,
+              "meanDiff": 0.000159898,
+              "diffLcb": -0.0008011833743661645,
+              "halfWidthDiff": 0.0009610813743661645,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.33455833333333335,
+            "sloppy": 0.2952403333333333,
+            "randomWalk": 0.0865386992468714,
+            "nervous": 0.10114966666666667
+          },
+          "nervousCashRate": [
+            0,
+            0.12519633333333333,
+            0.105772,
+            0.08288166666666667,
+            0.064218,
+            0.04909666666666666,
+            0.03592066666666666,
+            0.026155333333333333,
+            0.011269666666666667,
+            0.00792,
+            0.002781333333333333,
+            0.0019353333333333334,
+            0.0006153333333333333,
+            0.00038166666666666666,
+            0.000111,
+            0.00007,
+            0.00002,
+            0.00001,
+            0.0000036666666666666666,
+            0.000002,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 1,
+          "n": 7,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 66112,
+          "ceilingBps": 9600,
+          "games": 5000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 5000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8626650764800001,
+              "se": 0.000995897716761977
+            },
+            "sloppy-greedy": {
+              "rtp": 0.7133352576,
+              "se": 0.00091729555833886
+            },
+            "nervous": {
+              "rtp": 0.492030309,
+              "se": 0.0005421022104815334
+            },
+            "random-walk": {
+              "rtp": 0.10637072936298149,
+              "se": 0.0000753173312152271
+            },
+            "best": {
+              "rtp": 0.9539243298600001,
+              "se": 0.0008264204592233771
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9539243298600001,
+          "bestHalfWidth": 0.0016197543361649025,
+          "bestUcb": 0.955544084196165,
+          "engagement": {
+            "n1PlayPremium": 0.003924329860000131,
+            "e1WinRate": 0.1304854,
+            "e1Range": [
+              0.08,
+              0.2
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.86266507648,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0.3856128,
+            "e4CashOutRate": 0.4826054,
+            "e6MeanSteps": 8.0776762,
+            "e7NearMissRate": 0.0672866,
+            "e8Multiplier": 6.6112,
+            "e8Min": 5,
+            "e8Pass": true,
+            "e9Refund1Bps": 7300,
+            "e9RefundAtShortestBps": 3867,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.7133352576,
+            "e10Pass": true,
+            "e11SessionMedian": 268,
+            "e11Min": 150,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.0001547995540445706,
+            "m1JunctionRate": 0.3856128
+          },
+          "windowMissed": true,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.955544084196165,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.8749876613698375,
+              "ucb975": 0.88024764761646,
+              "meanDiff": -0.07893666849016262,
+              "diffLcb": -0.08394105168943232,
+              "halfWidthDiff": 0.005004383199269703,
+              "pairs": 579473,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.95269806986,
+              "ucb975": 0.955177242292694,
+              "meanDiff": -0.00122626,
+              "diffLcb": -0.0031031435450033333,
+              "halfWidthDiff": 0.001876883545003333,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.1304854,
+            "sloppy": 0.107898,
+            "randomWalk": 0.01608947382668592,
+            "nervous": 0.0354282
+          },
+          "nervousCashRate": [
+            0,
+            0.08365,
+            0.0739232,
+            0.0602092,
+            0.0484556,
+            0.0377856,
+            0.0297048,
+            0.0229286,
+            0.0176538,
+            0.0136708,
+            0.010326,
+            0.0077346,
+            0.0045832,
+            0.0034102,
+            0.0017042,
+            0.0012454,
+            0.0005614,
+            0.0004136,
+            0.000173,
+            0.0001268,
+            0.000051,
+            0.0000392,
+            0.0000122,
+            0.000008,
+            0.0000042,
+            0.0000018,
+            6e-7,
+            8e-7,
+            6e-7,
+            2e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 2,
+          "n": 10,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 308142,
+          "ceilingBps": 9600,
+          "games": 11000000,
+          "basis": "screened",
+          "stream": "A",
+          "sampleGames": 1375000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8293838020363636,
+              "se": 0.004252822715936466
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6208557067636364,
+              "se": 0.0036923236087850948
+            },
+            "nervous": {
+              "rtp": 0.3998207968,
+              "se": 0.0021106479961268943
+            },
+            "random-walk": {
+              "rtp": 0.03432948409438036,
+              "se": 0.00008299318738112305
+            },
+            "best": {
+              "rtp": 0.9568642101818182,
+              "se": 0.004235105437001329
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9568642101818182,
+          "bestHalfWidth": 0.008300654127252371,
+          "bestUcb": 0.9651648643090706,
+          "engagement": {
+            "n1PlayPremium": 0.006864210181818264,
+            "e1WinRate": 0.026915636363636364,
+            "e1Range": [
+              0.02,
+              0.06
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.8293838020363637,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0,
+            "e4CashOutRate": 0.19704945454545456,
+            "e6MeanSteps": 8.438542545454546,
+            "e7NearMissRate": 0.012830545454545454,
+            "e8Multiplier": 30.8142,
+            "e8Min": 20,
+            "e8Pass": true,
+            "e9Refund1Bps": 7300,
+            "e9RefundAtShortestBps": 3793,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6208557067636364,
+            "e10Pass": true,
+            "e11SessionMedian": 111,
+            "e11Min": 50,
+            "e11Pass": true,
+            "m1ContinuationMargin": 0.01010198352516065,
+            "m1JunctionRate": 0.38475345454545457
+          },
+          "windowMissed": false,
+          "pass": null,
+          "failedGates": [],
+          "gate1Value": null,
+          "gate1Limit": 0.965,
+          "adversaries": [],
+          "winRates": {
+            "naive": 0.026915636363636364,
+            "sloppy": 0.020148363636363638,
+            "randomWalk": 0.0011140800051397154,
+            "nervous": 0.006482909090909091
+          },
+          "nervousCashRate": [
+            0,
+            0.05540654545454545,
+            0.05063709090909091,
+            0.042568,
+            0.03531927272727273,
+            0.028385454545454547,
+            0.022632727272727273,
+            0.017904,
+            0.013986181818181818,
+            0.011017454545454546,
+            0.008516363636363636,
+            0.006620363636363636,
+            0.005210181818181818,
+            0.003994181818181819,
+            0.002997090909090909,
+            0.0024232727272727275,
+            0.0018363636363636364,
+            0.0014290909090909092,
+            0.000976,
+            0.0007803636363636363,
+            0.00046181818181818184,
+            0.00038763636363636366,
+            0.0002269090909090909,
+            0.00017163636363636364,
+            0.00009454545454545455,
+            0.00008290909090909091,
+            0.000034181818181818185,
+            0.000027636363636363636,
+            0.000014545454545454545,
+            0.000008,
+            0.0000058181818181818185,
+            0.0000058181818181818185,
+            7.272727272727273e-7,
+            7.272727272727273e-7,
+            0,
+            0,
+            7.272727272727273e-7,
+            7.272727272727273e-7,
+            0,
+            7.272727272727273e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "h": 0.2607969548321386,
+      "hSe": 0.0003659213603385641,
+      "state": {
+        "level": 0,
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          }
+        ],
+        "baseCeilingBps": 9600,
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "gate1Lowered": [],
+        "adversaryLowered": [],
+        "notes": []
+      }
+    },
+    {
+      "name": "iii",
+      "sizes": [
+        5,
+        7,
+        10
+      ],
+      "status": "ok",
+      "reason": null,
+      "exact": {
+        "schema": 1,
+        "profile": "production",
+        "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+        "variant": {
+          "level": 0,
+          "label": "production (lookahead on near-ties within 0.2)",
+          "hyper": {
+            "lookahead": "near-tie",
+            "threshold": 0.2
+          },
+          "rBins": 1
+        },
+        "targetBps": 9600,
+        "grids": [
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7340,
+              "phi": 0.5
+            },
+            "multiplierBps": 11928,
+            "botRtp": 0.95995,
+            "optimalRtp": 0.95995,
+            "gap": -0.00004999999999999449,
+            "gapToBot": 0,
+            "optimalEast": 0.95995,
+            "optimalSouth": 0.95995,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.0424767857142856
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 0.951105357142857
+              },
+              {
+                "multiplierBps": 11929,
+                "botRtp": 0.9600196428571429
+              },
+              {
+                "multiplierBps": 11865,
+                "botRtp": 0.9555625
+              },
+              {
+                "multiplierBps": 11928,
+                "botRtp": 0.95995
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7340,
+              "phi": 0.5
+            },
+            "multiplierBps": 17191,
+            "botRtp": 0.9599834921375267,
+            "optimalRtp": 0.960490115271855,
+            "gap": 0.0004901152718550517,
+            "gapToBot": 0.0005066231343283656,
+            "optimalEast": 0.960490115271855,
+            "optimalSouth": 0.960490115271855,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0362372134861406
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 0.9462022921108743
+              },
+              {
+                "multiplierBps": 17188,
+                "botRtp": 0.9598414179104476
+              },
+              {
+                "multiplierBps": 17983,
+                "botRtp": 0.9980578258262259
+              },
+              {
+                "multiplierBps": 17191,
+                "botRtp": 0.9599834921375267
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7340,
+              "phi": 0.5
+            },
+            "multiplierBps": 20879,
+            "botRtp": 0.9599690377776918,
+            "optimalRtp": 0.9614709062088314,
+            "gap": 0.0014709062088313907,
+            "gapToBot": 0.0015018684311395303,
+            "optimalEast": 0.957662557535407,
+            "optimalSouth": 0.9652792548822557,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0335440575466806
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 0.9473845853424424
+              },
+              {
+                "multiplierBps": 20883,
+                "botRtp": 0.9601095639629456
+              },
+              {
+                "multiplierBps": 20716,
+                "botRtp": 0.9530537332386355
+              },
+              {
+                "multiplierBps": 20880,
+                "botRtp": 0.9600041693240053
+              },
+              {
+                "multiplierBps": 20798,
+                "botRtp": 0.9571233825263076
+              },
+              {
+                "multiplierBps": 20879,
+                "botRtp": 0.9599690377776918
+              }
+            ]
+          },
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7550,
+              "phi": 0.5
+            },
+            "multiplierBps": 11875,
+            "botRtp": 0.959944642857143,
+            "optimalRtp": 0.959944642857143,
+            "gap": -0.00005535714285698212,
+            "gapToBot": 0,
+            "optimalEast": 0.959944642857143,
+            "optimalSouth": 0.959944642857143,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.0461625
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 0.9547910714285713
+              },
+              {
+                "multiplierBps": 11876,
+                "botRtp": 0.9600142857142857
+              },
+              {
+                "multiplierBps": 11838,
+                "botRtp": 0.9573678571428571
+              },
+              {
+                "multiplierBps": 11875,
+                "botRtp": 0.959944642857143
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7550,
+              "phi": 0.5
+            },
+            "multiplierBps": 17103,
+            "botRtp": 0.9599924973347548,
+            "optimalRtp": 0.960344829424307,
+            "gap": 0.0003448294243070249,
+            "gapToBot": 0.00035233208955220974,
+            "optimalEast": 0.960344829424307,
+            "optimalSouth": 0.960344829424307,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0400865971481876
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 0.9515433102345416
+              },
+              {
+                "multiplierBps": 17079,
+                "botRtp": 0.9588559035181237
+              },
+              {
+                "multiplierBps": 17928,
+                "botRtp": 0.9992334321695097
+              },
+              {
+                "multiplierBps": 17103,
+                "botRtp": 0.9599924973347548
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7550,
+              "phi": 0.5
+            },
+            "multiplierBps": 20712,
+            "botRtp": 0.9599913581738124,
+            "optimalRtp": 0.962357028338503,
+            "gap": 0.002357028338503042,
+            "gapToBot": 0.002365670164690581,
+            "optimalEast": 0.9626776846367177,
+            "optimalSouth": 0.9620363720402886,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0350930397054703
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 0.954495067697714
+              },
+              {
+                "multiplierBps": 20705,
+                "botRtp": 0.9597553211595016
+              },
+              {
+                "multiplierBps": 21769,
+                "botRtp": 0.997713074428028
+              },
+              {
+                "multiplierBps": 20712,
+                "botRtp": 0.9599913581738124
+              }
+            ]
+          },
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7700,
+              "phi": 0.5
+            },
+            "multiplierBps": 11837,
+            "botRtp": 0.9599375,
+            "optimalRtp": 0.9599375,
+            "gap": -0.00006249999999996536,
+            "gapToBot": 0,
+            "optimalEast": 0.9599375,
+            "optimalSouth": 0.9599375,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.0488017857142857
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 0.9574303571428571
+              },
+              {
+                "multiplierBps": 11838,
+                "botRtp": 0.960007142857143
+              },
+              {
+                "multiplierBps": 11819,
+                "botRtp": 0.9586839285714286
+              },
+              {
+                "multiplierBps": 11837,
+                "botRtp": 0.9599375
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7700,
+              "phi": 0.5
+            },
+            "multiplierBps": 16940,
+            "botRtp": 0.959989182436034,
+            "optimalRtp": 0.959989182436034,
+            "gap": -0.000010817563965925814,
+            "gapToBot": 0,
+            "optimalEast": 0.959989182436034,
+            "optimalSouth": 0.959989182436034,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0428246002132198
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 0.9585750033315565
+              },
+              {
+                "multiplierBps": 16932,
+                "botRtp": 0.9597063466151387
+              },
+              {
+                "multiplierBps": 17855,
+                "botRtp": 0.9985769822761195
+              },
+              {
+                "multiplierBps": 16939,
+                "botRtp": 0.9599538279584221
+              },
+              {
+                "multiplierBps": 17397,
+                "botRtp": 0.976886983608742
+              },
+              {
+                "multiplierBps": 16940,
+                "botRtp": 0.959989182436034
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 2000,
+              "aBps": 7700,
+              "phi": 0.5
+            },
+            "multiplierBps": 20559,
+            "botRtp": 0.9599928831238062,
+            "optimalRtp": 0.9618265459671264,
+            "gap": 0.0018265459671263917,
+            "gapToBot": 0.0018336628433202051,
+            "optimalEast": 0.9652772396532898,
+            "optimalSouth": 0.9583758522809629,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0397258794180266
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 0.9596558540766795
+              },
+              {
+                "multiplierBps": 20559,
+                "botRtp": 0.9599928831238062
+              }
+            ]
+          }
+        ],
+        "gaps": {
+          "3x3": -0.00004999999999999449,
+          "4x4": 0.0004901152718550517,
+          "5x4": 0.002357028338503042
+        },
+        "gapMax": 0.002357028338503042,
+        "pass": true,
+        "branch": "pass",
+        "ceilingBps": 9600,
+        "e0Bps": 500,
+        "symmetry": {
+          "pass": true,
+          "squareMaxDifference": 0,
+          "rectangleMinDifference": 0.0006413125964290778
+        }
+      },
+      "spec": {
+        "name": "iii",
+        "sizes": [
+          5,
+          7,
+          10
+        ],
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7340,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7550,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7700,
+            "phi": 0.5
+          }
+        ],
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "variantLevel": 0,
+        "screenLast": true
+      },
+      "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/iii.json",
+      "tableHash": "0x12affbdde724a8e040adf4aee12aa2658b40f8bde7f1271c252988b03ac8c52c",
+      "tiers": [
+        {
+          "tier": 0,
+          "n": 5,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7340,
+            "phi": 0.5
+          },
+          "multiplierBps": 26084,
+          "ceilingBps": 9600,
+          "games": 3000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 3000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8726619566666667,
+              "se": 0.0007105662207142489
+            },
+            "sloppy-greedy": {
+              "rtp": 0.7701048854666668,
+              "se": 0.000686945053728252
+            },
+            "nervous": {
+              "rtp": 0.5776744754666666,
+              "se": 0.00042886785965677614
+            },
+            "random-walk": {
+              "rtp": 0.22572754311559767,
+              "se": 0.00013158980343342514
+            },
+            "best": {
+              "rtp": 0.9581707187666666,
+              "se": 0.0006574517764391473
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9581707187666666,
+          "bestHalfWidth": 0.001288581803392641,
+          "bestUcb": 0.9594593005700592,
+          "engagement": {
+            "n1PlayPremium": 0.15817071876666666,
+            "e1WinRate": 0.33455833333333335,
+            "e1Range": [
+              0.25,
+              0.45
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.8726619566666667,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0,
+            "e4CashOutRate": 0.247577,
+            "e6MeanSteps": 6.991029666666667,
+            "e7NearMissRate": 0.170015,
+            "e8Multiplier": 2.6084,
+            "e8Min": 2,
+            "e8Pass": true,
+            "e9Refund1Bps": 7340,
+            "e9RefundAtShortestBps": 4002,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.7701048854666667,
+            "e10Pass": true,
+            "e11SessionMedian": 347,
+            "e11Min": 200,
+            "e11Pass": true,
+            "m1ContinuationMargin": 0.001933015329677816,
+            "m1JunctionRate": 0.390932
+          },
+          "windowMissed": false,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.9594593005700592,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.905664203863686,
+              "ucb975": 0.9108122940460607,
+              "meanDiff": -0.052506514902980604,
+              "diffLcb": -0.05749072892946743,
+              "halfWidthDiff": 0.004984214026486827,
+              "pairs": 124975,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9586812707666666,
+              "ucb975": 0.9603548679398067,
+              "meanDiff": 0.000510552,
+              "diffLcb": -0.0005573826580704261,
+              "halfWidthDiff": 0.001067934658070426,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.33455833333333335,
+            "sloppy": 0.2952403333333333,
+            "randomWalk": 0.0865386992468714,
+            "nervous": 0.10114966666666667
+          },
+          "nervousCashRate": [
+            0,
+            0.12519633333333333,
+            0.105772,
+            0.08288166666666667,
+            0.064218,
+            0.04909666666666666,
+            0.03592066666666666,
+            0.026155333333333333,
+            0.011269666666666667,
+            0.00792,
+            0.002781333333333333,
+            0.0019353333333333334,
+            0.0006153333333333333,
+            0.00038166666666666666,
+            0.000111,
+            0.00007,
+            0.00002,
+            0.00001,
+            0.0000036666666666666666,
+            0.000002,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 1,
+          "n": 7,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7550,
+            "phi": 0.5
+          },
+          "multiplierBps": 65295,
+          "ceilingBps": 9600,
+          "games": 5000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 5000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8520044193,
+              "se": 0.0009835905949899153
+            },
+            "sloppy-greedy": {
+              "rtp": 0.7045199910000001,
+              "se": 0.0009059597876593636
+            },
+            "nervous": {
+              "rtp": 0.49796892722,
+              "se": 0.0005360629339309275
+            },
+            "random-walk": {
+              "rtp": 0.10505621935137203,
+              "se": 0.00007438657341623649
+            },
+            "best": {
+              "rtp": 0.9577925377600001,
+              "se": 0.0008104132021593144
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9577925377600001,
+          "bestHalfWidth": 0.0015883806888280505,
+          "bestUcb": 0.9593809184488281,
+          "engagement": {
+            "n1PlayPremium": 0.15779253776000002,
+            "e1WinRate": 0.1304854,
+            "e1Range": [
+              0.08,
+              0.2
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.8520044192999999,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0.3856128,
+            "e4CashOutRate": 0.4936028,
+            "e6MeanSteps": 8.0776762,
+            "e7NearMissRate": 0.0672866,
+            "e8Multiplier": 6.5295,
+            "e8Min": 5,
+            "e8Pass": true,
+            "e9Refund1Bps": 7550,
+            "e9RefundAtShortestBps": 3999,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.7045199910000001,
+            "e10Pass": true,
+            "e11SessionMedian": 252,
+            "e11Min": 150,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.02238019224654283,
+            "m1JunctionRate": 0.3856128
+          },
+          "windowMissed": true,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.9593809184488281,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.7981904179370244,
+              "ucb975": 0.803434150623184,
+              "meanDiff": -0.15960211982297567,
+              "diffLcb": -0.16459949706221402,
+              "halfWidthDiff": 0.004997377239238358,
+              "pairs": 554952,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.95690721976,
+              "ucb975": 0.9594305778657019,
+              "meanDiff": -0.0008853180000000001,
+              "diffLcb": -0.0028460277992740095,
+              "halfWidthDiff": 0.0019607097992740095,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.1304854,
+            "sloppy": 0.107898,
+            "randomWalk": 0.01608947382668592,
+            "nervous": 0.0354282
+          },
+          "nervousCashRate": [
+            0,
+            0.08365,
+            0.0739232,
+            0.0602092,
+            0.0484556,
+            0.0377856,
+            0.0297048,
+            0.0229286,
+            0.0176538,
+            0.0136708,
+            0.010326,
+            0.0077346,
+            0.0045832,
+            0.0034102,
+            0.0017042,
+            0.0012454,
+            0.0005614,
+            0.0004136,
+            0.000173,
+            0.0001268,
+            0.000051,
+            0.0000392,
+            0.0000122,
+            0.000008,
+            0.0000042,
+            0.0000018,
+            6e-7,
+            8e-7,
+            6e-7,
+            2e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 2,
+          "n": 10,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7700,
+            "phi": 0.5
+          },
+          "multiplierBps": 301641,
+          "ceilingBps": 9600,
+          "games": 11000000,
+          "basis": "screened",
+          "stream": "A",
+          "sampleGames": 1375000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8118859468363637,
+              "se": 0.004163099145386839
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6077572555636364,
+              "se": 0.0036144251211374778
+            },
+            "nervous": {
+              "rtp": 0.4065711058909091,
+              "se": 0.0020675076612057413
+            },
+            "random-walk": {
+              "rtp": 0.033605220683041274,
+              "se": 0.00008124224557130828
+            },
+            "best": {
+              "rtp": 0.9570390715636363,
+              "se": 0.003529419660247386
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9570390715636363,
+          "bestHalfWidth": 0.00691753542041247,
+          "bestUcb": 0.9639566069840488,
+          "engagement": {
+            "n1PlayPremium": 0.1570390715636364,
+            "e1WinRate": 0.026915636363636364,
+            "e1Range": [
+              0.02,
+              0.06
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.8118859468363636,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.38475345454545457,
+            "e4CashOutRate": 0.49264145454545455,
+            "e6MeanSteps": 8.438542545454546,
+            "e7NearMissRate": 0.012830545454545454,
+            "e8Multiplier": 30.1641,
+            "e8Min": 20,
+            "e8Pass": true,
+            "e9Refund1Bps": 7700,
+            "e9RefundAtShortestBps": 4001,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6077572555636364,
+            "e10Pass": true,
+            "e11SessionMedian": 110,
+            "e11Min": 50,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.02594540004206502,
+            "m1JunctionRate": 0.38475345454545457
+          },
+          "windowMissed": false,
+          "pass": null,
+          "failedGates": [],
+          "gate1Value": null,
+          "gate1Limit": 0.965,
+          "adversaries": [],
+          "winRates": {
+            "naive": 0.026915636363636364,
+            "sloppy": 0.020148363636363638,
+            "randomWalk": 0.0011140800051397154,
+            "nervous": 0.006482909090909091
+          },
+          "nervousCashRate": [
+            0,
+            0.05540654545454545,
+            0.05063709090909091,
+            0.042568,
+            0.03531927272727273,
+            0.028385454545454547,
+            0.022632727272727273,
+            0.017904,
+            0.013986181818181818,
+            0.011017454545454546,
+            0.008516363636363636,
+            0.006620363636363636,
+            0.005210181818181818,
+            0.003994181818181819,
+            0.002997090909090909,
+            0.0024232727272727275,
+            0.0018363636363636364,
+            0.0014290909090909092,
+            0.000976,
+            0.0007803636363636363,
+            0.00046181818181818184,
+            0.00038763636363636366,
+            0.0002269090909090909,
+            0.00017163636363636364,
+            0.00009454545454545455,
+            0.00008290909090909091,
+            0.000034181818181818185,
+            0.000027636363636363636,
+            0.000014545454545454545,
+            0.000008,
+            0.0000058181818181818185,
+            0.0000058181818181818185,
+            7.272727272727273e-7,
+            7.272727272727273e-7,
+            0,
+            0,
+            7.272727272727273e-7,
+            7.272727272727273e-7,
+            0,
+            7.272727272727273e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "h": 0.263353688580167,
+      "hSe": 0.00035697902545935104,
+      "state": {
+        "level": 0,
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7340,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7550,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 2000,
+            "aBps": 7700,
+            "phi": 0.5
+          }
+        ],
+        "baseCeilingBps": 9600,
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "gate1Lowered": [],
+        "adversaryLowered": [],
+        "notes": []
+      }
+    },
+    {
+      "name": "ii-n5-7-9",
+      "sizes": [
+        5,
+        7,
+        9
+      ],
+      "status": "ok",
+      "reason": null,
+      "exact": {
+        "schema": 1,
+        "profile": "production",
+        "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+        "variant": {
+          "level": 0,
+          "label": "production (lookahead on near-ties within 0.2)",
+          "hyper": {
+            "lookahead": "near-tie",
+            "threshold": 0.2
+          },
+          "rBins": 1
+        },
+        "targetBps": 9600,
+        "grids": [
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 7300,
+              "phi": 0.5
+            },
+            "multiplierBps": 11939,
+            "botRtp": 0.9599982142857143,
+            "optimalRtp": 0.9599982142857143,
+            "gap": -0.000001785714285662543,
+            "gapToBot": 0,
+            "optimalEast": 0.9599982142857143,
+            "optimalSouth": 0.9599982142857143,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.0417589285714286
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 0.9503875
+              },
+              {
+                "multiplierBps": 11939,
+                "botRtp": 0.9599982142857143
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 7300,
+              "phi": 0.5
+            },
+            "multiplierBps": 17206,
+            "botRtp": 0.9599897654584222,
+            "optimalRtp": 0.9604428304904051,
+            "gap": 0.0004428304904051661,
+            "gapToBot": 0.00045306503198294656,
+            "optimalEast": 0.9604428304904051,
+            "optimalSouth": 0.9604428304904051,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0355018523454158
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 17120,
+                "botRtp": 0.9558247268123666
+              },
+              {
+                "multiplierBps": 17949,
+                "botRtp": 0.9956896355277186
+              },
+              {
+                "multiplierBps": 17207,
+                "botRtp": 0.9600376832356076
+              },
+              {
+                "multiplierBps": 17163,
+                "botRtp": 0.9579293010394456
+              },
+              {
+                "multiplierBps": 17206,
+                "botRtp": 0.9599897654584222
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 7300,
+              "phi": 0.5
+            },
+            "multiplierBps": 20915,
+            "botRtp": 0.9599960478127687,
+            "optimalRtp": 0.9614438997973981,
+            "gap": 0.0014438997973981182,
+            "gapToBot": 0.001447851984629378,
+            "optimalEast": 0.9568296461552336,
+            "optimalSouth": 0.9660581534395624,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0328363870582777
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 20825,
+                "botRtp": 0.956834208644564
+              },
+              {
+                "multiplierBps": 21829,
+                "botRtp": 0.9921062811432032
+              },
+              {
+                "multiplierBps": 20915,
+                "botRtp": 0.9599960478127687
+              }
+            ]
+          }
+        ],
+        "gaps": {
+          "3x3": -0.000001785714285662543,
+          "4x4": 0.0004428304904051661,
+          "5x4": 0.0014438997973981182
+        },
+        "gapMax": 0.0014438997973981182,
+        "pass": true,
+        "branch": "pass",
+        "ceilingBps": 9600,
+        "e0Bps": 500,
+        "symmetry": {
+          "pass": true,
+          "squareMaxDifference": 0,
+          "rectangleMinDifference": 0.00922850728432878
+        }
+      },
+      "spec": {
+        "name": "ii-n5-7-9",
+        "sizes": [
+          5,
+          7,
+          9
+        ],
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          }
+        ],
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "variantLevel": 0,
+        "screenLast": true
+      },
+      "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/ii-n5-7-9.json",
+      "tableHash": "0x50c5ebc7926a2ba2e5dcd763a139a8c498e3fbeef833c48d275146716a38875f",
+      "tiers": [
+        {
+          "tier": 0,
+          "n": 5,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 26088,
+          "ceilingBps": 9600,
+          "games": 3000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 3000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8727957800000001,
+              "se": 0.0007106751865508866
+            },
+            "sloppy-greedy": {
+              "rtp": 0.7702229816,
+              "se": 0.0006870503972420884
+            },
+            "nervous": {
+              "rtp": 0.5760096816333333,
+              "se": 0.0004288657975920343
+            },
+            "random-walk": {
+              "rtp": 0.22576215859526516,
+              "se": 0.00013160998282364471
+            },
+            "best": {
+              "rtp": 0.9580888912666666,
+              "se": 0.0006590213808289455
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9580888912666666,
+          "bestHalfWidth": 0.001291658171466592,
+          "bestUcb": 0.9593805494381332,
+          "engagement": {
+            "n1PlayPremium": 0.008088891266666787,
+            "e1WinRate": 0.33455833333333335,
+            "e1Range": [
+              0.25,
+              0.45
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.87279578,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0,
+            "e4CashOutRate": 0.243413,
+            "e6MeanSteps": 6.991029666666667,
+            "e7NearMissRate": 0.170015,
+            "e8Multiplier": 2.6088,
+            "e8Min": 2,
+            "e8Pass": true,
+            "e9Refund1Bps": 7300,
+            "e9RefundAtShortestBps": 3980,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.7702229816,
+            "e10Pass": true,
+            "e11SessionMedian": 347,
+            "e11Min": 200,
+            "e11Pass": true,
+            "m1ContinuationMargin": 0.006249795918841776,
+            "m1JunctionRate": 0.390932
+          },
+          "windowMissed": false,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.9593805494381332,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.9454521540699483,
+              "ucb975": 0.950627803268575,
+              "meanDiff": -0.012636737196718276,
+              "diffLcb": -0.01764861945743918,
+              "halfWidthDiff": 0.005011882260720906,
+              "pairs": 199773,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9582487892666667,
+              "ucb975": 0.9598587762976921,
+              "meanDiff": 0.000159898,
+              "diffLcb": -0.0008011833743661645,
+              "halfWidthDiff": 0.0009610813743661645,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.33455833333333335,
+            "sloppy": 0.2952403333333333,
+            "randomWalk": 0.0865386992468714,
+            "nervous": 0.10114966666666667
+          },
+          "nervousCashRate": [
+            0,
+            0.12519633333333333,
+            0.105772,
+            0.08288166666666667,
+            0.064218,
+            0.04909666666666666,
+            0.03592066666666666,
+            0.026155333333333333,
+            0.011269666666666667,
+            0.00792,
+            0.002781333333333333,
+            0.0019353333333333334,
+            0.0006153333333333333,
+            0.00038166666666666666,
+            0.000111,
+            0.00007,
+            0.00002,
+            0.00001,
+            0.0000036666666666666666,
+            0.000002,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 1,
+          "n": 7,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 66112,
+          "ceilingBps": 9600,
+          "games": 5000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 5000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8626650764800001,
+              "se": 0.000995897716761977
+            },
+            "sloppy-greedy": {
+              "rtp": 0.7133352576,
+              "se": 0.00091729555833886
+            },
+            "nervous": {
+              "rtp": 0.492030309,
+              "se": 0.0005421022104815334
+            },
+            "random-walk": {
+              "rtp": 0.10637072936298149,
+              "se": 0.0000753173312152271
+            },
+            "best": {
+              "rtp": 0.9539243298600001,
+              "se": 0.0008264204592233771
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9539243298600001,
+          "bestHalfWidth": 0.0016197543361649025,
+          "bestUcb": 0.955544084196165,
+          "engagement": {
+            "n1PlayPremium": 0.003924329860000131,
+            "e1WinRate": 0.1304854,
+            "e1Range": [
+              0.08,
+              0.2
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.86266507648,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0.3856128,
+            "e4CashOutRate": 0.4826054,
+            "e6MeanSteps": 8.0776762,
+            "e7NearMissRate": 0.0672866,
+            "e8Multiplier": 6.6112,
+            "e8Min": 5,
+            "e8Pass": true,
+            "e9Refund1Bps": 7300,
+            "e9RefundAtShortestBps": 3867,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.7133352576,
+            "e10Pass": true,
+            "e11SessionMedian": 268,
+            "e11Min": 150,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.0001547995540445706,
+            "m1JunctionRate": 0.3856128
+          },
+          "windowMissed": true,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.955544084196165,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.8749876613698375,
+              "ucb975": 0.88024764761646,
+              "meanDiff": -0.07893666849016262,
+              "diffLcb": -0.08394105168943232,
+              "halfWidthDiff": 0.005004383199269703,
+              "pairs": 579473,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.95269806986,
+              "ucb975": 0.955177242292694,
+              "meanDiff": -0.00122626,
+              "diffLcb": -0.0031031435450033333,
+              "halfWidthDiff": 0.001876883545003333,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.1304854,
+            "sloppy": 0.107898,
+            "randomWalk": 0.01608947382668592,
+            "nervous": 0.0354282
+          },
+          "nervousCashRate": [
+            0,
+            0.08365,
+            0.0739232,
+            0.0602092,
+            0.0484556,
+            0.0377856,
+            0.0297048,
+            0.0229286,
+            0.0176538,
+            0.0136708,
+            0.010326,
+            0.0077346,
+            0.0045832,
+            0.0034102,
+            0.0017042,
+            0.0012454,
+            0.0005614,
+            0.0004136,
+            0.000173,
+            0.0001268,
+            0.000051,
+            0.0000392,
+            0.0000122,
+            0.000008,
+            0.0000042,
+            0.0000018,
+            6e-7,
+            8e-7,
+            6e-7,
+            2e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 2,
+          "n": 9,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 183106,
+          "ceilingBps": 9600,
+          "games": 11000000,
+          "basis": "screened",
+          "stream": "A",
+          "sampleGames": 1375000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.8505306992000001,
+              "se": 0.003286372495982773
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6612723376,
+              "se": 0.0029134198147567356
+            },
+            "nervous": {
+              "rtp": 0.42401104574545456,
+              "se": 0.00165230683687168
+            },
+            "random-walk": {
+              "rtp": 0.05055861035574589,
+              "se": 0.00010155390587945278
+            },
+            "best": {
+              "rtp": 0.9576696314909091,
+              "se": 0.003199961274148078
+            }
+          },
+          "bestBot": "value-table",
+          "bestRtp": 0.9576696314909091,
+          "bestHalfWidth": 0.006271808849253135,
+          "bestUcb": 0.9639414403401623,
+          "engagement": {
+            "n1PlayPremium": 0.007669631490909157,
+            "e1WinRate": 0.04645018181818182,
+            "e1Range": [
+              0.02,
+              0.06
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.8505306992,
+            "e2Pass": true,
+            "e3EarlyQuitRate": 0,
+            "e4CashOutRate": 0.22185672727272726,
+            "e6MeanSteps": 8.396565818181818,
+            "e7NearMissRate": 0.022688727272727274,
+            "e8Multiplier": 18.3106,
+            "e8Min": 20,
+            "e8Pass": false,
+            "e9Refund1Bps": 7300,
+            "e9RefundAtShortestBps": 3811,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6612723376,
+            "e10Pass": true,
+            "e11SessionMedian": 178,
+            "e11Min": 50,
+            "e11Pass": true,
+            "m1ContinuationMargin": 0.009400503854712871,
+            "m1JunctionRate": 0.38365527272727273
+          },
+          "windowMissed": false,
+          "pass": null,
+          "failedGates": [],
+          "gate1Value": null,
+          "gate1Limit": 0.965,
+          "adversaries": [],
+          "winRates": {
+            "naive": 0.04645018181818182,
+            "sloppy": 0.036114181818181816,
+            "randomWalk": 0.002761166229164524,
+            "nervous": 0.011317090909090909
+          },
+          "nervousCashRate": [
+            0,
+            0.062272,
+            0.056697454545454544,
+            0.04714327272727273,
+            0.039024,
+            0.031162909090909092,
+            0.02460509090909091,
+            0.019328,
+            0.015150545454545455,
+            0.011784,
+            0.009162909090909091,
+            0.0070894545454545455,
+            0.005447272727272728,
+            0.004311272727272727,
+            0.0032443636363636364,
+            0.002525090909090909,
+            0.0016712727272727272,
+            0.0012887272727272728,
+            0.0007476363636363636,
+            0.0005890909090909091,
+            0.0003149090909090909,
+            0.00022545454545454545,
+            0.00012945454545454545,
+            0.000096,
+            0.000045818181818181815,
+            0.000030545454545454546,
+            0.000016727272727272726,
+            0.000010909090909090909,
+            0.000004363636363636364,
+            0.000002181818181818182,
+            0.000002181818181818182,
+            0,
+            7.272727272727273e-7,
+            0,
+            7.272727272727273e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "h": 0.2573055711799056,
+      "hSe": 0.00031801236880287057,
+      "state": {
+        "level": 0,
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          }
+        ],
+        "baseCeilingBps": 9600,
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "gate1Lowered": [],
+        "adversaryLowered": [],
+        "notes": []
+      }
+    }
+  ],
+  "selection": {
+    "order": [
+      "ii-n5-7-9",
+      "ii",
+      "iii",
+      "i"
+    ],
+    "relaxed": [
+      "E9",
+      "E8"
+    ],
+    "assumptionRangeMet": true,
+    "rows": [
+      {
+        "name": "i",
+        "h": 0.31615128944282866,
+        "feasible": false,
+        "status": {
+          "e2": false,
+          "e10": true,
+          "e8": true,
+          "e9": true,
+          "violation": 0.2922298443133332,
+          "violatingTiers": [
+            2,
+            1,
+            0
+          ]
+        }
+      },
+      {
+        "name": "ii",
+        "h": 0.2607969548321386,
+        "feasible": false,
+        "status": {
+          "e2": false,
+          "e10": true,
+          "e8": true,
+          "e9": true,
+          "violation": 0.02061619796363634,
+          "violatingTiers": [
+            2
+          ]
+        }
+      },
+      {
+        "name": "iii",
+        "h": 0.263353688580167,
+        "feasible": false,
+        "status": {
+          "e2": false,
+          "e10": true,
+          "e8": true,
+          "e9": true,
+          "violation": 0.03811405316363625,
+          "violatingTiers": [
+            2
+          ]
+        }
+      },
+      {
+        "name": "ii-n5-7-9",
+        "h": 0.2573055711799056,
+        "feasible": true,
+        "status": {
+          "e2": true,
+          "e10": true,
+          "e8": false,
+          "e9": true,
+          "violation": 0,
+          "violatingTiers": []
+        }
+      }
+    ]
+  },
+  "relaxed": [
+    "E9",
+    "E8"
+  ],
+  "assumptionRangeMet": true,
+  "sizeChanges": [
+    {
+      "candidate": "ii",
+      "tier": 2,
+      "from": 10,
+      "to": 9,
+      "adopted": true,
+      "reason": "E2/E10 shortfall 2.062% → 0.000% (spec deviation: tier size changed)"
+    }
+  ],
+  "baselineAttempts": [
+    {
+      "name": "ii-n5-7-9",
+      "status": "ok",
+      "reason": null
+    }
+  ],
+  "baseline": {
+    "name": "ii-n5-7-9",
+    "sizes": [
+      5,
+      7,
+      9
+    ],
+    "status": "ok",
+    "reason": null,
+    "exact": {
+      "schema": 1,
+      "profile": "production",
+      "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+      "variant": {
+        "level": 0,
+        "label": "production (lookahead on near-ties within 0.2)",
+        "hyper": {
+          "lookahead": "near-tie",
+          "threshold": 0.2
+        },
+        "rBins": 1
+      },
+      "targetBps": 9600,
+      "grids": [
+        {
+          "w": 3,
+          "h": 3,
+          "mazes": 112,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 11939,
+          "botRtp": 0.9599982142857143,
+          "optimalRtp": 0.9599982142857143,
+          "gap": -0.000001785714285662543,
+          "gapToBot": 0,
+          "optimalEast": 0.9599982142857143,
+          "optimalSouth": 0.9599982142857143,
+          "trainGames": 1000048,
+          "evaluations": [
+            {
+              "multiplierBps": 13113,
+              "botRtp": 1.0417589285714286
+            },
+            {
+              "multiplierBps": 11801,
+              "botRtp": 0.9503875
+            },
+            {
+              "multiplierBps": 11939,
+              "botRtp": 0.9599982142857143
+            }
+          ]
+        },
+        {
+          "w": 4,
+          "h": 4,
+          "mazes": 60032,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 17206,
+          "botRtp": 0.9599897654584222,
+          "optimalRtp": 0.9604428304904051,
+          "gap": 0.0004428304904051661,
+          "gapToBot": 0.00045306503198294656,
+          "optimalEast": 0.9604428304904051,
+          "optimalSouth": 0.9604428304904051,
+          "trainGames": 1020544,
+          "evaluations": [
+            {
+              "multiplierBps": 18778,
+              "botRtp": 1.0355018523454158
+            },
+            {
+              "multiplierBps": 16900,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 17120,
+              "botRtp": 0.9558247268123666
+            },
+            {
+              "multiplierBps": 17949,
+              "botRtp": 0.9956896355277186
+            },
+            {
+              "multiplierBps": 17207,
+              "botRtp": 0.9600376832356076
+            },
+            {
+              "multiplierBps": 17163,
+              "botRtp": 0.9579293010394456
+            },
+            {
+              "multiplierBps": 17206,
+              "botRtp": 0.9599897654584222
+            }
+          ]
+        },
+        {
+          "w": 5,
+          "h": 4,
+          "mazes": 2483688,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 20915,
+          "botRtp": 0.9599960478127687,
+          "optimalRtp": 0.9614438997973981,
+          "gap": 0.0014438997973981182,
+          "gapToBot": 0.001447851984629378,
+          "optimalEast": 0.9568296461552336,
+          "optimalSouth": 0.9660581534395624,
+          "trainGames": 2483688,
+          "evaluations": [
+            {
+              "multiplierBps": 22833,
+              "botRtp": 1.0328363870582777
+            },
+            {
+              "multiplierBps": 20549,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 20825,
+              "botRtp": 0.956834208644564
+            },
+            {
+              "multiplierBps": 21829,
+              "botRtp": 0.9921062811432032
+            },
+            {
+              "multiplierBps": 20915,
+              "botRtp": 0.9599960478127687
+            }
+          ]
+        }
+      ],
+      "gaps": {
+        "3x3": -0.000001785714285662543,
+        "4x4": 0.0004428304904051661,
+        "5x4": 0.0014438997973981182
+      },
+      "gapMax": 0.0014438997973981182,
+      "pass": true,
+      "branch": "pass",
+      "ceilingBps": 9600,
+      "e0Bps": 500,
+      "symmetry": {
+        "pass": true,
+        "squareMaxDifference": 0,
+        "rectangleMinDifference": 0.00922850728432878
+      }
+    },
+    "spec": {
+      "name": "ii-n5-7-9",
+      "sizes": [
+        5,
+        7,
+        9
+      ],
+      "curves": [
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        }
+      ],
+      "ceilingsBps": [
+        9600,
+        9600,
+        9600
+      ],
+      "variantLevel": 0,
+      "screenLast": false
+    },
+    "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/ii-n5-7-9.json",
+    "tableHash": "0x50c5ebc7926a2ba2e5dcd763a139a8c498e3fbeef833c48d275146716a38875f",
+    "tiers": [
+      {
+        "tier": 0,
+        "n": 5,
+        "curve": {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        "multiplierBps": 26088,
+        "ceilingBps": 9600,
+        "games": 3000000,
+        "basis": "certified",
+        "stream": "B",
+        "sampleGames": 3000000,
+        "population": {
+          "naive-greedy": {
+            "rtp": 0.8727957800000001,
+            "se": 0.0007106751865508866
+          },
+          "sloppy-greedy": {
+            "rtp": 0.7702229816,
+            "se": 0.0006870503972420884
+          },
+          "nervous": {
+            "rtp": 0.5760096816333333,
+            "se": 0.0004288657975920343
+          },
+          "random-walk": {
+            "rtp": 0.22576215859526516,
+            "se": 0.00013160998282364471
+          },
+          "best": {
+            "rtp": 0.9580888912666666,
+            "se": 0.0006590213808289455
+          }
+        },
+        "bestBot": "value-lsm",
+        "bestRtp": 0.9580888912666666,
+        "bestHalfWidth": 0.001291658171466592,
+        "bestUcb": 0.9593805494381332,
+        "engagement": {
+          "n1PlayPremium": 0.008088891266666787,
+          "e1WinRate": 0.33455833333333335,
+          "e1Range": [
+            0.25,
+            0.45
+          ],
+          "e1InRange": true,
+          "e2NaiveRtp": 0.87279578,
+          "e2Pass": true,
+          "e3EarlyQuitRate": 0,
+          "e4CashOutRate": 0.243413,
+          "e6MeanSteps": 6.991029666666667,
+          "e7NearMissRate": 0.170015,
+          "e8Multiplier": 2.6088,
+          "e8Min": 2,
+          "e8Pass": true,
+          "e9Refund1Bps": 7300,
+          "e9RefundAtShortestBps": 3980,
+          "e9Pass": true,
+          "e10SloppyRtp": 0.7702229816,
+          "e10Pass": true,
+          "e11SessionMedian": 347,
+          "e11Min": 200,
+          "e11Pass": true,
+          "m1ContinuationMargin": 0.006249795918841776,
+          "m1JunctionRate": 0.390932
+        },
+        "windowMissed": false,
+        "pass": true,
+        "failedGates": [],
+        "gate1Value": 0.9593805494381332,
+        "gate1Limit": 0.965,
+        "adversaries": [
+          {
+            "name": "rollout(32)",
+            "rtp": 0.9454521540699483,
+            "ucb975": 0.950627803268575,
+            "meanDiff": -0.012636737196718276,
+            "diffLcb": -0.01764861945743918,
+            "halfWidthDiff": 0.005011882260720906,
+            "pairs": 199773,
+            "capped": false
+          },
+          {
+            "name": "value-lookahead-all",
+            "rtp": 0.9582487892666667,
+            "ucb975": 0.9598587762976921,
+            "meanDiff": 0.000159898,
+            "diffLcb": -0.0008011833743661645,
+            "halfWidthDiff": 0.0009610813743661645,
+            "pairs": 100000,
+            "capped": false
+          }
+        ],
+        "winRates": {
+          "naive": 0.33455833333333335,
+          "sloppy": 0.2952403333333333,
+          "randomWalk": 0.0865386992468714,
+          "nervous": 0.10114966666666667
+        },
+        "nervousCashRate": [
+          0,
+          0.12519633333333333,
+          0.105772,
+          0.08288166666666667,
+          0.064218,
+          0.04909666666666666,
+          0.03592066666666666,
+          0.026155333333333333,
+          0.011269666666666667,
+          0.00792,
+          0.002781333333333333,
+          0.0019353333333333334,
+          0.0006153333333333333,
+          0.00038166666666666666,
+          0.000111,
+          0.00007,
+          0.00002,
+          0.00001,
+          0.0000036666666666666666,
+          0.000002,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "tier": 1,
+        "n": 7,
+        "curve": {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        "multiplierBps": 66112,
+        "ceilingBps": 9600,
+        "games": 5000000,
+        "basis": "certified",
+        "stream": "B",
+        "sampleGames": 5000000,
+        "population": {
+          "naive-greedy": {
+            "rtp": 0.8626650764800001,
+            "se": 0.000995897716761977
+          },
+          "sloppy-greedy": {
+            "rtp": 0.7133352576,
+            "se": 0.00091729555833886
+          },
+          "nervous": {
+            "rtp": 0.492030309,
+            "se": 0.0005421022104815334
+          },
+          "random-walk": {
+            "rtp": 0.10637072936298149,
+            "se": 0.0000753173312152271
+          },
+          "best": {
+            "rtp": 0.9539243298600001,
+            "se": 0.0008264204592233771
+          }
+        },
+        "bestBot": "value-lsm",
+        "bestRtp": 0.9539243298600001,
+        "bestHalfWidth": 0.0016197543361649025,
+        "bestUcb": 0.955544084196165,
+        "engagement": {
+          "n1PlayPremium": 0.003924329860000131,
+          "e1WinRate": 0.1304854,
+          "e1Range": [
+            0.08,
+            0.2
+          ],
+          "e1InRange": true,
+          "e2NaiveRtp": 0.86266507648,
+          "e2Pass": true,
+          "e3EarlyQuitRate": 0.3856128,
+          "e4CashOutRate": 0.4826054,
+          "e6MeanSteps": 8.0776762,
+          "e7NearMissRate": 0.0672866,
+          "e8Multiplier": 6.6112,
+          "e8Min": 5,
+          "e8Pass": true,
+          "e9Refund1Bps": 7300,
+          "e9RefundAtShortestBps": 3867,
+          "e9Pass": true,
+          "e10SloppyRtp": 0.7133352576,
+          "e10Pass": true,
+          "e11SessionMedian": 268,
+          "e11Min": 150,
+          "e11Pass": true,
+          "m1ContinuationMargin": -0.0001547995540445706,
+          "m1JunctionRate": 0.3856128
+        },
+        "windowMissed": true,
+        "pass": true,
+        "failedGates": [],
+        "gate1Value": 0.955544084196165,
+        "gate1Limit": 0.965,
+        "adversaries": [
+          {
+            "name": "rollout(32)",
+            "rtp": 0.8749876613698375,
+            "ucb975": 0.88024764761646,
+            "meanDiff": -0.07893666849016262,
+            "diffLcb": -0.08394105168943232,
+            "halfWidthDiff": 0.005004383199269703,
+            "pairs": 579473,
+            "capped": false
+          },
+          {
+            "name": "value-lookahead-all",
+            "rtp": 0.95269806986,
+            "ucb975": 0.955177242292694,
+            "meanDiff": -0.00122626,
+            "diffLcb": -0.0031031435450033333,
+            "halfWidthDiff": 0.001876883545003333,
+            "pairs": 100000,
+            "capped": false
+          }
+        ],
+        "winRates": {
+          "naive": 0.1304854,
+          "sloppy": 0.107898,
+          "randomWalk": 0.01608947382668592,
+          "nervous": 0.0354282
+        },
+        "nervousCashRate": [
+          0,
+          0.08365,
+          0.0739232,
+          0.0602092,
+          0.0484556,
+          0.0377856,
+          0.0297048,
+          0.0229286,
+          0.0176538,
+          0.0136708,
+          0.010326,
+          0.0077346,
+          0.0045832,
+          0.0034102,
+          0.0017042,
+          0.0012454,
+          0.0005614,
+          0.0004136,
+          0.000173,
+          0.0001268,
+          0.000051,
+          0.0000392,
+          0.0000122,
+          0.000008,
+          0.0000042,
+          0.0000018,
+          6e-7,
+          8e-7,
+          6e-7,
+          2e-7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "tier": 2,
+        "n": 9,
+        "curve": {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        "multiplierBps": 183106,
+        "ceilingBps": 9600,
+        "games": 11000000,
+        "basis": "certified",
+        "stream": "B",
+        "sampleGames": 11000000,
+        "population": {
+          "naive-greedy": {
+            "rtp": 0.8466871378,
+            "se": 0.0011594070483072344
+          },
+          "sloppy-greedy": {
+            "rtp": 0.6572806268,
+            "se": 0.0010270516441627975
+          },
+          "nervous": {
+            "rtp": 0.4266699146363637,
+            "se": 0.0005879183758773218
+          },
+          "random-walk": {
+            "rtp": 0.05043099643765859,
+            "se": 0.00003589819079456911
+          },
+          "best": {
+            "rtp": 0.955011237609091,
+            "se": 0.0011286909507249791
+          }
+        },
+        "bestBot": "value-lsm",
+        "bestRtp": 0.955011237609091,
+        "bestHalfWidth": 0.002212193613097213,
+        "bestUcb": 0.9572234312221882,
+        "engagement": {
+          "n1PlayPremium": 0.005011237609090946,
+          "e1WinRate": 0.04624027272727273,
+          "e1Range": [
+            0.02,
+            0.06
+          ],
+          "e1InRange": true,
+          "e2NaiveRtp": 0.8466871377999999,
+          "e2Pass": false,
+          "e3EarlyQuitRate": 0,
+          "e4CashOutRate": 0.2241970909090909,
+          "e6MeanSteps": 8.395585636363636,
+          "e7NearMissRate": 0.022767363636363638,
+          "e8Multiplier": 18.3106,
+          "e8Min": 20,
+          "e8Pass": false,
+          "e9Refund1Bps": 7300,
+          "e9RefundAtShortestBps": 3811,
+          "e9Pass": true,
+          "e10SloppyRtp": 0.6572806268,
+          "e10Pass": true,
+          "e11SessionMedian": 159,
+          "e11Min": 50,
+          "e11Pass": true,
+          "m1ContinuationMargin": 0.009400503854712859,
+          "m1JunctionRate": 0.3841780909090909
+        },
+        "windowMissed": true,
+        "pass": true,
+        "failedGates": [],
+        "gate1Value": 0.9572234312221882,
+        "gate1Limit": 0.965,
+        "adversaries": [
+          {
+            "name": "rollout(32)",
+            "rtp": 0.9536754852090911,
+            "ucb975": 0.9613233200972386,
+            "meanDiff": -0.0013357524,
+            "diffLcb": -0.008656652474071398,
+            "halfWidthDiff": 0.007320900074071397,
+            "pairs": 1000000,
+            "capped": true
+          },
+          {
+            "name": "value-lookahead-all",
+            "rtp": 0.956500791609091,
+            "ucb975": 0.9597681274350548,
+            "meanDiff": 0.001489554,
+            "diffLcb": -0.0009149590105280898,
+            "halfWidthDiff": 0.0024045130105280897,
+            "pairs": 400000,
+            "capped": false
+          }
+        ],
+        "winRates": {
+          "naive": 0.04624027272727273,
+          "sloppy": 0.03589618181818182,
+          "randomWalk": 0.0027541968279385996,
+          "nervous": 0.011467727272727274
+        },
+        "nervousCashRate": [
+          0,
+          0.06250845454545455,
+          0.05666709090909091,
+          0.047144818181818184,
+          0.03889145454545455,
+          0.03099,
+          0.024692636363636365,
+          0.019400272727272728,
+          0.015079636363636363,
+          0.011776818181818182,
+          0.009123,
+          0.007090454545454546,
+          0.005420727272727272,
+          0.0042172727272727275,
+          0.003232181818181818,
+          0.0024717272727272726,
+          0.0016668181818181819,
+          0.00127,
+          0.0007658181818181819,
+          0.0005659090909090909,
+          0.0003082727272727273,
+          0.00023445454545454545,
+          0.00011590909090909091,
+          0.00009263636363636364,
+          0.00004545454545454545,
+          0.00003454545454545455,
+          0.000014272727272727272,
+          0.000013727272727272727,
+          0.000004909090909090909,
+          0.0000037272727272727274,
+          0.000001909090909090909,
+          0.0000013636363636363636,
+          3.6363636363636366e-7,
+          9.09090909090909e-7,
+          1.8181818181818183e-7,
+          0,
+          0,
+          0,
+          0,
+          9.090909090909091e-8,
+          9.090909090909091e-8,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "h": 0.2576380522084049,
+    "hSe": 0.0002406872087906058,
+    "state": {
+      "level": 0,
+      "curves": [
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        }
+      ],
+      "baseCeilingBps": 9600,
+      "ceilingsBps": [
+        9600,
+        9600,
+        9600
+      ],
+      "gate1Lowered": [],
+      "adversaryLowered": [],
+      "notes": []
+    }
+  },
+  "pointMode": "repair",
+  "points": [
+    {
+      "estimate": {
+        "tier": 2,
+        "aBps": 7300,
+        "phi": 0.4,
+        "multiplierBps": 184071,
+        "deltaH": -0.00012627246915871313,
+        "naiveRtp": 0.8511493241181818,
+        "sloppyRtp": 0.6607446083454546,
+        "refund1Bps": 7300,
+        "refundAtShortestBps": 3092
+      },
+      "name": "point-2-7300-40",
+      "status": "rejected",
+      "reason": "an assumption constraint (E2, E10, E8 or E9) is violated",
+      "deltaH": 0.000023211035207611673,
+      "deltaHLcb": -0.00019454712291858904,
+      "certified": {
+        "level": 0,
+        "multiplierBps": 183776,
+        "bestRtp": 0.9537934408909091,
+        "naiveRtp": 0.8497852360727274,
+        "sloppyRtp": 0.6596856709818182,
+        "windowMissed": true
+      }
+    },
+    {
+      "estimate": {
+        "tier": 2,
+        "aBps": 7000,
+        "phi": 0.5,
+        "multiplierBps": 184250,
+        "deltaH": -0.000206171659151055,
+        "naiveRtp": 0.851977025,
+        "sloppyRtp": 0.66138715,
+        "refund1Bps": 7000,
+        "refundAtShortestBps": 3654
+      },
+      "name": "point-2-7000-50",
+      "status": "rejected",
+      "reason": "an assumption constraint (E2, E10, E8 or E9) is violated",
+      "deltaH": 0.00017242406908670805,
+      "deltaHLcb": -0.00004520384185860657,
+      "certified": {
+        "level": 1,
+        "multiplierBps": 183387,
+        "bestRtp": 0.9540578600818183,
+        "naiveRtp": 0.8479864894636365,
+        "sloppyRtp": 0.6582893095090909,
+        "windowMissed": true
+      }
+    },
+    {
+      "estimate": {
+        "tier": 2,
+        "aBps": 7300,
+        "phi": 0.3,
+        "multiplierBps": 185072,
+        "deltaH": -0.00022208472726820407,
+        "naiveRtp": 0.8557779754181819,
+        "sloppyRtp": 0.6643378161454546,
+        "refund1Bps": 7300,
+        "refundAtShortestBps": 2361
+      },
+      "name": "point-2-7300-30",
+      "status": "adopted",
+      "reason": "first point that satisfies every constraint (the baseline violates E2 or E10)",
+      "deltaH": -0.00003263018341057944,
+      "deltaHLcb": -0.0002510580841484721,
+      "certified": {
+        "level": 0,
+        "multiplierBps": 184695,
+        "bestRtp": 0.9535251705727272,
+        "naiveRtp": 0.8540347171363638,
+        "sloppyRtp": 0.6629845300909091,
+        "windowMissed": true
+      }
+    }
+  ],
+  "outcome": "improved",
+  "final": {
+    "name": "point-2-7300-30",
+    "sizes": [
+      5,
+      7,
+      9
+    ],
+    "status": "ok",
+    "reason": null,
+    "exact": {
+      "schema": 1,
+      "profile": "production",
+      "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+      "variant": {
+        "level": 0,
+        "label": "production (lookahead on near-ties within 0.2)",
+        "hyper": {
+          "lookahead": "near-tie",
+          "threshold": 0.2
+        },
+        "rBins": 1
+      },
+      "targetBps": 9600,
+      "grids": [
+        {
+          "w": 3,
+          "h": 3,
+          "mazes": 112,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 11939,
+          "botRtp": 0.9599982142857143,
+          "optimalRtp": 0.9599982142857143,
+          "gap": -0.000001785714285662543,
+          "gapToBot": 0,
+          "optimalEast": 0.9599982142857143,
+          "optimalSouth": 0.9599982142857143,
+          "trainGames": 1000048,
+          "evaluations": [
+            {
+              "multiplierBps": 13113,
+              "botRtp": 1.0417589285714286
+            },
+            {
+              "multiplierBps": 11801,
+              "botRtp": 0.9503875
+            },
+            {
+              "multiplierBps": 11939,
+              "botRtp": 0.9599982142857143
+            }
+          ]
+        },
+        {
+          "w": 4,
+          "h": 4,
+          "mazes": 60032,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 17206,
+          "botRtp": 0.9599897654584222,
+          "optimalRtp": 0.9604428304904051,
+          "gap": 0.0004428304904051661,
+          "gapToBot": 0.00045306503198294656,
+          "optimalEast": 0.9604428304904051,
+          "optimalSouth": 0.9604428304904051,
+          "trainGames": 1020544,
+          "evaluations": [
+            {
+              "multiplierBps": 18778,
+              "botRtp": 1.0355018523454158
+            },
+            {
+              "multiplierBps": 16900,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 17120,
+              "botRtp": 0.9558247268123666
+            },
+            {
+              "multiplierBps": 17949,
+              "botRtp": 0.9956896355277186
+            },
+            {
+              "multiplierBps": 17207,
+              "botRtp": 0.9600376832356076
+            },
+            {
+              "multiplierBps": 17163,
+              "botRtp": 0.9579293010394456
+            },
+            {
+              "multiplierBps": 17206,
+              "botRtp": 0.9599897654584222
+            }
+          ]
+        },
+        {
+          "w": 5,
+          "h": 4,
+          "mazes": 2483688,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.5
+          },
+          "multiplierBps": 20915,
+          "botRtp": 0.9599960478127687,
+          "optimalRtp": 0.9614438997973981,
+          "gap": 0.0014438997973981182,
+          "gapToBot": 0.001447851984629378,
+          "optimalEast": 0.9568296461552336,
+          "optimalSouth": 0.9660581534395624,
+          "trainGames": 2483688,
+          "evaluations": [
+            {
+              "multiplierBps": 22833,
+              "botRtp": 1.0328363870582777
+            },
+            {
+              "multiplierBps": 20549,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 20825,
+              "botRtp": 0.956834208644564
+            },
+            {
+              "multiplierBps": 21829,
+              "botRtp": 0.9921062811432032
+            },
+            {
+              "multiplierBps": 20915,
+              "botRtp": 0.9599960478127687
+            }
+          ]
+        },
+        {
+          "w": 3,
+          "h": 3,
+          "mazes": 112,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.3
+          },
+          "multiplierBps": 12271,
+          "botRtp": 0.9599339285714287,
+          "optimalRtp": 0.9599339285714287,
+          "gap": -0.00006607142857129045,
+          "gapToBot": 0,
+          "optimalEast": 0.9599339285714287,
+          "optimalSouth": 0.9599339285714287,
+          "trainGames": 1000048,
+          "evaluations": [
+            {
+              "multiplierBps": 13113,
+              "botRtp": 1.0185732142857142
+            },
+            {
+              "multiplierBps": 11801,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 11992,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 12552,
+              "botRtp": 0.9795035714285714
+            },
+            {
+              "multiplierBps": 12182,
+              "botRtp": 0.9537357142857144
+            },
+            {
+              "multiplierBps": 12367,
+              "botRtp": 0.966619642857143
+            },
+            {
+              "multiplierBps": 12272,
+              "botRtp": 0.9600035714285714
+            },
+            {
+              "multiplierBps": 12227,
+              "botRtp": 0.9568696428571429
+            },
+            {
+              "multiplierBps": 12271,
+              "botRtp": 0.9599339285714287
+            }
+          ]
+        },
+        {
+          "w": 4,
+          "h": 4,
+          "mazes": 60032,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.3
+          },
+          "multiplierBps": 17678,
+          "botRtp": 0.959952065565032,
+          "optimalRtp": 0.959955310501066,
+          "gap": -0.00004468949893399188,
+          "gapToBot": 0.0000032449360339859012,
+          "optimalEast": 0.959955310501066,
+          "optimalSouth": 0.959955310501066,
+          "trainGames": 1020544,
+          "evaluations": [
+            {
+              "multiplierBps": 18778,
+              "botRtp": 1.0127935501066099
+            },
+            {
+              "multiplierBps": 16900,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 17199,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 17988,
+              "botRtp": 0.974843756663113
+            },
+            {
+              "multiplierBps": 17517,
+              "botRtp": 0.9522179937366738
+            },
+            {
+              "multiplierBps": 17752,
+              "botRtp": 0.9635068563432837
+            },
+            {
+              "multiplierBps": 17679,
+              "botRtp": 0.9600001032782517
+            },
+            {
+              "multiplierBps": 17598,
+              "botRtp": 0.9561090485074627
+            },
+            {
+              "multiplierBps": 17678,
+              "botRtp": 0.959952065565032
+            }
+          ]
+        },
+        {
+          "w": 5,
+          "h": 4,
+          "mazes": 2483688,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 7300,
+            "phi": 0.3
+          },
+          "multiplierBps": 21326,
+          "botRtp": 0.9599843800026412,
+          "optimalRtp": 0.960076193386609,
+          "gap": 0.00007619338660902475,
+          "gapToBot": 0.00009181338396779815,
+          "optimalEast": 0.956633313363031,
+          "optimalSouth": 0.9635190734101868,
+          "trainGames": 2483688,
+          "evaluations": [
+            {
+              "multiplierBps": 22833,
+              "botRtp": 1.0136442026534735
+            },
+            {
+              "multiplierBps": 20549,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 20908,
+              "botRtp": 0.95
+            },
+            {
+              "multiplierBps": 21870,
+              "botRtp": 0.979354614589272
+            },
+            {
+              "multiplierBps": 21236,
+              "botRtp": 0.9567797456041177
+            },
+            {
+              "multiplierBps": 21553,
+              "botRtp": 0.9680671800966949
+            },
+            {
+              "multiplierBps": 21326,
+              "botRtp": 0.9599843800026412
+            }
+          ]
+        }
+      ],
+      "gaps": {
+        "3x3": -0.000001785714285662543,
+        "4x4": 0.0004428304904051661,
+        "5x4": 0.0014438997973981182
+      },
+      "gapMax": 0.0014438997973981182,
+      "pass": true,
+      "branch": "pass",
+      "ceilingBps": 9600,
+      "e0Bps": 500,
+      "symmetry": {
+        "pass": true,
+        "squareMaxDifference": 0,
+        "rectangleMinDifference": 0.006885760047155798
+      }
+    },
+    "spec": {
+      "name": "point-2-7300-30",
+      "sizes": [
+        5,
+        7,
+        9
+      ],
+      "curves": [
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.3
+        }
+      ],
+      "ceilingsBps": [
+        9600,
+        9600,
+        9600
+      ],
+      "variantLevel": 0,
+      "screenLast": false
+    },
+    "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/point-2-7300-30.json",
+    "tableHash": "0xd07642f3561163900d1c90b74a8e4acce618f5d58e51750f4061486d57777caf",
+    "tiers": [
+      {
+        "tier": 0,
+        "n": 5,
+        "curve": {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        "multiplierBps": 26088,
+        "ceilingBps": 9600,
+        "games": 3000000,
+        "basis": "certified",
+        "stream": "B",
+        "sampleGames": 3000000,
+        "population": {
+          "naive-greedy": {
+            "rtp": 0.8727957800000001,
+            "se": 0.0007106751865508866
+          },
+          "sloppy-greedy": {
+            "rtp": 0.7702229816,
+            "se": 0.0006870503972420884
+          },
+          "nervous": {
+            "rtp": 0.5760096816333333,
+            "se": 0.0004288657975920343
+          },
+          "random-walk": {
+            "rtp": 0.22576215859526516,
+            "se": 0.00013160998282364471
+          },
+          "best": {
+            "rtp": 0.9580888912666666,
+            "se": 0.0006590213808289455
+          }
+        },
+        "bestBot": "value-lsm",
+        "bestRtp": 0.9580888912666666,
+        "bestHalfWidth": 0.001291658171466592,
+        "bestUcb": 0.9593805494381332,
+        "engagement": {
+          "n1PlayPremium": 0.008088891266666787,
+          "e1WinRate": 0.33455833333333335,
+          "e1Range": [
+            0.25,
+            0.45
+          ],
+          "e1InRange": true,
+          "e2NaiveRtp": 0.87279578,
+          "e2Pass": true,
+          "e3EarlyQuitRate": 0,
+          "e4CashOutRate": 0.243413,
+          "e6MeanSteps": 6.991029666666667,
+          "e7NearMissRate": 0.170015,
+          "e8Multiplier": 2.6088,
+          "e8Min": 2,
+          "e8Pass": true,
+          "e9Refund1Bps": 7300,
+          "e9RefundAtShortestBps": 3980,
+          "e9Pass": true,
+          "e10SloppyRtp": 0.7702229816,
+          "e10Pass": true,
+          "e11SessionMedian": 347,
+          "e11Min": 200,
+          "e11Pass": true,
+          "m1ContinuationMargin": 0.006249795918841776,
+          "m1JunctionRate": 0.390932
+        },
+        "windowMissed": false,
+        "pass": true,
+        "failedGates": [],
+        "gate1Value": 0.9593805494381332,
+        "gate1Limit": 0.965,
+        "adversaries": [
+          {
+            "name": "rollout(32)",
+            "rtp": 0.9454521540699483,
+            "ucb975": 0.950627803268575,
+            "meanDiff": -0.012636737196718276,
+            "diffLcb": -0.01764861945743918,
+            "halfWidthDiff": 0.005011882260720906,
+            "pairs": 199773,
+            "capped": false
+          },
+          {
+            "name": "value-lookahead-all",
+            "rtp": 0.9582487892666667,
+            "ucb975": 0.9598587762976921,
+            "meanDiff": 0.000159898,
+            "diffLcb": -0.0008011833743661645,
+            "halfWidthDiff": 0.0009610813743661645,
+            "pairs": 100000,
+            "capped": false
+          }
+        ],
+        "winRates": {
+          "naive": 0.33455833333333335,
+          "sloppy": 0.2952403333333333,
+          "randomWalk": 0.0865386992468714,
+          "nervous": 0.10114966666666667
+        },
+        "nervousCashRate": [
+          0,
+          0.12519633333333333,
+          0.105772,
+          0.08288166666666667,
+          0.064218,
+          0.04909666666666666,
+          0.03592066666666666,
+          0.026155333333333333,
+          0.011269666666666667,
+          0.00792,
+          0.002781333333333333,
+          0.0019353333333333334,
+          0.0006153333333333333,
+          0.00038166666666666666,
+          0.000111,
+          0.00007,
+          0.00002,
+          0.00001,
+          0.0000036666666666666666,
+          0.000002,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "tier": 1,
+        "n": 7,
+        "curve": {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        "multiplierBps": 66112,
+        "ceilingBps": 9600,
+        "games": 5000000,
+        "basis": "certified",
+        "stream": "B",
+        "sampleGames": 5000000,
+        "population": {
+          "naive-greedy": {
+            "rtp": 0.8626650764800001,
+            "se": 0.000995897716761977
+          },
+          "sloppy-greedy": {
+            "rtp": 0.7133352576,
+            "se": 0.00091729555833886
+          },
+          "nervous": {
+            "rtp": 0.492030309,
+            "se": 0.0005421022104815334
+          },
+          "random-walk": {
+            "rtp": 0.10637072936298149,
+            "se": 0.0000753173312152271
+          },
+          "best": {
+            "rtp": 0.9539243298600001,
+            "se": 0.0008264204592233771
+          }
+        },
+        "bestBot": "value-lsm",
+        "bestRtp": 0.9539243298600001,
+        "bestHalfWidth": 0.0016197543361649025,
+        "bestUcb": 0.955544084196165,
+        "engagement": {
+          "n1PlayPremium": 0.003924329860000131,
+          "e1WinRate": 0.1304854,
+          "e1Range": [
+            0.08,
+            0.2
+          ],
+          "e1InRange": true,
+          "e2NaiveRtp": 0.86266507648,
+          "e2Pass": true,
+          "e3EarlyQuitRate": 0.3856128,
+          "e4CashOutRate": 0.4826054,
+          "e6MeanSteps": 8.0776762,
+          "e7NearMissRate": 0.0672866,
+          "e8Multiplier": 6.6112,
+          "e8Min": 5,
+          "e8Pass": true,
+          "e9Refund1Bps": 7300,
+          "e9RefundAtShortestBps": 3867,
+          "e9Pass": true,
+          "e10SloppyRtp": 0.7133352576,
+          "e10Pass": true,
+          "e11SessionMedian": 268,
+          "e11Min": 150,
+          "e11Pass": true,
+          "m1ContinuationMargin": -0.0001547995540445706,
+          "m1JunctionRate": 0.3856128
+        },
+        "windowMissed": true,
+        "pass": true,
+        "failedGates": [],
+        "gate1Value": 0.955544084196165,
+        "gate1Limit": 0.965,
+        "adversaries": [
+          {
+            "name": "rollout(32)",
+            "rtp": 0.8749876613698375,
+            "ucb975": 0.88024764761646,
+            "meanDiff": -0.07893666849016262,
+            "diffLcb": -0.08394105168943232,
+            "halfWidthDiff": 0.005004383199269703,
+            "pairs": 579473,
+            "capped": false
+          },
+          {
+            "name": "value-lookahead-all",
+            "rtp": 0.95269806986,
+            "ucb975": 0.955177242292694,
+            "meanDiff": -0.00122626,
+            "diffLcb": -0.0031031435450033333,
+            "halfWidthDiff": 0.001876883545003333,
+            "pairs": 100000,
+            "capped": false
+          }
+        ],
+        "winRates": {
+          "naive": 0.1304854,
+          "sloppy": 0.107898,
+          "randomWalk": 0.01608947382668592,
+          "nervous": 0.0354282
+        },
+        "nervousCashRate": [
+          0,
+          0.08365,
+          0.0739232,
+          0.0602092,
+          0.0484556,
+          0.0377856,
+          0.0297048,
+          0.0229286,
+          0.0176538,
+          0.0136708,
+          0.010326,
+          0.0077346,
+          0.0045832,
+          0.0034102,
+          0.0017042,
+          0.0012454,
+          0.0005614,
+          0.0004136,
+          0.000173,
+          0.0001268,
+          0.000051,
+          0.0000392,
+          0.0000122,
+          0.000008,
+          0.0000042,
+          0.0000018,
+          6e-7,
+          8e-7,
+          6e-7,
+          2e-7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "tier": 2,
+        "n": 9,
+        "curve": {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.3
+        },
+        "multiplierBps": 184695,
+        "ceilingBps": 9600,
+        "games": 11000000,
+        "basis": "certified",
+        "stream": "B",
+        "sampleGames": 11000000,
+        "population": {
+          "naive-greedy": {
+            "rtp": 0.8540347171363638,
+            "se": 0.0011694684214995938
+          },
+          "sloppy-greedy": {
+            "rtp": 0.6629845300909091,
+            "se": 0.0010359644327255682
+          },
+          "nervous": {
+            "rtp": 0.4087745842727273,
+            "se": 0.000592654203199856
+          },
+          "random-walk": {
+            "rtp": 0.05086863831361453,
+            "se": 0.000036209716496462894
+          },
+          "best": {
+            "rtp": 0.9535251705727272,
+            "se": 0.0011593734022568335
+          }
+        },
+        "bestBot": "value-lsm",
+        "bestRtp": 0.9535251705727272,
+        "bestHalfWidth": 0.002272330113057053,
+        "bestUcb": 0.9557975006857843,
+        "engagement": {
+          "n1PlayPremium": 0.0035251705727272764,
+          "e1WinRate": 0.04624027272727273,
+          "e1Range": [
+            0.02,
+            0.06
+          ],
+          "e1InRange": true,
+          "e2NaiveRtp": 0.8540347171363637,
+          "e2Pass": true,
+          "e3EarlyQuitRate": 0,
+          "e4CashOutRate": 0.1813641818181818,
+          "e6MeanSteps": 8.395585636363636,
+          "e7NearMissRate": 0.022767363636363638,
+          "e8Multiplier": 18.4695,
+          "e8Min": 20,
+          "e8Pass": false,
+          "e9Refund1Bps": 7300,
+          "e9RefundAtShortestBps": 2361,
+          "e9Pass": true,
+          "e10SloppyRtp": 0.6629845300909091,
+          "e10Pass": true,
+          "e11SessionMedian": 160,
+          "e11Min": 50,
+          "e11Pass": true,
+          "m1ContinuationMargin": 0.006042011907087171,
+          "m1JunctionRate": 0.3841780909090909
+        },
+        "windowMissed": true,
+        "pass": true,
+        "failedGates": [],
+        "gate1Value": 0.9557975006857843,
+        "gate1Limit": 0.965,
+        "adversaries": [
+          {
+            "name": "rollout(32)",
+            "rtp": 0.9533997524727272,
+            "ucb975": 0.9612577117209995,
+            "meanDiff": -0.0001254181,
+            "diffLcb": -0.0076476544300285495,
+            "halfWidthDiff": 0.0075222363300285495,
+            "pairs": 1000000,
+            "capped": true
+          },
+          {
+            "name": "value-lookahead-all",
+            "rtp": 0.9546808723227272,
+            "ucb975": 0.9575207634001912,
+            "meanDiff": 0.0011557017500000001,
+            "diffLcb": -0.0005476764197419372,
+            "halfWidthDiff": 0.0017033781697419373,
+            "pairs": 400000,
+            "capped": false
+          }
+        ],
+        "winRates": {
+          "naive": 0.04624027272727273,
+          "sloppy": 0.03589618181818182,
+          "randomWalk": 0.0027541968279385996,
+          "nervous": 0.011467727272727274
+        },
+        "nervousCashRate": [
+          0,
+          0.06250845454545455,
+          0.05666709090909091,
+          0.047144818181818184,
+          0.03889145454545455,
+          0.03099,
+          0.024692636363636365,
+          0.019400272727272728,
+          0.015079636363636363,
+          0.011776818181818182,
+          0.009123,
+          0.007090454545454546,
+          0.005420727272727272,
+          0.0042172727272727275,
+          0.003232181818181818,
+          0.0024717272727272726,
+          0.0016668181818181819,
+          0.00127,
+          0.0007658181818181819,
+          0.0005659090909090909,
+          0.0003082727272727273,
+          0.00023445454545454545,
+          0.00011590909090909091,
+          0.00009263636363636364,
+          0.00004545454545454545,
+          0.00003454545454545455,
+          0.000014272727272727272,
+          0.000013727272727272727,
+          0.000004909090909090909,
+          0.0000037272727272727274,
+          0.000001909090909090909,
+          0.0000013636363636363636,
+          3.6363636363636366e-7,
+          9.09090909090909e-7,
+          1.8181818181818183e-7,
+          0,
+          0,
+          0,
+          0,
+          9.090909090909091e-8,
+          9.090909090909091e-8,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "h": 0.25760542202499437,
+    "hSe": 0.0002409592221317939,
+    "state": {
+      "level": 0,
+      "curves": [
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.5
+        },
+        {
+          "family": "two-stage-geometric",
+          "e0Bps": 500,
+          "aBps": 7300,
+          "phi": 0.3
+        }
+      ],
+      "baseCeilingBps": 9600,
+      "ceilingsBps": [
+        9600,
+        9600,
+        9600
+      ],
+      "gate1Lowered": [],
+      "adversaryLowered": [],
+      "notes": []
+    }
+  },
+  "houseMax": {
+    "same": false,
+    "run": {
+      "name": "i",
+      "sizes": [
+        5,
+        7,
+        10
+      ],
+      "status": "ok",
+      "reason": null,
+      "exact": {
+        "schema": 1,
+        "profile": "production",
+        "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+        "variant": {
+          "level": 0,
+          "label": "production (lookahead on near-ties within 0.2)",
+          "hyper": {
+            "lookahead": "near-tie",
+            "threshold": 0.2
+          },
+          "rBins": 1
+        },
+        "targetBps": 9600,
+        "grids": [
+          {
+            "w": 3,
+            "h": 3,
+            "mazes": 112,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 9000,
+              "phi": 0.3
+            },
+            "multiplierBps": 10918,
+            "botRtp": 0.9599714285714286,
+            "optimalRtp": 0.9599714285714286,
+            "gap": -0.000028571428571377844,
+            "gapToBot": 0,
+            "optimalEast": 0.9599714285714286,
+            "optimalSouth": 0.9599714285714286,
+            "trainGames": 1000048,
+            "evaluations": [
+              {
+                "multiplierBps": 13113,
+                "botRtp": 1.061882142857143
+              },
+              {
+                "multiplierBps": 11801,
+                "botRtp": 1.000967857142857
+              },
+              {
+                "multiplierBps": 10620,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 10852,
+                "botRtp": 0.956907142857143
+              },
+              {
+                "multiplierBps": 11326,
+                "botRtp": 0.9789142857142857
+              },
+              {
+                "multiplierBps": 10919,
+                "botRtp": 0.960017857142857
+              },
+              {
+                "multiplierBps": 10885,
+                "botRtp": 0.9584392857142857
+              },
+              {
+                "multiplierBps": 10918,
+                "botRtp": 0.9599714285714286
+              }
+            ]
+          },
+          {
+            "w": 4,
+            "h": 4,
+            "mazes": 60032,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 9000,
+              "phi": 0.3
+            },
+            "multiplierBps": 15616,
+            "botRtp": 0.9599808735341152,
+            "optimalRtp": 0.9599808735341152,
+            "gap": -0.00001912646588475564,
+            "gapToBot": 0,
+            "optimalEast": 0.9599808735341152,
+            "optimalSouth": 0.9599808735341152,
+            "trainGames": 1020544,
+            "evaluations": [
+              {
+                "multiplierBps": 18778,
+                "botRtp": 1.0713944596215352
+              },
+              {
+                "multiplierBps": 16900,
+                "botRtp": 1.0049634894722814
+              },
+              {
+                "multiplierBps": 15210,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 15517,
+                "botRtp": 0.956808295575693
+              },
+              {
+                "multiplierBps": 16208,
+                "botRtp": 0.9804981909648188
+              },
+              {
+                "multiplierBps": 15610,
+                "botRtp": 0.9597885960820896
+              },
+              {
+                "multiplierBps": 15909,
+                "botRtp": 0.9693704224413646
+              },
+              {
+                "multiplierBps": 15617,
+                "botRtp": 0.9600129197761195
+              },
+              {
+                "multiplierBps": 15613,
+                "botRtp": 0.9598847348081022
+              },
+              {
+                "multiplierBps": 15616,
+                "botRtp": 0.9599808735341152
+              }
+            ]
+          },
+          {
+            "w": 5,
+            "h": 4,
+            "mazes": 2483688,
+            "curve": {
+              "family": "two-stage-geometric",
+              "e0Bps": 500,
+              "aBps": 9000,
+              "phi": 0.3
+            },
+            "multiplierBps": 18946,
+            "botRtp": 0.9599986050180216,
+            "optimalRtp": 0.9601133957646855,
+            "gap": 0.00011339576468549772,
+            "gapToBot": 0.00011479074666387312,
+            "optimalEast": 0.964202092774938,
+            "optimalSouth": 0.956024698754433,
+            "trainGames": 2483688,
+            "evaluations": [
+              {
+                "multiplierBps": 22833,
+                "botRtp": 1.0700988268252696
+              },
+              {
+                "multiplierBps": 20549,
+                "botRtp": 1.004503280283192
+              },
+              {
+                "multiplierBps": 18494,
+                "botRtp": 0.95
+              },
+              {
+                "multiplierBps": 18871,
+                "botRtp": 0.9574579247473918
+              },
+              {
+                "multiplierBps": 19710,
+                "botRtp": 0.9811451456463129
+              },
+              {
+                "multiplierBps": 18961,
+                "botRtp": 0.9604137857895195
+              },
+              {
+                "multiplierBps": 18916,
+                "botRtp": 0.9591682434750259
+              },
+              {
+                "multiplierBps": 18946,
+                "botRtp": 0.9599986050180216
+              }
+            ]
+          }
+        ],
+        "gaps": {
+          "3x3": -0.000028571428571377844,
+          "4x4": -0.00001912646588475564,
+          "5x4": 0.00011339576468549772
+        },
+        "gapMax": 0.00011339576468549772,
+        "pass": true,
+        "branch": "pass",
+        "ceilingBps": 9600,
+        "e0Bps": 500,
+        "symmetry": {
+          "pass": true,
+          "squareMaxDifference": 0,
+          "rectangleMinDifference": 0.008177394020504991
+        }
+      },
+      "spec": {
+        "name": "i",
+        "sizes": [
+          5,
+          7,
+          10
+        ],
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          }
+        ],
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "variantLevel": 0,
+        "screenLast": false
+      },
+      "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/candidates/i.json",
+      "tableHash": "0x249b6773ea47674ef201d2a8182e4021ceffb039b0c8e78f9788ad608dc11ad8",
+      "tiers": [
+        {
+          "tier": 0,
+          "n": 5,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          "multiplierBps": 23408,
+          "ceilingBps": 9600,
+          "games": 3000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 3000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.7831341466666667,
+              "se": 0.0006376680760036476
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6910985722666667,
+              "se": 0.0006164702429715887
+            },
+            "nervous": {
+              "rtp": 0.5791985583333333,
+              "se": 0.0003937968185519121
+            },
+            "random-walk": {
+              "rtp": 0.20256978719706042,
+              "se": 0.00011808979139585839
+            },
+            "best": {
+              "rtp": 0.9589734983000001,
+              "se": 0.0004541492247674136
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9589734983000001,
+          "bestHalfWidth": 0.0008901161241509081,
+          "bestUcb": 0.959863614424151,
+          "engagement": {
+            "n1PlayPremium": 0.008973498300000049,
+            "e1WinRate": 0.33455833333333335,
+            "e1Range": [
+              0.25,
+              0.45
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.7831341466666667,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.390932,
+            "e4CashOutRate": 0.5804633333333333,
+            "e6MeanSteps": 6.991029666666667,
+            "e7NearMissRate": 0.170015,
+            "e8Multiplier": 2.3408,
+            "e8Min": 2,
+            "e8Pass": true,
+            "e9Refund1Bps": 9000,
+            "e9RefundAtShortestBps": 3138,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6910985722666666,
+            "e10Pass": true,
+            "e11SessionMedian": 218,
+            "e11Min": 200,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.16667306543445307,
+            "m1JunctionRate": 0.390932
+          },
+          "windowMissed": false,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.959863614424151,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.9226195663000001,
+              "ucb975": 0.9275835447257101,
+              "meanDiff": -0.036353932,
+              "diffLcb": -0.04123745276850724,
+              "halfWidthDiff": 0.004883520768507238,
+              "pairs": 100000,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9594675163000002,
+              "ucb975": 0.9606791928142772,
+              "meanDiff": 0.000494018,
+              "diffLcb": -0.0003280849502300567,
+              "halfWidthDiff": 0.0008221029502300568,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.33455833333333335,
+            "sloppy": 0.2952403333333333,
+            "randomWalk": 0.0865386992468714,
+            "nervous": 0.10114966666666667
+          },
+          "nervousCashRate": [
+            0,
+            0.12519633333333333,
+            0.105772,
+            0.08288166666666667,
+            0.064218,
+            0.04909666666666666,
+            0.03592066666666666,
+            0.026155333333333333,
+            0.011269666666666667,
+            0.00792,
+            0.002781333333333333,
+            0.0019353333333333334,
+            0.0006153333333333333,
+            0.00038166666666666666,
+            0.000111,
+            0.00007,
+            0.00002,
+            0.00001,
+            0.0000036666666666666666,
+            0.000002,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 1,
+          "n": 7,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          "multiplierBps": 58113,
+          "ceilingBps": 9600,
+          "games": 5000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 5000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.75828980502,
+              "se": 0.0008754024082494671
+            },
+            "sloppy-greedy": {
+              "rtp": 0.6270276474,
+              "se": 0.0008063104547093744
+            },
+            "nervous": {
+              "rtp": 0.49112553102,
+              "se": 0.00048229360067796186
+            },
+            "random-walk": {
+              "rtp": 0.09350075924904223,
+              "se": 0.00006620456299773904
+            },
+            "best": {
+              "rtp": 0.9579651919,
+              "se": 0.0006195136425289903
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9579651919,
+          "bestHalfWidth": 0.0012142244272880243,
+          "bestUcb": 0.959179416327288,
+          "engagement": {
+            "n1PlayPremium": 0.007965191900000002,
+            "e1WinRate": 0.1304854,
+            "e1Range": [
+              0.08,
+              0.2
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.75828980502,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.3856128,
+            "e4CashOutRate": 0.65741,
+            "e6MeanSteps": 8.0776762,
+            "e7NearMissRate": 0.0672866,
+            "e8Multiplier": 5.8113,
+            "e8Min": 5,
+            "e8Pass": true,
+            "e9Refund1Bps": 9000,
+            "e9RefundAtShortestBps": 2984,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.6270276474,
+            "e10Pass": true,
+            "e11SessionMedian": 172,
+            "e11Min": 150,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.14182704599203474,
+            "m1JunctionRate": 0.3856128
+          },
+          "windowMissed": true,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.959179416327288,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.9138336582065344,
+              "ucb975": 0.918975593285507,
+              "meanDiff": -0.04413153369346554,
+              "diffLcb": -0.04912804801812689,
+              "halfWidthDiff": 0.004996514324661344,
+              "pairs": 293781,
+              "capped": false
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9573100699,
+              "ucb975": 0.9591084115520756,
+              "meanDiff": -0.0006551220000000001,
+              "diffLcb": -0.001981655730354055,
+              "halfWidthDiff": 0.001326533730354055,
+              "pairs": 100000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.1304854,
+            "sloppy": 0.107898,
+            "randomWalk": 0.01608947382668592,
+            "nervous": 0.0354282
+          },
+          "nervousCashRate": [
+            0,
+            0.08365,
+            0.0739232,
+            0.0602092,
+            0.0484556,
+            0.0377856,
+            0.0297048,
+            0.0229286,
+            0.0176538,
+            0.0136708,
+            0.010326,
+            0.0077346,
+            0.0045832,
+            0.0034102,
+            0.0017042,
+            0.0012454,
+            0.0005614,
+            0.0004136,
+            0.000173,
+            0.0001268,
+            0.000051,
+            0.0000392,
+            0.0000122,
+            0.000008,
+            0.0000042,
+            0.0000018,
+            6e-7,
+            8e-7,
+            6e-7,
+            2e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "tier": 2,
+          "n": 10,
+          "curve": {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          "multiplierBps": 265572,
+          "ceilingBps": 9600,
+          "games": 11000000,
+          "basis": "certified",
+          "stream": "B",
+          "sampleGames": 11000000,
+          "population": {
+            "naive-greedy": {
+              "rtp": 0.7141158651272728,
+              "se": 0.0012952696476815164
+            },
+            "sloppy-greedy": {
+              "rtp": 0.5375273851636364,
+              "se": 0.001127599536221146
+            },
+            "nervous": {
+              "rtp": 0.39688518337272727,
+              "se": 0.0006433798699315248
+            },
+            "random-walk": {
+              "rtp": 0.029586470245029313,
+              "se": 0.00002534920120167134
+            },
+            "best": {
+              "rtp": 0.9575473127909091,
+              "se": 0.0009395509050104846
+            }
+          },
+          "bestBot": "value-lsm",
+          "bestRtp": 0.9575473127909091,
+          "bestHalfWidth": 0.0018414859354625168,
+          "bestUcb": 0.9593887987263716,
+          "engagement": {
+            "n1PlayPremium": 0.007547312790909033,
+            "e1WinRate": 0.026889727272727273,
+            "e1Range": [
+              0.02,
+              0.06
+            ],
+            "e1InRange": true,
+            "e2NaiveRtp": 0.7141158651272728,
+            "e2Pass": false,
+            "e3EarlyQuitRate": 0.38429718181818184,
+            "e4CashOutRate": 0.671815,
+            "e6MeanSteps": 8.444905727272728,
+            "e7NearMissRate": 0.012827181818181817,
+            "e8Multiplier": 26.5572,
+            "e8Min": 20,
+            "e8Pass": true,
+            "e9Refund1Bps": 9000,
+            "e9RefundAtShortestBps": 2886,
+            "e9Pass": true,
+            "e10SloppyRtp": 0.5375273851636363,
+            "e10Pass": true,
+            "e11SessionMedian": 103,
+            "e11Min": 50,
+            "e11Pass": true,
+            "m1ContinuationMargin": -0.1193213710286734,
+            "m1JunctionRate": 0.38429718181818184
+          },
+          "windowMissed": false,
+          "pass": true,
+          "failedGates": [],
+          "gate1Value": 0.9593887987263716,
+          "gate1Limit": 0.965,
+          "adversaries": [
+            {
+              "name": "rollout(32)",
+              "rtp": 0.8513269357909091,
+              "ucb975": 0.8579581657521219,
+              "meanDiff": -0.106220377,
+              "diffLcb": -0.1125907883170171,
+              "halfWidthDiff": 0.006370411317017097,
+              "pairs": 1000000,
+              "capped": true
+            },
+            {
+              "name": "value-lookahead-all",
+              "rtp": 0.9581299757909091,
+              "ucb975": 0.9604809234051934,
+              "meanDiff": 0.000582663,
+              "diffLcb": -0.0008788034671495617,
+              "halfWidthDiff": 0.0014614664671495617,
+              "pairs": 400000,
+              "capped": false
+            }
+          ],
+          "winRates": {
+            "naive": 0.026889727272727273,
+            "sloppy": 0.020240363636363636,
+            "randomWalk": 0.0011140658746037015,
+            "nervous": 0.006438636363636363
+          },
+          "nervousCashRate": [
+            0,
+            0.05557718181818182,
+            0.050772,
+            0.04250363636363636,
+            0.03527290909090909,
+            0.02833772727272727,
+            0.02270690909090909,
+            0.017945636363636365,
+            0.014147818181818182,
+            0.010996545454545455,
+            0.00856690909090909,
+            0.0066237272727272724,
+            0.005174909090909091,
+            0.003984181818181818,
+            0.0030792727272727274,
+            0.002377818181818182,
+            0.0018422727272727273,
+            0.0014176363636363635,
+            0.001001,
+            0.0007589090909090909,
+            0.00048618181818181817,
+            0.00035663636363636366,
+            0.00021781818181818181,
+            0.00015236363636363635,
+            0.00009472727272727272,
+            0.00006672727272727273,
+            0.00003372727272727273,
+            0.000024181818181818182,
+            0.000012272727272727273,
+            0.000008545454545454546,
+            0.000004909090909090909,
+            0.000002818181818181818,
+            0.0000012727272727272728,
+            5.454545454545455e-7,
+            6.363636363636364e-7,
+            3.6363636363636366e-7,
+            9.090909090909091e-8,
+            1.8181818181818183e-7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "h": 0.3162718181901487,
+      "hSe": 0.000216837420961404,
+      "state": {
+        "level": 0,
+        "curves": [
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          },
+          {
+            "family": "two-stage-geometric",
+            "e0Bps": 500,
+            "aBps": 9000,
+            "phi": 0.3
+          }
+        ],
+        "baseCeilingBps": 9600,
+        "ceilingsBps": [
+          9600,
+          9600,
+          9600
+        ],
+        "gate1Lowered": [],
+        "adversaryLowered": [],
+        "notes": []
+      }
+    },
+    "tried": [
+      {
+        "name": "i",
+        "status": "selected",
+        "reason": null
+      }
+    ]
+  },
+  "blocked": null
+}

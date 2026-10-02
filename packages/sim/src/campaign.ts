@@ -11,7 +11,8 @@ import { certifyTable, type TierCertification } from './certify';
 import { hashFiles, simPackageRoot } from './codehash';
 import { tierEngagement, type PopulationRtp } from './engagement';
 import { BOT_VARIANTS, exactGate, type ExactGateReport } from './exact';
-import type { Trajectories } from './lsm';
+import type { TierEconomics } from './engine';
+import { harmonicLsmTable, tableIndex, type Trajectories } from './lsm';
 import { byTier } from './profile';
 import type { CellResult, Runner } from './runner';
 import {
@@ -23,7 +24,7 @@ import {
   type ReportPaths,
   type TierMeta,
 } from './tables';
-import { inSampleRtp, largestMultiplierBelow, trajectoryCache } from './trajectory-cache';
+import { trajectoryCache } from './trajectory-cache';
 import type { CandidateRun, Evaluation, PointEstimate, TierSummary, TuneBackend, TuneResult } from './tune';
 
 /** The coarse ranking prices each grid point on at most this many recorded walks. */
@@ -149,17 +150,61 @@ function prefix(t: Trajectories, games: number): Trajectories {
   return { games, len: t.len.subarray(0, games), onPath: t.onPath.subarray(0, games), win: t.win.subarray(0, games), steps: t.steps.subarray(0, steps) };
 }
 
+/**
+ * In-sample value of *playing* for harmonic-lsm on recorded walks: the mean payout of the
+ * walks when the first move is made and the cash-out rule applies from the second cell on.
+ * Unlike the policy's value it is not floored at refund(0), so it keeps rising with the
+ * multiplier even where the policy itself would rather cash out before the first move. It is
+ * the first afterstate's cell of the backward-induction table: every walk passes through it.
+ */
+export function playValue(walks: Trajectories, econ: TierEconomics, minSamples: number): number {
+  const { table } = harmonicLsmTable(walks, econ, minSamples);
+  return table.values[tableIndex(table, 1, table.qBins - 1, table.shortest - 1, 0)] / 10_000;
+}
+
+/**
+ * The multiplier (integer bps, at least 1.0) at which a non-decreasing `valueAt` reaches
+ * `target`: the largest multiplier whose value does not exceed it, located to within 0.02% of
+ * the multiplier.
+ */
+export function matchMultiplier(valueAt: (multiplierBps: number) => number, target: number, startBps: number): number {
+  let lo = Math.max(10_000, Math.round(startBps));
+  let hi = lo;
+  if (valueAt(lo) > target) {
+    while (lo > 10_000 && valueAt(lo) > target) {
+      hi = lo;
+      lo = Math.max(10_000, Math.floor(lo * 0.9));
+    }
+    if (valueAt(lo) > target) return lo;
+  } else {
+    do {
+      lo = hi;
+      hi = Math.ceil(hi * 1.1);
+    } while (!(valueAt(hi) > target) && hi < 1_000_000_000);
+  }
+  while (hi - lo > Math.max(1, Math.floor(lo / 5000))) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (valueAt(mid) > target) hi = mid;
+    else lo = mid;
+  }
+  return lo;
+}
+
 let campaignHash: string | null = null;
 
 /**
  * Coarse ranking of the grid points of every tier against a finalized baseline. A point's
- * multiplier is the one at which harmonic-lsm's in-sample value on the trajectory cache equals
- * what the baseline's certified multiplier gives under the baseline curve; the casual bots'
- * RTP then follows from their curve-independent behaviour (win rates and nervous's cash-out
- * steps) measured in the baseline's cells. The best bot is taken as unchanged.
+ * multiplier is the one at which harmonic-lsm's in-sample *play value* on the trajectory cache
+ * equals what the baseline's certified multiplier gives under the baseline curve; the casual
+ * bots' RTP then follows from their curve-independent behaviour (win rates and nervous's
+ * cash-out steps) measured in the baseline's cells. The best bot is taken as unchanged.
+ *
+ * The play value is matched, not the policy's value: at a calibrated multiplier harmonic-lsm
+ * usually prefers to cash out before the first move, its value is exactly refund(0) over a
+ * whole range of multipliers, and matching on it cannot tell those multipliers apart.
  */
 export async function rankPoints(runner: Runner, baseline: CandidateRun, assumptions: Assumptions): Promise<PointEstimate[]> {
-  campaignHash ??= hashFiles([join(simPackageRoot(), 'src', 'campaign.ts'), join(simPackageRoot(), 'src', 'trajectory-cache.ts')], simPackageRoot());
+  campaignHash ??= hashFiles([join(simPackageRoot(), 'src', 'campaign.ts')], simPackageRoot());
   const key = cacheKey(baseline.tableHash ?? baseline.name, `${runner.codeHash}|${campaignHash}`, {
     kind: 'point-ranking',
     profile: runner.profile.name,
@@ -178,7 +223,7 @@ export async function rankPoints(runner: Runner, baseline: CandidateRun, assumpt
     const walks = prefix(await trajectoryCache(runner, tier.n, tier.tier), RANKING_WALKS);
     runner.checkpoint(`coarse ranking of the search points of tier ${tier.tier}`);
     const grid = { w: tier.n, h: tier.n };
-    const reference = inSampleRtp(walks, { ...grid, multiplierBps: tier.multiplierBps, refundBps: refundTableFor(tier.n, tier.curve) }, minSamples);
+    const reference = playValue(walks, { ...grid, multiplierBps: tier.multiplierBps, refundBps: refundTableFor(tier.n, tier.curve) }, minSamples);
     const share = byTier(assumptions.tierShare, tier.tier);
     const weights = assumptions.population;
     for (const aBps of SEARCH_A_BPS) {
@@ -192,8 +237,8 @@ export async function rankPoints(runner: Runner, baseline: CandidateRun, assumpt
           // Not a buildable curve for this e0 (aBps too large, or the tail cannot stay strictly decreasing).
           continue;
         }
-        const multiplierBps = largestMultiplierBelow(
-          (candidate) => inSampleRtp(walks, { ...grid, multiplierBps: candidate, refundBps }, minSamples),
+        const multiplierBps = matchMultiplier(
+          (candidate) => playValue(walks, { ...grid, multiplierBps: candidate, refundBps }, minSamples),
           reference,
           tier.multiplierBps,
         );
@@ -235,31 +280,52 @@ export function simulationBackend(
   log: (line: string) => void,
   assumptions: Assumptions = ASSUMPTIONS,
 ): TuneBackend {
+  const evaluate = async (spec: CalibrationSpec): Promise<Evaluation> => {
+    const calibration = await calibrateCandidate(runner, paths, spec);
+    const lastTier = spec.sizes.length - 1;
+    const certifiedTiers = spec.sizes.map((_, i) => i).filter((i) => !(spec.screenLast && i === lastTier));
+    const certification = await certifyTable(runner, paths, calibration.tablePath, calibration.table, calibration.meta, certifiedTiers);
+    const tiers: TierSummary[] = spec.sizes.map((_, i) => {
+      const certified = certification.tiers.find((tier) => tier.tier === i);
+      return certified !== undefined
+        ? summarizeCertified(certified, calibration.meta.tiers[i])
+        : summarizeScreened(calibration.tiers[i], assumptions, runner.profile.sessions);
+    });
+    return { tablePath: calibration.tablePath, tableHash: calibration.meta.tableHash, table: calibration.table, tiers };
+  };
+
   return {
     profileName: runner.profile.name,
     simCodeHash: runner.codeHash,
     log,
 
     async exactGate(curves: CurveParams[], variantLevel: number): Promise<ExactGateReport> {
-      return exactGate(runner, curves, BOT_VARIANTS[variantLevel]);
+      const started = Date.now();
+      try {
+        return await exactGate(runner, curves, BOT_VARIANTS[variantLevel]);
+      } finally {
+        runner.store.addCampaignSeconds('stage:exactness gates', (Date.now() - started) / 1000);
+      }
     },
 
     async evaluate(spec: CalibrationSpec): Promise<Evaluation> {
-      const calibration = await calibrateCandidate(runner, paths, spec);
-      const lastTier = spec.sizes.length - 1;
-      const certifiedTiers = spec.sizes.map((_, i) => i).filter((i) => !(spec.screenLast && i === lastTier));
-      const certification = await certifyTable(runner, paths, calibration.tablePath, calibration.table, calibration.meta, certifiedTiers);
-      const tiers: TierSummary[] = spec.sizes.map((_, i) => {
-        const certified = certification.tiers.find((tier) => tier.tier === i);
-        return certified !== undefined
-          ? summarizeCertified(certified, calibration.meta.tiers[i])
-          : summarizeScreened(calibration.tiers[i], assumptions, runner.profile.sessions);
-      });
-      return { tablePath: calibration.tablePath, tableHash: calibration.meta.tableHash, table: calibration.table, tiers };
+      const started = Date.now();
+      try {
+        return await evaluate(spec);
+      } finally {
+        // Wall-clock per stage, accumulated over every call (replays of finished work add seconds only).
+        const stage = `stage:${spec.name} (${spec.screenLast ? 'last tier screened' : 'every tier at full N'})`;
+        runner.store.addCampaignSeconds(stage, (Date.now() - started) / 1000);
+      }
     },
 
-    rankPoints(baseline: CandidateRun): Promise<PointEstimate[]> {
-      return rankPoints(runner, baseline, assumptions);
+    async rankPoints(baseline: CandidateRun): Promise<PointEstimate[]> {
+      const started = Date.now();
+      try {
+        return await rankPoints(runner, baseline, assumptions);
+      } finally {
+        runner.store.addCampaignSeconds('stage:coarse ranking of search points', (Date.now() - started) / 1000);
+      }
     },
 
     publish(kind: 'candidate' | 'house-max', run: CandidateRun): void {

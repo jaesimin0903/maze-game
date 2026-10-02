@@ -1,0 +1,227 @@
+{
+  "schema": 1,
+  "tableHash": "0x249b6773ea47674ef201d2a8182e4021ceffb039b0c8e78f9788ad608dc11ad8",
+  "name": "i",
+  "profile": "production",
+  "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+  "variantLevel": 0,
+  "tiers": [
+    {
+      "tier": 0,
+      "n": 5,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 23408,
+      "ceilingBps": 9600,
+      "games": 3000000,
+      "screened": false,
+      "coarseGames": 187500,
+      "theta": [
+        -2.4438895015046,
+        3.9787739077582955,
+        -2.1490266108885407,
+        2.3417743081226945,
+        -2.85346504393965,
+        -3.434536593966186
+      ],
+      "thetaMultiplierBps": 23432,
+      "initialMultiplierBps": 23622,
+      "coarse": [
+        {
+          "multiplierBps": 23622,
+          "point": 0.9631538234666667,
+          "target": 0.9591016465075473
+        },
+        {
+          "multiplierBps": 22913,
+          "point": 0.95,
+          "target": 0.96
+        },
+        {
+          "multiplierBps": 23267,
+          "point": 0.9542003706666667,
+          "target": 0.9591201450348616
+        },
+        {
+          "multiplierBps": 23444,
+          "point": 0.9594589232,
+          "target": 0.9591090077809773
+        }
+      ],
+      "contenders": [
+        "immediate-cashout",
+        "region-heuristic",
+        "param-search",
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 23432,
+          "u": 0.9602896811068568,
+          "best": "value-lsm",
+          "bestRtp": 0.9593981733000001,
+          "slope": 0.208044,
+          "pass": false
+        },
+        {
+          "multiplierBps": 23408,
+          "u": 0.9597893832281847,
+          "best": "value-lsm",
+          "bestRtp": 0.9588988677,
+          "slope": 0.208044,
+          "pass": true
+        }
+      ],
+      "windowMissed": false,
+      "discontinuities": []
+    },
+    {
+      "tier": 1,
+      "n": 7,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 58113,
+      "ceilingBps": 9600,
+      "games": 5000000,
+      "screened": false,
+      "coarseGames": 312500,
+      "theta": [
+        -2.4438895015046,
+        3.9787739077582955,
+        -2.1490266108885407,
+        2.3417743081226945,
+        -2.85346504393965,
+        -3.434536593966186
+      ],
+      "thetaMultiplierBps": 58113,
+      "initialMultiplierBps": 59174,
+      "coarse": [
+        {
+          "multiplierBps": 59174,
+          "point": 0.96629806624,
+          "target": 0.9587615128035752
+        },
+        {
+          "multiplierBps": 57398,
+          "point": 0.9536383936,
+          "target": 0.9588004063152538
+        },
+        {
+          "multiplierBps": 58286,
+          "point": 0.9599941705600001,
+          "target": 0.9587810054316313
+        },
+        {
+          "multiplierBps": 57842,
+          "point": 0.9568775036800001,
+          "target": 0.9587905659625368
+        }
+      ],
+      "contenders": [
+        "immediate-cashout",
+        "region-heuristic",
+        "param-search",
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 58113,
+          "u": 0.9586246469484255,
+          "best": "value-lsm",
+          "bestRtp": 0.9574109172399999,
+          "slope": 0.0699762,
+          "pass": true
+        }
+      ],
+      "windowMissed": true,
+      "discontinuities": []
+    },
+    {
+      "tier": 2,
+      "n": 10,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 265572,
+      "ceilingBps": 9600,
+      "games": 11000000,
+      "screened": false,
+      "coarseGames": 1375000,
+      "theta": [
+        -2.4438895015046,
+        3.9787739077582955,
+        -2.1490266108885407,
+        2.3417743081226945,
+        -2.85346504393965,
+        -3.434536593966186
+      ],
+      "thetaMultiplierBps": 266145,
+      "initialMultiplierBps": 272111,
+      "coarse": [
+        {
+          "multiplierBps": 272111,
+          "point": 0.9667354008,
+          "target": 0.9581144109733909
+        },
+        {
+          "multiplierBps": 263947,
+          "point": 0.9549178997818183,
+          "target": 0.9581726486945232
+        },
+        {
+          "multiplierBps": 268029,
+          "point": 0.9608125179636363,
+          "target": 0.9581440453202599
+        },
+        {
+          "multiplierBps": 265988,
+          "point": 0.9579345584,
+          "target": 0.9581578330576098
+        }
+      ],
+      "contenders": [
+        "immediate-cashout",
+        "region-heuristic",
+        "param-search",
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 266145,
+          "u": 0.9608084891984946,
+          "best": "value-lsm",
+          "bestRtp": 0.9589621701272728,
+          "slope": 0.014375,
+          "pass": false
+        },
+        {
+          "multiplierBps": 265572,
+          "u": 0.9599973900690519,
+          "best": "value-lsm",
+          "bestRtp": 0.9581550284545456,
+          "slope": 0.014375636363636363,
+          "pass": true
+        }
+      ],
+      "windowMissed": false,
+      "discontinuities": []
+    }
+  ]
+}

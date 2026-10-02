@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "tableHash": "0x12affbdde724a8e040adf4aee12aa2658b40f8bde7f1271c252988b03ac8c52c",
+  "name": "iii",
+  "profile": "production",
+  "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+  "variantLevel": 0,
+  "tiers": [
+    {
+      "tier": 0,
+      "n": 5,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 2000,
+        "aBps": 7340,
+        "phi": 0.5
+      },
+      "multiplierBps": 26084,
+      "ceilingBps": 9600,
+      "games": 3000000,
+      "screened": false,
+      "coarseGames": 187500,
+      "theta": [
+        2.3823492964729667,
+        -2.061835023574531,
+        0.8962340699508786,
+        -2.7600653590634465,
+        -0.94554936978966,
+        0.9126771660521626
+      ],
+      "thetaMultiplierBps": 26084,
+      "initialMultiplierBps": 26301,
+      "coarse": [
+        {
+          "multiplierBps": 26301,
+          "point": 0.9662705696,
+          "target": 0.9586978366738808
+        },
+        {
+          "multiplierBps": 25511,
+          "point": 0.9426196517333334,
+          "target": 0.9589350531324301
+        },
+        {
+          "multiplierBps": 25906,
+          "point": 0.9516326789333335,
+          "target": 0.9589169344468714
+        },
+        {
+          "multiplierBps": 26103,
+          "point": 0.9594450400000001,
+          "target": 0.958710626442154
+        }
+      ],
+      "contenders": [
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 26084,
+          "u": 0.9594005695381339,
+          "best": "value-lsm",
+          "bestRtp": 0.9581122491666667,
+          "slope": 0.3132606666666667,
+          "pass": true
+        }
+      ],
+      "windowMissed": false,
+      "discontinuities": []
+    },
+    {
+      "tier": 1,
+      "n": 7,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 2000,
+        "aBps": 7550,
+        "phi": 0.5
+      },
+      "multiplierBps": 65295,
+      "ceilingBps": 9600,
+      "games": 5000000,
+      "screened": false,
+      "coarseGames": 312500,
+      "theta": [
+        2.222002069465816,
+        -1.3947030855342746,
+        -1.5616415897384286,
+        3.5985740358009934,
+        -0.6703686648979783,
+        3.395363708026707
+      ],
+      "thetaMultiplierBps": 65295,
+      "initialMultiplierBps": 66439,
+      "coarse": [
+        {
+          "multiplierBps": 66439,
+          "point": 0.9691195555200002,
+          "target": 0.9583813424438687
+        },
+        {
+          "multiplierBps": 64445,
+          "point": 0.9506283632000001,
+          "target": 0.9584317033951685
+        },
+        {
+          "multiplierBps": 65442,
+          "point": 0.9597591744000001,
+          "target": 0.9584069530554077
+        },
+        {
+          "multiplierBps": 64943,
+          "point": 0.95515785888,
+          "target": 0.9584193765824346
+        }
+      ],
+      "contenders": [
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [
+        {
+          "multiplierBps": 65295,
+          "u": 0.9580747197930013,
+          "best": "value-lsm",
+          "bestRtp": 0.9564874994200001,
+          "slope": 0.092332,
+          "pass": true
+        }
+      ],
+      "windowMissed": true,
+      "discontinuities": []
+    },
+    {
+      "tier": 2,
+      "n": 10,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 2000,
+        "aBps": 7700,
+        "phi": 0.5
+      },
+      "multiplierBps": 301641,
+      "ceilingBps": 9600,
+      "games": 11000000,
+      "screened": true,
+      "coarseGames": 1375000,
+      "theta": [
+        3.4836235933733537,
+        -2.723730061379139,
+        -0.5463396273694744,
+        -5.123040966100033,
+        -1.795505574694751,
+        1.820290603724524
+      ],
+      "thetaMultiplierBps": 301641,
+      "initialMultiplierBps": 309530,
+      "coarse": [
+        {
+          "multiplierBps": 309530,
+          "point": 0.9737279709818182,
+          "target": 0.9574556481134366
+        },
+        {
+          "multiplierBps": 300244,
+          "point": 0.9548471153454545,
+          "target": 0.9575645107322025
+        },
+        {
+          "multiplierBps": 304887,
+          "point": 0.9648517798545455,
+          "target": 0.9575070768455342
+        },
+        {
+          "multiplierBps": 302565,
+          "point": 0.9593398392,
+          "target": 0.9575457353644928
+        }
+      ],
+      "contenders": [
+        "harmonic-lsm",
+        "value-table",
+        "value-lsm"
+      ],
+      "evaluations": [],
+      "windowMissed": false,
+      "discontinuities": []
+    }
+  ]
+}

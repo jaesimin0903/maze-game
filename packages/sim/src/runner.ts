@@ -280,6 +280,7 @@ export class Runner {
         record = { schema: 1, key, chunk: c, from, to, seconds: elapsed, stats };
         this.store.writeChunk(record);
         this.store.addCellSeconds(key, elapsed);
+        this.store.addGames(`${enumerated !== undefined ? 'exact-eval' : 'eval'}:${stream}`, to - from);
         this.newUnits += 1;
         this.log(`${what}: ${to - from} games in ${elapsed.toFixed(1)}s`);
       }
@@ -350,6 +351,8 @@ export class Runner {
         record = { schema: 1, key, chunk: c, from, to, seconds: elapsed, stats };
         this.store.writeChunk(record);
         this.store.addCellSeconds(key, elapsed);
+        // A pair is two games: one per bot on the same maze.
+        this.store.addGames(`pair:${stream}`, 2 * (to - from));
         this.newUnits += 1;
         this.log(`${what}: ${to - from} pairs in ${elapsed.toFixed(1)}s`);
       }
@@ -435,6 +438,7 @@ export class Runner {
     );
     const acc = newAccumulator(shapeOf(econ.w, econ.h, rBins));
     for (const part of parts) addAccumulator(acc, part);
+    this.store.addGames(enumerated !== undefined ? 'exact-train:C' : 'train:C', games);
     return acc;
   }
 
@@ -581,6 +585,7 @@ export class Runner {
     const acc = newRegionAccumulator(w * h, w + h - 2);
     for (const part of parts) addRegionAccumulator(acc, part);
     const table = finalizeRegionTable(acc, w * h, w + h - 2, this.profile.minSamples);
+    this.store.addGames('train:C', games);
     this.store.writeArtifact(key, { meta: { kind: 'region-table', cells: table.cells, shortest: table.shortest, games }, arrays: { win: table.win } });
     this.newUnits += 1;
     this.log(`region table ${w}x${h}: ${games} games in ${((this.now() - started) / 1000).toFixed(1)}s`);
@@ -623,6 +628,7 @@ export class Runner {
         splitRange(0, games, jobGames('harmonic')).map(([a, b]) => this.executor.run({ kind: 'trajectories', econ, source, from: a, to: b })),
       );
       data = concatTrajectories(parts);
+      this.store.addGames(`trajectories:${stream}`, games);
       this.store.writeArtifact(key, {
         meta: { kind: 'trajectories', w, h, stream, games: data.games },
         arrays: { len: data.len, onPath: data.onPath, win: data.win, steps: data.steps },
@@ -663,6 +669,7 @@ export class Runner {
     );
     const sums = new Array<number>(thetas.length).fill(0);
     for (const part of parts) for (let i = 0; i < sums.length; i++) sums[i] += part.sums[i];
+    this.store.addGames('search:C', games * thetas.length);
     return sums.map((sum) => sum / games);
   }
 }

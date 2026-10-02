@@ -543,5 +543,12 @@ describe('ranking, sensitivity and report', () => {
       houseMaxTablePath: 'b',
     });
     expect(improved).toContain('**튜닝 결과: 개선됨**');
+    expect(improved).not.toContain('개선 없음');
+    // The phrases `tune` records in English are shown in Korean.
+    expect(text).toContain('| 기본 가정 |');
+    expect(text).toContain('| 집단 가중치: 최고 봇 +50% |');
+    expect(text).toContain('| 크기 이용 비중: L -50% |');
+    expect(text).not.toContain('base assumptions');
+    expect(text).not.toContain('population weight of');
   });
 });

@@ -1,0 +1,266 @@
+{
+  "schema": 1,
+  "profile": "production",
+  "generatedAt": "2026-10-02T11:14:07.107Z",
+  "note": "ASSUMPTIONS varied one at a time. Candidates are compared as tune compared them: tiers S and M certified on stream B, the last tier of every candidate screened on a reduced sample of stream A (no fixed gate judged).",
+  "baseSelected": "ii-n5-7-9",
+  "rows": [
+    {
+      "scenario": "base assumptions",
+      "kind": "base",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2573055711799056,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.25760542202499437,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of naive-greedy -50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2834422651130977,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2839172121626956,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of naive-greedy +50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.23895427543957928,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.23913118639639558,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of sloppy-greedy -50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2560591787198921,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2564385552390844,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of sloppy-greedy +50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2582749875376939,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.25851298508070203,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of nervous -50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.23298586862528237,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.23306509520639104,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of nervous +50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2772035096336883,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2776838712402152,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of random-walk -50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.24230557623908366,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.24261430798260233,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of random-walk +50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2715738590504436,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2718652622116599,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of best -50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2746467044491928,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2749204619192027,
+      "changesSelection": false
+    },
+    {
+      "scenario": "population weight of best +50%",
+      "kind": "population",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.24238413092493752,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.24270643420904753,
+      "changesSelection": false
+    },
+    {
+      "scenario": "E2 floor 80%",
+      "kind": "e2-floor",
+      "selected": "iii",
+      "selectedH": 0.263353688580167,
+      "relaxed": [],
+      "assumptionRangeMet": true,
+      "finalH": 0.25760542202499437,
+      "changesSelection": true
+    },
+    {
+      "scenario": "E2 floor 85%",
+      "kind": "e2-floor",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2573055711799056,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.25760542202499437,
+      "changesSelection": false
+    },
+    {
+      "scenario": "E2 floor 90%",
+      "kind": "e2-floor",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2573055711799056,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": false,
+      "finalH": 0.25760542202499437,
+      "changesSelection": false
+    },
+    {
+      "scenario": "share of tier 0 -50%",
+      "kind": "tier-share",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2658199770220175,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.26621977814880243,
+      "changesSelection": false
+    },
+    {
+      "scenario": "share of tier 0 +50%",
+      "kind": "tier-share",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2521969276746385,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2524368083507095,
+      "changesSelection": false
+    },
+    {
+      "scenario": "share of tier 1 -50%",
+      "kind": "tier-share",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.25399338544249295,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2543568410122975,
+      "changesSelection": false
+    },
+    {
+      "scenario": "share of tier 1 +50%",
+      "kind": "tier-share",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2596311483997911,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2598863406083773,
+      "changesSelection": false
+    },
+    {
+      "scenario": "share of tier 2 -50%",
+      "kind": "tier-share",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.2533561104791289,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2535181920170147,
+      "changesSelection": false
+    },
+    {
+      "scenario": "share of tier 2 +50%",
+      "kind": "tier-share",
+      "selected": "ii-n5-7-9",
+      "selectedH": 0.26070394434103905,
+      "relaxed": [
+        "E9",
+        "E8"
+      ],
+      "assumptionRangeMet": true,
+      "finalH": 0.2611223408690699,
+      "changesSelection": false
+    }
+  ]
+}

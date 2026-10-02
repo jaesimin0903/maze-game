@@ -1,0 +1,201 @@
+{
+  "tablePath": "/Users/jaemin/Developer/Personal/maze-game/packages/sim/reports/tuning.house-max.json",
+  "tableHash": "0x249b6773ea47674ef201d2a8182e4021ceffb039b0c8e78f9788ad608dc11ad8",
+  "schema": 1,
+  "profile": "production",
+  "simCodeHash": "70ddcd2e94e3674853873a8da5f2cfa3c8758f4bee19dfe1e401ab9194064390",
+  "variant": {
+    "level": 0,
+    "label": "production (lookahead on near-ties within 0.2)",
+    "hyper": {
+      "lookahead": "near-tie",
+      "threshold": 0.2
+    },
+    "rBins": 1
+  },
+  "targetBps": 9600,
+  "grids": [
+    {
+      "w": 3,
+      "h": 3,
+      "mazes": 112,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 10918,
+      "botRtp": 0.9599714285714286,
+      "optimalRtp": 0.9599714285714286,
+      "gap": -0.000028571428571377844,
+      "gapToBot": 0,
+      "optimalEast": 0.9599714285714286,
+      "optimalSouth": 0.9599714285714286,
+      "trainGames": 1000048,
+      "evaluations": [
+        {
+          "multiplierBps": 13113,
+          "botRtp": 1.061882142857143
+        },
+        {
+          "multiplierBps": 11801,
+          "botRtp": 1.000967857142857
+        },
+        {
+          "multiplierBps": 10620,
+          "botRtp": 0.95
+        },
+        {
+          "multiplierBps": 10852,
+          "botRtp": 0.956907142857143
+        },
+        {
+          "multiplierBps": 11326,
+          "botRtp": 0.9789142857142857
+        },
+        {
+          "multiplierBps": 10919,
+          "botRtp": 0.960017857142857
+        },
+        {
+          "multiplierBps": 10885,
+          "botRtp": 0.9584392857142857
+        },
+        {
+          "multiplierBps": 10918,
+          "botRtp": 0.9599714285714286
+        }
+      ]
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "mazes": 60032,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 15616,
+      "botRtp": 0.9599808735341152,
+      "optimalRtp": 0.9599808735341152,
+      "gap": -0.00001912646588475564,
+      "gapToBot": 0,
+      "optimalEast": 0.9599808735341152,
+      "optimalSouth": 0.9599808735341152,
+      "trainGames": 1020544,
+      "evaluations": [
+        {
+          "multiplierBps": 18778,
+          "botRtp": 1.0713944596215352
+        },
+        {
+          "multiplierBps": 16900,
+          "botRtp": 1.0049634894722814
+        },
+        {
+          "multiplierBps": 15210,
+          "botRtp": 0.95
+        },
+        {
+          "multiplierBps": 15517,
+          "botRtp": 0.956808295575693
+        },
+        {
+          "multiplierBps": 16208,
+          "botRtp": 0.9804981909648188
+        },
+        {
+          "multiplierBps": 15610,
+          "botRtp": 0.9597885960820896
+        },
+        {
+          "multiplierBps": 15909,
+          "botRtp": 0.9693704224413646
+        },
+        {
+          "multiplierBps": 15617,
+          "botRtp": 0.9600129197761195
+        },
+        {
+          "multiplierBps": 15613,
+          "botRtp": 0.9598847348081022
+        },
+        {
+          "multiplierBps": 15616,
+          "botRtp": 0.9599808735341152
+        }
+      ]
+    },
+    {
+      "w": 5,
+      "h": 4,
+      "mazes": 2483688,
+      "curve": {
+        "family": "two-stage-geometric",
+        "e0Bps": 500,
+        "aBps": 9000,
+        "phi": 0.3
+      },
+      "multiplierBps": 18946,
+      "botRtp": 0.9599986050180216,
+      "optimalRtp": 0.9601133957646855,
+      "gap": 0.00011339576468549772,
+      "gapToBot": 0.00011479074666387312,
+      "optimalEast": 0.964202092774938,
+      "optimalSouth": 0.956024698754433,
+      "trainGames": 2483688,
+      "evaluations": [
+        {
+          "multiplierBps": 22833,
+          "botRtp": 1.0700988268252696
+        },
+        {
+          "multiplierBps": 20549,
+          "botRtp": 1.004503280283192
+        },
+        {
+          "multiplierBps": 18494,
+          "botRtp": 0.95
+        },
+        {
+          "multiplierBps": 18871,
+          "botRtp": 0.9574579247473918
+        },
+        {
+          "multiplierBps": 19710,
+          "botRtp": 0.9811451456463129
+        },
+        {
+          "multiplierBps": 18961,
+          "botRtp": 0.9604137857895195
+        },
+        {
+          "multiplierBps": 18916,
+          "botRtp": 0.9591682434750259
+        },
+        {
+          "multiplierBps": 18946,
+          "botRtp": 0.9599986050180216
+        }
+      ]
+    }
+  ],
+  "gaps": {
+    "3x3": -0.000028571428571377844,
+    "4x4": -0.00001912646588475564,
+    "5x4": 0.00011339576468549772
+  },
+  "gapMax": 0.00011339576468549772,
+  "pass": true,
+  "branch": "pass",
+  "ceilingBps": 9600,
+  "e0Bps": 500,
+  "symmetry": {
+    "pass": true,
+    "squareMaxDifference": 0,
+    "rectangleMinDifference": 0.008177394020504991
+  }
+}

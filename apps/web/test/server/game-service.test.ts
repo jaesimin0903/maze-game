@@ -439,6 +439,17 @@ describe('ticket policy', () => {
     expect((await api.ticket<TicketResponse>(body)).status).toBe(201);
   });
 
+  it('a ticket right after the settlement is mined does not wait for the next worker pass', async () => {
+    const game = await openGame(env);
+    await api.cashout(game.gameId, game.token, { step: 0 });
+    await env.container.relayer.drain();
+    // The block with the settlement exists, but the worker has not made a pass since.
+    env.advance(1);
+    expect(env.chain.games.get(game.gameId)!.status).toBe(ONCHAIN.Settled);
+    const body = { player: PLAYERS[0], tier: 0, sessionTokenHash: newToken().sessionTokenHash };
+    expect((await api.ticket<TicketResponse>(body)).status).toBe(201);
+  });
+
   it('rejects malformed ticket requests', async () => {
     const hash = newToken().sessionTokenHash;
     for (const body of [

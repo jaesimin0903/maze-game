@@ -228,8 +228,14 @@ export class GameService {
 
     const now = await this.clock.chainNow();
     this.countTicket(playerKey, now);
-    // Checked here only; the contract does not enforce it (plan §7.3).
-    if ((this.activeByPlayer.get(playerKey)?.size ?? 0) > 0) throw new ApiError('ALREADY_ACTIVE');
+    // Checked here only; the contract does not enforce it (plan §7.3). The answer follows the
+    // chain rather than the worker's last pass: when the address still looks busy, one scan is
+    // made on the spot, so a player whose game was settled a moment ago is not turned away.
+    const busy = (): boolean => (this.activeByPlayer.get(playerKey)?.size ?? 0) > 0;
+    if (busy()) {
+      await this.hooks.syncChain?.();
+      if (busy()) throw new ApiError('ALREADY_ACTIVE');
+    }
 
     let gameId = this.random32();
     while (this.games.has(gameId)) gameId = this.random32();

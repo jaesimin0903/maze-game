@@ -1100,6 +1100,69 @@ textarea {
   box-shadow: inset 0 0 0 3px var(--lamp);
 }
 
+.vcell[data-chest-kind='path'] {
+  box-shadow: inset 0 0 0 2px var(--lamp);
+}
+
+/* The points a path chest just earned, over its cell. */
+.chest-pop {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  z-index: 2;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--lamp);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.game-chests {
+  display: grid;
+  gap: 6px;
+}
+
+.chest-just-found {
+  padding: 8px 12px;
+  border: 2px solid var(--lamp);
+  border-radius: 4px;
+  background: #fff8e1;
+  color: var(--lamp-deep);
+  font-weight: 800;
+}
+
+.game-points {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-chests {
+  display: grid;
+  gap: 6px;
+}
+
+.result-chests-title {
+  font-weight: 800;
+  color: var(--lamp-deep);
+}
+
+.result-chest-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-chests-total {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
 .verify-chests {
   display: grid;
   gap: 8px;

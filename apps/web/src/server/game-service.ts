@@ -18,10 +18,13 @@
 //   the arrival cell only; everything else is answered from the open masks the player was
 //   already shown. A maze is built once, when the game is seen on chain, and never by a move,
 //   cash-out or read.
-// - Chests never reach a game in progress. The chest rule is asked about one cell only: the dead
-//   end a move has just entered, which ends the game. No other request, the worker, the boot or
-//   a log line ever evaluates it, so nothing a player sees before the game is over depends on
-//   where the chests are. The award is stored in the same line as the ending, before the answer.
+// - A chest is shown only on a cell the player has entered. The chest rule is asked about one
+//   cell only: the cell a move has just entered, once the move knows whether that cell is the
+//   exit or a dead end (which its open mask, shown in the same answer, tells the player anyway).
+//   No other request, the worker, the boot or a log line ever evaluates it, so nothing the server
+//   answers or writes depends on the chests or walls of a cell the player has not entered. A path
+//   chest (rule 2) is stored in the same line as the move that found it; the chest in a dead end
+//   in the same line as the move and the ending; both before the answer.
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
@@ -39,6 +42,7 @@ import {
   refundWei,
   ticketRequestMessage,
   type ChestDraw,
+  type ChestKind,
   type Dir,
   type GameView,
   type Hex,
@@ -52,7 +56,7 @@ import type { Clock } from './clock';
 import { ApiError } from './errors';
 import { describeError, type Logger } from './log';
 import { KeyedMutex } from './mutex';
-import { PointsLedger, type LedgerAccount } from './points';
+import { PointsLedger, type AwardEvent, type LedgerAccount } from './points';
 import { toPublicView, toTicketResponse } from './serializer';
 import type { Signer } from './signer';
 import type { EndCause, EventStore, StoreEvent } from './store';
@@ -118,6 +122,8 @@ export interface Game {
     createdAtSec: number;
     settleDeadlineSec: number;
     blockNumber: bigint;
+    /** The chest rule the game is played under, recorded with its creation (1 in older logs). */
+    chestRule: number;
   };
   moves: Dir[];
   /** Cells the player has stood in, in order, with the open mask shown for each. */
@@ -132,11 +138,26 @@ export interface Game {
     auto: boolean;
     cause: EndCause;
     atSec: number;
-    /** The chest rule applied to the dead end that ended the game; `null` for any other ending. */
+    /**
+     * The chest rule applied to this ending: a rule 1 game's only when it ended in a dead end, a
+     * rule 2 game's on every ending the server made itself; `null` otherwise.
+     */
     chestRule: number | null;
   };
-  /** The chest found in the dead end that ended the game. Points have no cash value. */
-  chest: null | { cell: number; rewardBps: number; points: bigint; chestRule: number };
+  /**
+   * The chests found so far, in the order found: path chests as their cells were entered, and the
+   * chest in the dead end that ended the game. Points have no cash value.
+   */
+  chests: {
+    cell: number;
+    kind: 'dead-end' | 'path';
+    rewardBps: number;
+    points: bigint;
+    chestRule: number;
+    /** Moves made when it was found. */
+    step: number;
+    atSec: number;
+  }[];
   settle: {
     lastSentSec: number | null;
     lastTxHash: Hex | null;
@@ -168,10 +189,11 @@ export interface GameServiceDeps {
   /** How long building a maze appears to take, in milliseconds. See `buildMaze`. */
   mazePadMs?: number;
   /**
-   * The chest draws of one cell of a game with a final seed. Defaults to rule
-   * `CHEST_RULE_VERSION` (`chestDraw`). Called only for the dead end a move has just entered.
+   * The chest draws of one cell of a game with a final seed, for the kind of chest that cell can
+   * hold and the game's chest rule. Defaults to `chestDraw`. Called only for the cell a move has
+   * just entered.
    */
-  chestDraw?: (finalSeed: Hex, cell: number) => ChestDraw;
+  chestDraw?: (finalSeed: Hex, cell: number, kind: ChestKind, rule: number) => ChestDraw;
 }
 
 export interface GameServiceHooks {
@@ -236,7 +258,7 @@ export class GameService {
   private readonly log: Logger;
   private readonly mazeFactory: (finalSeed: Hex, n: number) => Maze;
   private readonly random32: () => Hex;
-  private readonly chestDraw: (finalSeed: Hex, cell: number) => ChestDraw;
+  private readonly chestDraw: (finalSeed: Hex, cell: number, kind: ChestKind, rule: number) => ChestDraw;
 
   constructor(private readonly deps: GameServiceDeps) {
     this.table = deps.table;
@@ -246,7 +268,7 @@ export class GameService {
     this.log = deps.log;
     this.mazeFactory = deps.mazeFactory ?? generateMaze;
     this.random32 = deps.random32 ?? (() => `0x${randomBytes(32).toString('hex')}`);
-    this.chestDraw = deps.chestDraw ?? ((finalSeed, cell) => chestDraw(finalSeed, cell, CHEST_RULE_VERSION));
+    this.chestDraw = deps.chestDraw ?? ((finalSeed, cell, kind, rule) => chestDraw(finalSeed, cell, rule, kind));
   }
 
   setHooks(hooks: GameServiceHooks): void {
@@ -432,15 +454,22 @@ export class GameService {
           : isDeadEnd(maze, arrival, here.cell)
             ? OUTCOME_LOSS
             : null;
+      // The only call of the chest rule, for the arrival only. Its kind follows from the arrival's
+      // own open mask: a dead end (the game ends here) or, under rule 2, a path cell.
+      const chain = game.chain!;
+      const kind: ChestKind | null =
+        outcome === OUTCOME_LOSS ? 'dead-end' : outcome === null && chain.chestRule >= 2 ? 'path' : null;
+      const draw =
+        kind === null
+          ? null
+          : this.chestDraw(this.finalSeedOf(game, chain.clientSeed), arrival, kind, chain.chestRule);
       if (outcome === null) {
-        await this.persist([moved]);
+        const award = draw?.placed === true ? this.awardOf(game, arrival, 'path', draw, steps, now) : null;
+        await this.persist(award === null ? [moved] : [moved, award]);
         this.log.event({ event: 'move', chainSec: now, gameId, step: steps });
+        if (award !== null) this.logAward(award, null);
       } else {
-        // The only call of the chest rule: the arrival is a dead end and the game ends here.
-        const deadEnd =
-          outcome === OUTCOME_LOSS
-            ? { cell: arrival, draw: this.chestDraw(this.finalSeedOf(game, game.chain!.clientSeed), arrival) }
-            : undefined;
+        const deadEnd = outcome === OUTCOME_LOSS && draw !== null ? { cell: arrival, draw } : undefined;
         await this.finish(game, {
           outcome,
           steps,
@@ -631,7 +660,7 @@ export class GameService {
 
   /**
    * The points ledger account of an address (any letter case), or `null` when it holds no award.
-   * Only finished games are in it: an award is written with the ending of its game.
+   * A path chest is in it from the move that found it; a dead-end chest from the ending.
    */
   pointsOf(address: string): LedgerAccount | null {
     return this.ledger.account(address);
@@ -686,6 +715,7 @@ export class GameService {
         blockNumber: event.blockNumber.toString(),
         startOpen: maskOf(openDirs(maze, START_CELL)),
         atSec: now,
+        chestRule: CHEST_RULE_VERSION,
       },
     ]);
     this.mazes.set(gameId, maze);
@@ -843,22 +873,11 @@ export class GameService {
       auto: p.auto,
       cause: p.cause,
       atSec: p.now,
-      ...(p.deadEnd === undefined ? {} : { chestRule: CHEST_RULE_VERSION }),
+      ...(chain.chestRule >= 2 || p.deadEnd !== undefined ? { chestRule: chain.chestRule } : {}),
     };
-    const award: StoreEvent | null =
+    const award =
       p.deadEnd !== undefined && p.deadEnd.draw.placed
-        ? {
-            type: 'chest-awarded',
-            gameId,
-            player: game.player,
-            n: game.n,
-            cell: p.deadEnd.cell,
-            betWei: chain.betWei.toString(),
-            rewardBps: p.deadEnd.draw.rewardBps,
-            points: chestPoints(chain.betWei, p.deadEnd.draw.rewardBps).toString(),
-            chestRule: CHEST_RULE_VERSION,
-            atSec: p.now,
-          }
+        ? this.awardOf(game, p.deadEnd.cell, 'dead-end', p.deadEnd.draw, p.steps, p.now)
         : null;
     await this.persist([
       ...(p.moved === undefined ? [] : [p.moved]),
@@ -878,23 +897,53 @@ export class GameService {
       outcome: p.outcome,
       detail: { cause: p.cause, auto: p.auto, payoutWei },
     });
-    if (award !== null && award.type === 'chest-awarded') {
-      this.log.event({
-        event: 'chest-awarded',
-        chainSec: p.now,
-        gameId,
-        step: p.steps,
-        outcome: p.outcome,
-        detail: {
-          player: award.player,
-          cell: award.cell,
-          rewardBps: award.rewardBps,
-          points: award.points,
-          chestRule: award.chestRule,
-        },
-      });
-    }
+    if (award !== null) this.logAward(award, p.outcome);
     this.hooks.onEnded?.(gameId);
+  }
+
+  /** The award of a chest found by the move that made `steps` moves, into `cell`. */
+  private awardOf(
+    game: Game,
+    cell: number,
+    kind: ChestKind,
+    draw: ChestDraw,
+    steps: number,
+    now: number,
+  ): AwardEvent {
+    const chain = game.chain!;
+    return {
+      type: 'chest-awarded',
+      gameId: game.gameId,
+      player: game.player,
+      n: game.n,
+      cell,
+      betWei: chain.betWei.toString(),
+      rewardBps: draw.rewardBps,
+      points: chestPoints(chain.betWei, draw.rewardBps).toString(),
+      chestRule: chain.chestRule,
+      atSec: now,
+      kind,
+      step: steps,
+    };
+  }
+
+  /** Logged after the award is durable. `outcome` is the ending stored with it, if any. */
+  private logAward(award: AwardEvent, outcome: OutcomeCode | null): void {
+    this.log.event({
+      event: 'chest-awarded',
+      chainSec: award.atSec,
+      gameId: award.gameId,
+      step: award.step,
+      outcome,
+      detail: {
+        player: award.player,
+        cell: award.cell,
+        kind: award.kind,
+        rewardBps: award.rewardBps,
+        points: award.points,
+        chestRule: award.chestRule,
+      },
+    });
   }
 
   private async persist(events: readonly StoreEvent[]): Promise<void> {
@@ -925,7 +974,7 @@ export class GameService {
         path: [],
         lastActivitySec: 0,
         ended: null,
-        chest: null,
+        chests: [],
         settle: { lastSentSec: null, lastTxHash: null, sends: 0, minedTxHash: null },
         final: null,
       });
@@ -958,6 +1007,7 @@ export class GameService {
           createdAtSec: event.createdAtSec,
           settleDeadlineSec: event.settleDeadlineSec,
           blockNumber: BigInt(event.blockNumber),
+          chestRule: event.chestRule ?? 1,
         };
         game.path = [{ cell: START_CELL, open: event.startOpen }];
         game.lastActivitySec = event.createdAtSec;
@@ -979,8 +1029,14 @@ export class GameService {
         if (game.chain === null || game.ended !== null) invalid();
         // An ending taken from the chain reports the chain's step count, whatever this log holds.
         if (event.cause !== 'chain' && event.steps !== game.moves.length) invalid();
-        // A chest rule applies only to an ending in a dead end.
-        if (event.chestRule !== undefined && (event.cause !== 'dead-end' || event.outcome !== OUTCOME_LOSS)) {
+        // The game's own chest rule, on an ending the server made: under rule 1 only on an ending
+        // in a dead end.
+        if (
+          event.chestRule !== undefined &&
+          (event.chestRule !== game.chain!.chestRule ||
+            event.cause === 'chain' ||
+            (event.chestRule < 2 && (event.cause !== 'dead-end' || event.outcome !== OUTCOME_LOSS)))
+        ) {
           invalid();
         }
         game.ended = {
@@ -998,27 +1054,36 @@ export class GameService {
         return;
       }
       case 'chest-awarded': {
-        // One award per game, for the dead end its ending recorded, under the rule it recorded,
-        // to the address its ticket was issued to.
+        // For the cell the last move entered, once per cell, under the game's rule, to the address
+        // its ticket was issued to: a path chest while the game is in play (rule 2), the chest
+        // in a dead end with the ending that recorded the dead end.
+        const kind = event.kind ?? 'dead-end';
+        const step = event.step ?? game.moves.length;
         const ended = game.ended;
         if (
-          ended === null ||
-          ended.chestRule === null ||
-          ended.chestRule !== event.chestRule ||
-          game.chest !== null ||
+          game.chain === null ||
+          event.chestRule !== game.chain.chestRule ||
+          step !== game.moves.length ||
           game.path[game.path.length - 1]?.cell !== event.cell ||
+          game.chests.some((chest) => chest.cell === event.cell) ||
           event.player.toLowerCase() !== game.player.toLowerCase() ||
-          event.n !== game.n
+          event.n !== game.n ||
+          (kind === 'path'
+            ? ended !== null || event.chestRule < 2
+            : ended === null || ended.cause !== 'dead-end' || ended.chestRule === null)
         ) {
           invalid();
         }
-        this.ledger.add(event);
-        game.chest = {
+        this.ledger.add(event, step);
+        game.chests.push({
           cell: event.cell,
+          kind,
           rewardBps: event.rewardBps,
           points: BigInt(event.points),
           chestRule: event.chestRule,
-        };
+          step,
+          atSec: event.atSec,
+        });
         return;
       }
       case 'settle-sent': {

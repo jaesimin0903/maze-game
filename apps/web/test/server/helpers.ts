@@ -578,7 +578,8 @@ export async function requestTicket(
  * A client seed for a ticket whose server seed the test knows. With `deadEnd`, one whose maze
  * has a dead end that can be walked into before the exit (about one 5×5 maze in a thousand
  * has none). With `chest` as well, one where the dead end `deadEndRoute` leads into holds a
- * chest under the current chest rule (`true`) or holds none (`false`). A real player cannot do
+ * chest under the current chest rule (`true`) or holds none (`false`); with `pathChest`, one where
+ * that route passes at least one path chest (`true`) or none (`false`). A real player cannot do
  * this: the server seed is secret until the game ends.
  */
 export function pickClientSeed(
@@ -587,24 +588,29 @@ export function pickClientSeed(
   n: number,
   deadEnd: boolean,
   chest?: boolean,
+  pathChest?: boolean,
 ): { clientSeed: Hex; maze: Maze } {
   for (;;) {
     const clientSeed = hex32();
     const finalSeed = deriveFinalSeed({ serverSeed, clientSeed, gameId: ticket.gameId });
     const maze = generateMaze(finalSeed, n);
-    if (!deadEnd && chest === undefined) return { clientSeed, maze };
+    if (!deadEnd && chest === undefined && pathChest === undefined) return { clientSeed, maze };
     const route = findDeadEndRoute(maze);
     if (route === null) continue;
-    if (chest === undefined) return { clientSeed, maze };
-    const end = cellsOf(maze, route)[route.length];
-    if ((chestAt(finalSeed, maze, end) !== null) === chest) return { clientSeed, maze };
+    const cells = cellsOf(maze, route);
+    if (chest !== undefined && (chestAt(finalSeed, maze, cells[route.length]) !== null) !== chest) continue;
+    if (pathChest !== undefined && cells.slice(1, -1).some((cell) => chestAt(finalSeed, maze, cell) !== null) !== pathChest) {
+      continue;
+    }
+    return { clientSeed, maze };
   }
 }
 
 /**
  * Ticket, `createGame` on the fake chain, and one worker pass so the server has seen it.
  * `deadEnd: true` guarantees that `deadEndRoute(game.maze)` exists; `chest` also fixes whether
- * the dead end it leads into holds a chest under the current chest rule.
+ * the dead end it leads into holds a chest under the current chest rule, and `pathChest` whether
+ * the route there passes a path chest.
  */
 export async function openGame(
   env: TestEnv,
@@ -616,6 +622,7 @@ export async function openGame(
     tick?: boolean;
     deadEnd?: boolean;
     chest?: boolean;
+    pathChest?: boolean;
   } = {},
 ): Promise<OpenedGame> {
   const { ticket, token } = await requestTicket(p);
@@ -623,7 +630,7 @@ export async function openGame(
   const n = env.table.tiers[ticket.tier].n;
   const serverSeed = env.container.service.get(ticket.gameId)!.serverSeed;
   const clientSeed =
-    p.clientSeed ?? pickClientSeed(ticket, serverSeed, n, p.deadEnd ?? false, p.chest).clientSeed;
+    p.clientSeed ?? pickClientSeed(ticket, serverSeed, n, p.deadEnd ?? false, p.chest, p.pathChest).clientSeed;
   env.chain.createGame({
     gameId: ticket.gameId,
     player: ticket.player,

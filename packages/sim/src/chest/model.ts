@@ -9,15 +9,24 @@
 // mazes follow the certified distribution. `chestStreamDisjoint` checks that the stream's seed
 // interval meets none of A..E nor the human stream, so no maze here was played there.
 //
-// Chests use the production rule itself (`chestDraw` of @maze/shared, rule v1), applied to a
-// synthetic final seed per game: sha256 of "maze-sim/chest/final-seed/v1/<w>x<h>/<i>". In a real
-// game the chest hash and the maze stream are two unrelated functions of the same final seed;
-// here the maze comes from the fast generator and the chest hash from this seed, which is the
-// same thing in distribution: which dead ends hold a chest, and what each is worth, is
-// independent of the walls. As on the server, a game asks about one cell only: the dead end it
-// ended in.
+// Chests use the production rule itself (`chestDraw` of @maze/shared, rule 2 by default, rule 1
+// on request), applied to a synthetic final seed per game: sha256 of
+// "maze-sim/chest/final-seed/v1/<w>x<h>/<i>". In a real game the chest hash and the maze stream
+// are two unrelated functions of the same final seed; here the maze comes from the fast generator
+// and the chest hash from this seed, which is the same thing in distribution: which cells hold a
+// chest, and what each is worth, is independent of the walls. As on the server, a game asks about
+// the cells it entered only: each path cell as it is entered (rule 2), and the dead end it ended in.
 
-import { chestDraw, fastRng, generateGridFromRng, type ChestDraw, type Hex, type Rng } from '@maze/shared';
+import {
+  CHEST_RULE_VERSION,
+  chestDraw,
+  fastRng,
+  generateGridFromRng,
+  type ChestDraw,
+  type ChestKind,
+  type Hex,
+  type Rng,
+} from '@maze/shared';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type { Bot } from '../bots/types';
@@ -103,9 +112,16 @@ export function chestFinalSeed(w: number, h: number, index: number): Hex {
   return `0x${bytesToHex(sha256(utf8ToBytes(`maze-sim/chest/final-seed/v1/${w}x${h}/${index}`)))}`;
 }
 
-/** The production chest draws (rule v1) of `cell` in game `index`. */
-export function chestOfGame(w: number, h: number, index: number, cell: number): ChestDraw {
-  return chestDraw(chestFinalSeed(w, h, index), cell);
+/** The production chest draws of `cell` in game `index`, for a cell of `kind` under `rule`. */
+export function chestOfGame(
+  w: number,
+  h: number,
+  index: number,
+  cell: number,
+  rule: number = CHEST_RULE_VERSION,
+  kind: ChestKind = 'dead-end',
+): ChestDraw {
+  return chestDraw(chestFinalSeed(w, h, index), cell, rule, kind);
 }
 
 /**

@@ -95,6 +95,7 @@ function issueTicket(world: FakeWorld, record: PlayRecord): void {
     status: 'active',
     auto: false,
     terminal: null,
+    chests: [],
   });
 }
 

@@ -41,6 +41,8 @@ const VIEW_KEYS = [
   'idleDeadlineSec',
   'gameDeadlineSec',
   'settleDeadlineSec',
+  'chestRule',
+  'chests',
 ];
 const TERMINAL_KEYS = [
   'serverSeed',
@@ -157,7 +159,8 @@ describe('ended games', () => {
     const reply = await api.cashout<GameView>(game.gameId, game.token, { step: 1 });
 
     expect(Object.keys(reply.body)).toEqual([...VIEW_KEYS, 'terminal']);
-    expect(Object.keys(reply.body.terminal!)).toEqual(TERMINAL_KEYS);
+    // A chest rule 2 game names its rule on every ending; only a dead end adds `chest`.
+    expect(Object.keys(reply.body.terminal!)).toEqual([...TERMINAL_KEYS, 'chestRule']);
     // AC-M4: the revealed seed opens the commitment the ticket was signed with.
     expect(
       commitmentOf({ mazeVersion: 1, n: game.n, serverSeed: reply.body.terminal!.serverSeed }),
@@ -186,6 +189,7 @@ describe('toPublicView', () => {
       createdAtSec: T0,
       settleDeadlineSec: T0 + 1800,
       blockNumber: 7n,
+      chestRule: 2,
     },
     moves: [1, 2],
     path: [
@@ -195,6 +199,7 @@ describe('toPublicView', () => {
     ],
     lastActivitySec: T0 + 9,
     ended: null,
+    chests: [{ cell: 1, kind: 'path', rewardBps: 321, points: 3210n, chestRule: 2, step: 1, atSec: T0 + 5 }],
     settle: { lastSentSec: null, lastTxHash: null, sends: 0, minedTxHash: null },
     final: null,
     // Things a careless serializer could pick up.
@@ -215,7 +220,10 @@ describe('toPublicView', () => {
       idleDeadlineSec: T0 + 129,
       gameDeadlineSec: T0 + 900,
       settleDeadlineSec: T0 + 1800,
+      chestRule: 2,
+      chests: [{ cell: { x: 1, y: 0 }, kind: 'path', rewardBps: 321, points: '3210', step: 1 }],
     });
+    expect(Object.keys(view.chests![0])).toEqual(['cell', 'kind', 'rewardBps', 'points', 'step']);
     const text = JSON.stringify(view);
     expect(text).not.toContain('5e5e');
     expect(text).not.toContain('f5f5');
@@ -291,14 +299,17 @@ describe('other responses', () => {
       'devWallet',
       'chest',
     ]);
-    // AC-P5: the chest rule version, and that points have no cash value.
+    // AC-P5, AC-P9: the chest rule version, both kinds of chest, and that points have no cash value.
     expect(reply.body.chest).toEqual({
-      ruleVersion: 1,
+      ruleVersion: 2,
       rateBps: 3000,
       rewardMinBps: 1000,
       rewardMaxBps: 3000,
       pointUnitWei: '1000000000000',
       cashValue: false,
+      pathRateBps: 1000,
+      pathRewardMinBps: 200,
+      pathRewardMaxBps: 500,
     });
     expect(reply.body).toMatchObject({
       chainId: 31337,

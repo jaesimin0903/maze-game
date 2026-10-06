@@ -333,7 +333,10 @@ AC-P4|T-web
 AC-P5|T-web T-int
 AC-P6|T-web
 AC-P7|T-web T-aside
-AC-P8|T-sim'
+AC-P8|T-sim
+AC-P9|T-shared
+AC-P10|T-web T-int
+AC-P11|T-web'
 
 # Where the tests of a suite live; empty for suites that are not test suites.
 test_dirs() {

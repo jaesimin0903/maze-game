@@ -62,6 +62,15 @@ export function toPublicView(p: {
     idleDeadlineSec: game.lastActivitySec + p.idleTimeoutSec,
     gameDeadlineSec: chain.createdAtSec + p.maxGameSec,
     settleDeadlineSec: chain.settleDeadlineSec,
+    chestRule: chain.chestRule,
+    // Chests already found: on cells the player has entered, with the points already awarded.
+    chests: game.chests.map((chest) => ({
+      cell: xy(chest.cell),
+      kind: chest.kind,
+      rewardBps: chest.rewardBps,
+      points: chest.points.toString(),
+      step: chest.step,
+    })),
   };
   if (p.withPath) {
     view.path = game.path.map((visited) => ({ ...xy(visited.cell), open: visited.open }));
@@ -76,15 +85,18 @@ export function toPublicView(p: {
       signature: ended.signature,
       settleTxHash: game.settle.minedTxHash ?? game.settle.lastTxHash,
     };
-    // Only for an ending in a dead end, which is after the game: whether that dead end held a chest.
+    // The rule the server applied to the ending; for an ending in a dead end, whether that dead
+    // end held a chest.
     const chestRule = ended.chestRule ?? null;
     if (chestRule !== null) {
-      const chest = game.chest ?? null;
       view.terminal.chestRule = chestRule;
-      view.terminal.chest =
-        chest === null
-          ? null
-          : { cell: xy(chest.cell), rewardBps: chest.rewardBps, points: chest.points.toString() };
+      if (ended.cause === 'dead-end') {
+        const chest = game.chests.find((found) => found.kind === 'dead-end') ?? null;
+        view.terminal.chest =
+          chest === null
+            ? null
+            : { cell: xy(chest.cell), rewardBps: chest.rewardBps, points: chest.points.toString() };
+      }
     }
   }
   return view;
@@ -106,6 +118,8 @@ export function toPointsResponse(address: Hex, account: LedgerAccount | null): P
       points: award.points.toString(),
       chestRule: award.chestRule,
       atSec: award.atSec,
+      kind: award.kind,
+      step: award.step,
     })),
     cashValue: false,
   };

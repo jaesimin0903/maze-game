@@ -2,7 +2,7 @@
 // table of the run. Numbers come from `ChestStats` only.
 
 import { POINT_UNIT_WEI } from '@maze/shared';
-import { PLAYER_INFO, type ChestRow, type ChestStats, type Interval, type MoneyCost } from './run';
+import { PLAYER_INFO, type ChestRow, type ChestStats, type Interval, type MoneyCost, type PointsMindedEffect } from './run';
 
 export interface ChestRunInfo {
   generatedAt: string;
@@ -29,9 +29,10 @@ function rowLine(n: number, row: ChestRow): string {
     PLAYER_INFO[row.player].name,
     int(row.games),
     pct(row.lossRate, 1),
+    num(row.pathChestsPerGame, 2),
     ci(row.chestRate),
     pct(row.chestShareOfLosses, 1),
-    num(row.pointsPerGame, 2),
+    `${num(row.pointsPerGame, 2)} (${num(row.pathPointsPerGame, 2)} / ${num(row.deadEndPointsPerGame, 2)})`,
     int(row.pointsPerEth),
     ci(row.rtp),
     ci(row.moneyRtp),
@@ -61,14 +62,34 @@ function costLine(n: number, cost: MoneyCost): string {
   ].join(' | ');
 }
 
+function mindedLine(n: number, m: PointsMindedEffect): string {
+  const cash = (value: number | null): string => (value === null ? '—' : num(value, 2));
+  return [
+    `${n}×${n}`,
+    num(m.perStepBps, 1),
+    num(m.bonusBps, 1),
+    `${num(m.ignoring.meanSteps, 2)} → ${num(m.counting.meanSteps, 2)} (${m.counting.meanSteps >= m.ignoring.meanSteps ? '+' : ''}${num(m.counting.meanSteps - m.ignoring.meanSteps, 2)})`,
+    `${cash(m.ignoring.meanCashSteps)} → ${cash(m.counting.meanCashSteps)}`,
+    `${pct(m.ignoring.cashRate, 1)} → ${pct(m.counting.cashRate, 1)}`,
+    `${pct(m.ignoring.lossRate, 1)} → ${pct(m.counting.lossRate, 1)}`,
+    `${pct(m.ignoring.rtp, 2)} → ${pct(m.counting.rtp, 2)}`,
+    `${num(m.ignoring.pointsPerGame, 2)} → ${num(m.counting.pointsPerGame, 2)}`,
+  ].join(' | ');
+}
+
 /** The Markdown report of a run. */
 export function renderMarkdown(stats: ChestStats, run: ChestRunInfo): string {
   const lines: string[] = [];
   const o = stats.options;
   lines.push('# sim:chest 결과', '');
   lines.push(`- 생성: ${run.generatedAt}, 명령 \`${run.command}\`, ${num(run.seconds, 1)}초, 작업 스레드 ${run.workers}개`);
+  const path = stats.rule.path;
   lines.push(
-    `- 보물상자 규칙 v${stats.rule.version} (태그 ${stats.rule.tag}): 막다른 칸의 ${stats.rule.rateBps / 100}%, 보상 베팅액의 ${stats.rule.rewardMinBps / 100}~${stats.rule.rewardMaxBps / 100}%, 1포인트 = ${stats.rule.pointUnitWei} wei 베팅 상당`,
+    `- 보물상자 규칙 v${stats.rule.version}: 막다른 칸의 ${stats.rule.rateBps / 100}%, 보상 베팅액의 ${stats.rule.rewardMinBps / 100}~${stats.rule.rewardMaxBps / 100}% (태그 ${stats.rule.tag})${
+      path === null
+        ? ''
+        : `; 길 칸(출발·출구·막다른 칸이 아닌 칸)의 ${path.rateBps / 100}%, 보상 베팅액의 ${path.rewardMinBps / 100}~${path.rewardMaxBps / 100}% (태그 ${path.tag})`
+    }. 1포인트 = ${stats.rule.pointUnitWei} wei 베팅 상당`,
   );
   lines.push(
     `- 판 수: 줄마다 평가 ${int(o.games)}판, 세션 ${int(o.sessions)}개(잔고 ${o.bankrollBets}배, 상한 ${int(o.gameCap)}판), 배율 짝 검증 ${int(o.checkGames)}판. 포인트는 베팅 ${o.betWei} wei 기준(서버처럼 상자마다 내림)`,
@@ -80,9 +101,9 @@ export function renderMarkdown(stats: ChestStats, run: ChestRunInfo): string {
   for (const table of stats.tables) {
     lines.push(`## ${table.label} (\`${table.path}\`)`, '');
     lines.push(
-      '| 크기 | 플레이어 | 판 수 | 막다른 칸 패배율 | 상자로 끝난 판 [95%] | 패배 중 상자 | 판당 포인트 | 1 ETH당 포인트 | 환수율(돈) [95%] | 상자를 돈으로 주면 [95%] | 증가분 | 손익분기 포인트 가치(1포인트 단위의 배수) | 세션 포인트 중앙값 [p10, p90] | 상자 1개 이상 세션 | 세션 판 수 중앙값 |',
+      '| 크기 | 플레이어 | 판 수 | 막다른 칸 패배율 | 판당 길 상자 | 막다른 칸 상자로 끝난 판 [95%] | 패배 중 상자 | 판당 포인트 (길 / 막다른) | 1 ETH당 포인트 | 환수율(돈) [95%] | 상자를 돈으로 주면 [95%] | 증가분 | 손익분기 포인트 가치(1포인트 단위의 배수) | 세션 포인트 중앙값 [p10, p90] | 상자 1개 이상 세션 | 세션 판 수 중앙값 |',
     );
-    lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+    lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
     for (const tier of table.tiers) for (const row of tier.rows) lines.push(`| ${rowLine(tier.n, row)} |`);
     lines.push('');
     const costs = table.tiers.flatMap((tier) => tier.moneyCost.map((cost) => ({ n: tier.n, cost })));
@@ -91,6 +112,17 @@ export function renderMarkdown(stats: ChestStats, run: ChestRunInfo): string {
       lines.push('| 크기 | 전략 | 지금 배율 | 지금 환수율 | 상자 기댓값 | 출구 도달률 | 필요한 배율 | 배율 변화 | 짝 검증 (지금 → 새 배율 + 돈 상자) |');
       lines.push('|---|---|---|---|---|---|---|---|---|');
       for (const { n, cost } of costs) lines.push(`| ${costLine(n, cost)} |`);
+      lines.push('');
+    }
+    const minded = table.tiers.flatMap((tier) => (tier.pointsMinded === null ? [] : [{ n: tier.n, m: tier.pointsMinded }]));
+    if (minded.length > 0) {
+      lines.push(
+        `포인트를 세는 생각하는 사람(1포인트 = 1포인트 단위 ${stats.rule.pointUnitWei} wei의 가치, 같은 사람·같은 미로·같은 잡음)과 포인트를 무시하는 같은 사람:`,
+        '',
+      );
+      lines.push('| 크기 | 한 걸음의 상자 보상(bps) | 그만두는 값을 낮춘 폭(bps) | 판당 걸음 | 캐시아웃한 판의 걸음 | 캐시아웃 비율 | 막다른 칸 패배율 | 환수율(돈) | 판당 포인트 |');
+      lines.push('|---|---|---|---|---|---|---|---|---|');
+      for (const { n, m } of minded) lines.push(`| ${mindedLine(n, m)} |`);
       lines.push('');
     }
     if (table.population !== null) {
@@ -108,6 +140,7 @@ export function renderMarkdown(stats: ChestStats, run: ChestRunInfo): string {
   }
   if (stats.cheapestPoints !== null) {
     const c = stats.cheapestPoints;
+    // The cap a later coin conversion must stay under: the cheapest break-even over every row.
     lines.push(
       `가장 싸게 포인트를 얻는 줄: ${c.table} ${c.n}×${c.n}의 ${PLAYER_INFO[c.player].name}. 1포인트의 가치가 ${num(c.weiPerPoint, 0)} wei(1포인트 단위의 ${units(c.weiPerPoint)}배) 이상이면 그 플레이가 손익분기를 넘습니다.`,
     );
@@ -124,7 +157,13 @@ export function formatSummary(stats: ChestStats, run: ChestRunInfo): string {
     for (const tier of table.tiers) {
       for (const row of tier.rows) {
         lines.push(
-          `  ${table.label} ${tier.n}x${tier.n} ${row.player.padEnd(20)} chest ${pct(row.chestRate.mean).padStart(7)}  points/game ${num(row.pointsPerGame, 2).padStart(7)}  rtp ${pct(row.rtp.mean).padStart(7)} -> ${pct(row.moneyRtp.mean).padStart(7)} if money  break-even ${row.breakEvenWeiPerPoint === null ? '-' : units(row.breakEvenWeiPerPoint)} units/point`,
+          `  ${table.label} ${tier.n}x${tier.n} ${row.player.padEnd(20)} path chests/game ${num(row.pathChestsPerGame, 2).padStart(5)}  dead-end chest ${pct(row.chestRate.mean).padStart(7)}  points/game ${num(row.pointsPerGame, 2).padStart(7)} (path ${num(row.pathPointsPerGame, 2)}, dead end ${num(row.deadEndPointsPerGame, 2)})  rtp ${pct(row.rtp.mean).padStart(7)} -> ${pct(row.moneyRtp.mean).padStart(7)} if money  break-even ${row.breakEvenWeiPerPoint === null ? '-' : units(row.breakEvenWeiPerPoint)} units/point`,
+        );
+      }
+      if (tier.pointsMinded !== null) {
+        const m = tier.pointsMinded;
+        lines.push(
+          `  ${table.label} ${tier.n}x${tier.n} thoughtful counting points (bonus ${num(m.bonusBps, 1)} bps): steps ${num(m.ignoring.meanSteps, 2)} -> ${num(m.counting.meanSteps, 2)}, cash-outs ${pct(m.ignoring.cashRate, 1)} -> ${pct(m.counting.cashRate, 1)}, rtp ${pct(m.ignoring.rtp)} -> ${pct(m.counting.rtp)}`,
         );
       }
       for (const cost of tier.moneyCost) {

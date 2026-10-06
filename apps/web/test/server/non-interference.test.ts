@@ -1,10 +1,12 @@
 // AC-X2: non-interference. Two games whose mazes differ only in cells the player has not
 // visited answer every request with byte-identical bodies. The clock is injected, so the time
 // fields agree; the only thing normalized is the random game id.
-// AC-P4: the same holds when the chests differ as well: answers and log lines of a game in
-// progress do not depend on where the chests are.
+// AC-P4: the same holds when the chests differ as well: two games that differ only in the walls
+// and the chests of cells the player has not entered give byte-identical answers and log lines.
+// A chest on an entered cell is shown (rule 2), so the chests of entered cells are the same in
+// both games: the property is about what the player has not seen.
 
-import { generateMaze, type ChestDraw, type Dir, type GameView, type Hex, type Maze } from '@maze/shared';
+import { generateMaze, type ChestDraw, type ChestKind, type Dir, type GameView, type Hex, type Maze } from '@maze/shared';
 import { describe, expect, it } from 'vitest';
 import {
   api,
@@ -35,16 +37,21 @@ function variant(keep: readonly number[], change: (mask: number, cell: number) =
   return { w: N, h: N, open };
 }
 
+type Draw = (finalSeed: Hex, cell: number, kind: ChestKind, rule: number) => ChestDraw;
+
+/**
+ * The chests of the transcripts unless a test says otherwise: one path chest, on the second cell
+ * the script enters, and none elsewhere. Fixed, because the game id (so the final seed) is random.
+ */
+const FIXED_CHESTS: Draw = (_finalSeed, cell) => ({ placed: cell === VISITED[2], rewardBps: 345 });
+
 /**
  * Runs one fixed request script against a server whose game has `maze`. With `chestDraw`, the
- * server's chests are those; with `logs`, the server's log lines (game id normalized) are
- * pushed there once the script has run.
+ * server's chests are those (`FIXED_CHESTS` by default); with `logs`, the server's log lines (game
+ * id normalized) are pushed there once the script has run.
  */
-async function transcript(
-  maze: Maze,
-  options: { chestDraw?: (finalSeed: Hex, cell: number) => ChestDraw; logs?: string[] } = {},
-): Promise<string[]> {
-  const env = await makeEnv({ mazeFactory: () => maze, chestDraw: options.chestDraw });
+async function transcript(maze: Maze, options: { chestDraw?: Draw; logs?: string[] } = {}): Promise<string[]> {
+  const env = await makeEnv({ mazeFactory: () => maze, chestDraw: options.chestDraw ?? FIXED_CHESTS });
   try {
     const game = await openGame(env, { clientSeed: CLIENT_SEED });
     const lines: string[] = [];
@@ -90,16 +97,20 @@ async function transcript(
   }
 }
 
-/** Chest draws from a small generator: which cells hold a chest, and their rewards, vary with `seed`. */
-function randomChests(seed: number, asked: number[] = []): (finalSeed: Hex, cell: number) => ChestDraw {
-  return (_finalSeed, cell) => {
+/**
+ * `FIXED_CHESTS` on the cells in `keep`, and elsewhere chests from a small generator: which cells
+ * hold a chest, and their rewards, vary with `seed`. Every question goes to `asked`.
+ */
+function randomChests(seed: number, keep: readonly number[], asked: number[] = []): Draw {
+  return (finalSeed, cell, kind, rule) => {
     asked.push(cell);
+    if (keep.includes(cell)) return FIXED_CHESTS(finalSeed, cell, kind, rule);
     const mix = (Math.imul(seed ^ (cell * 0x9e3779b1), 0x85ebca6b) >>> 0) ^ (seed >>> 3);
-    return { placed: (mix & 1) === 1, rewardBps: 1000 + (mix % 2001) };
+    return { placed: (mix & 1) === 1, rewardBps: 200 + (mix % 2801) };
   };
 }
 
-const NO_CHESTS = (): ChestDraw => ({ placed: false, rewardBps: 1000 });
+const NO_CHESTS: Draw = () => ({ placed: false, rewardBps: 1000 });
 
 describe('AC-X2: responses do not depend on unvisited cells', () => {
   it('start, move, resume and error bodies are byte-identical for two such mazes', async () => {
@@ -154,12 +165,16 @@ describe('AC-X2: responses do not depend on unvisited cells', () => {
   });
 });
 
-describe('AC-P4: responses and log lines of a game in progress do not depend on the chests', () => {
-  it('AC-P4 two games that differ only in chest placement and unvisited walls give byte-identical transcripts and log lines', async () => {
+describe('AC-P4: responses and log lines do not depend on the walls or chests of cells not entered', () => {
+  it('AC-P4 two games that differ only in the walls and chests of unvisited cells give byte-identical transcripts and log lines', async () => {
     const baseLogs: string[] = [];
-    const base = await transcript(BASE, { chestDraw: NO_CHESTS, logs: baseLogs });
+    const base = await transcript(BASE, { logs: baseLogs });
     expect(base).toHaveLength(18);
     expect(baseLogs.length).toBeGreaterThan(5);
+    // The script does find the one chest on its way, in the answer to the move into its cell.
+    expect(base.find((line) => line.startsWith('move-2 '))).toContain('"chests":[{"cell"');
+    expect(base.find((line) => line.startsWith('move-1 '))).toContain('"chests":[]');
+    expect(baseLogs.some((line) => line.includes('"event":"chest-awarded"'))).toBe(true);
 
     let state = 0x1b873593;
     const next = (): number => {
@@ -170,14 +185,24 @@ describe('AC-P4: responses and log lines of a game in progress do not depend on 
       const asked: number[] = [];
       const logs: string[] = [];
       const lines = await transcript(variant(VISITED, () => next()), {
-        chestDraw: randomChests(0x2545f491 + round, asked),
+        chestDraw: randomChests(0x2545f491 + round, VISITED, asked),
         logs,
       });
       expect(lines).toEqual(base);
       expect(logs).toEqual(baseLogs);
-      // Not a single question about a chest was asked while the game was in progress.
-      expect(asked).toEqual([]);
+      // The chest rule was asked about the cells the moves entered, once each, and nothing else.
+      expect(asked).toEqual(VISITED.slice(1));
     }
+  });
+
+  it('AC-P4 negative control: a chest on a cell the player enters changes the answers from that move on', async () => {
+    const base = await transcript(BASE);
+    const without = await transcript(BASE, { chestDraw: NO_CHESTS });
+    const at = base.findIndex((line) => line.startsWith('move-2 '));
+    // Up to the move into the chest's cell, nothing differs; that answer and later ones do.
+    expect(without.slice(0, at)).toEqual(base.slice(0, at));
+    expect(without[at]).not.toEqual(base[at]);
+    expect(without[at]).toContain('"chests":[]');
   });
 
   it('AC-P4 negative control: only the answer to the move into a dead end shows whether it held a chest', async () => {
@@ -189,7 +214,7 @@ describe('AC-P4: responses and log lines of a game in progress do not depend on 
       if (route !== null && route.length >= 2) maze = candidate;
     }
     const route = deadEndRoute(maze);
-    const play = async (draw: (finalSeed: Hex, cell: number) => ChestDraw): Promise<{ inGame: string[]; last: GameView }> => {
+    const play = async (draw: Draw): Promise<{ inGame: string[]; last: GameView }> => {
       const env = await makeEnv({ mazeFactory: () => maze, chestDraw: draw });
       try {
         const game = await openGame(env, { clientSeed: CLIENT_SEED });
@@ -206,8 +231,10 @@ describe('AC-P4: responses and log lines of a game in progress do not depend on 
         await env.close();
       }
     };
-    const withChest = await play(() => ({ placed: true, rewardBps: 2222 }));
-    const without = await play(NO_CHESTS);
+    // The same path chests on the way in both games; only the dead end differs.
+    const onPath = (kind: ChestKind): ChestDraw | null => (kind === 'path' ? { placed: true, rewardBps: 250 } : null);
+    const withChest = await play((_f, _c, kind) => onPath(kind) ?? { placed: true, rewardBps: 2222 });
+    const without = await play((_f, _c, kind) => onPath(kind) ?? { placed: false, rewardBps: 2222 });
     expect(withChest.inGame).toEqual(without.inGame);
     expect(withChest.last.terminal?.chest).toMatchObject({ rewardBps: 2222 });
     expect(without.last.terminal?.chest).toBeNull();

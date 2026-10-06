@@ -21,9 +21,11 @@
 //                 open, plus those two moves (`a`, `b`): the two-tab race of scenario 08
 //   invalid       a route of at least one move to a cell that has a wall inside the grid, plus
 //                 that wall's direction (`wall`) and the direction back (`visited`)
-//   chest         the shortest route into a dead end that holds a chest (chest rule of
-//                 @maze/shared, plan-chest.ts), plus that chest (`chest`: cell, x, y, rewardBps),
-//                 every chest of the maze (`chests`) and the rule version (`chestRule`)
+//   chest         the shortest route that passes at least one path chest and ends in a dead end
+//                 that holds a chest (chest rule 2 of @maze/shared, plan-chest.ts), plus that
+//                 chest (`chest`: cell, x, y, kind, rewardBps), the path chests on the way
+//                 (`pathChests`, each with the `step` of the move that enters it), every chest of
+//                 the maze (`chests`) and the rule version (`chestRule`)
 //
 // Output: one JSON object on stdout. `moves` are direction letters (N, E, S, W).
 // Exit codes: 0 planned, 3 this maze cannot serve the goal (the scenario starts another game),
@@ -209,7 +211,15 @@ else if (goal === 'chest') {
   plan =
     chestPlan === null
       ? null
-      : { cells: chestPlan.cells, extra: { chest: chestPlan.chest, chests: chestPlan.chests, chestRule: chestPlan.chestRule } };
+      : {
+          cells: chestPlan.cells,
+          extra: {
+            chest: chestPlan.chest,
+            pathChests: chestPlan.pathChests,
+            chests: chestPlan.chests,
+            chestRule: chestPlan.chestRule,
+          },
+        };
 }
 else if (goal === 'junction') plan = planJunction(maze);
 else if (goal === 'invalid') plan = planInvalid(maze);

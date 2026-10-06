@@ -1,6 +1,6 @@
 'use client';
 
-import type { Hex } from '@maze/shared';
+import type { FoundChest, Hex } from '@maze/shared';
 import { formatEth, formatPercent, formatPoints } from '../format';
 import type { Busy, GameResult, ResultOutcome } from '../use-game';
 
@@ -91,6 +91,9 @@ export function ResultPanel({
           이 막다른 칸에는 보물상자가 없었습니다.
         </p>
       )}
+      {result.chests !== undefined && result.chests.length > 0 && (
+        <GameChestList chests={result.chests} />
+      )}
       <p className="result-pay">
         <span className="money-label">받는 금액</span>
         <strong
@@ -144,6 +147,39 @@ export function ResultPanel({
           새 게임
         </button>
       </div>
+    </section>
+  );
+}
+
+const KIND_TEXT = { path: '길 상자', 'dead-end': '막다른 칸 상자' } as const;
+
+/** The chests found in this game, in the order found, and their points in all. */
+function GameChestList({ chests }: { chests: FoundChest[] }) {
+  const total = chests.reduce((sum, chest) => sum + BigInt(chest.points), 0n).toString();
+  return (
+    <section className="result-chests" data-testid="game-chests" data-count={chests.length} data-points={total}>
+      <p className="result-chests-title">이번 판에서 찾은 보물상자 {chests.length}개</p>
+      <ol className="result-chest-list">
+        {chests.map((chest, k) => (
+          <li
+            key={`${chest.cell.x}-${chest.cell.y}`}
+            data-testid={`game-chest-${k}`}
+            data-kind={chest.kind}
+            data-x={chest.cell.x}
+            data-y={chest.cell.y}
+            data-step={chest.step}
+            data-reward-bps={chest.rewardBps}
+            data-points={chest.points}
+          >
+            {KIND_TEXT[chest.kind]} ({chest.cell.x},{chest.cell.y}), {chest.step}걸음째: +
+            {formatPoints(chest.points)} 포인트 (베팅액의 {formatPercent(chest.rewardBps)})
+          </li>
+        ))}
+      </ol>
+      <p className="result-chests-total" data-testid="game-points-total" data-points={total}>
+        합계 +{formatPoints(total)} 포인트. 현금 가치 없음: 포인트는 돈으로 바꾸거나 출금할 수 없고,
+        받는 금액에는 영향이 없습니다.
+      </p>
     </section>
   );
 }

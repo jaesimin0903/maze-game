@@ -1,11 +1,13 @@
 // Jobs of `sim:chest`. A job is a pure function of its description: the same job returns the same
 // result on any thread, so the split into jobs and the number of workers never change a result.
 //
-// Every game is played by the engine exactly as the certification plays it (`play`); a chest is
-// asked about only when the game ended in a dead end (outcome loss), for that one cell. Points
-// are what the server would award for the job's bet (`chestPoints`, rounded down).
+// Every game is played by the engine exactly as the certification plays it (`play`). Afterwards
+// the chest rule is asked about the cells the game entered, and only those, as the server asks:
+// under rule 2 every entered cell that is neither the exit nor the dead end the game ended in is
+// a path cell, and the dead end of a loss is asked about as a dead end. Points are what the server
+// would award for the job's bet (`chestPoints`, rounded down per chest).
 
-import { chestPoints } from '@maze/shared';
+import { chestPoints, type Rng } from '@maze/shared';
 import { createBot, type BotSpec } from '../bots/index';
 import type { Bot } from '../bots/types';
 import { Game, OUTCOME_CASH, OUTCOME_EXIT, OUTCOME_LOSS, play, type TierEconomics } from '../engine';
@@ -18,10 +20,14 @@ import { ChestFeed, chestOfGame, DeadEndSeeker } from './model';
 /** `workerData` of the threads of this command's pool (pool.ts). */
 export const CHEST_WORKER_TAG = 'maze-sim-chest-worker';
 
-/** A player: a certified bot, a model of a person (`career` games per person, 0 = a new person every game), or the points maximiser. */
+/**
+ * A player: a certified bot, a model of a person (`career` games per person, 0 = a new person
+ * every game), or the points maximiser. A person with `pointsBonusBps` also counts points: see
+ * `PointsMinded`.
+ */
 export type PlayerSpec =
   | { kind: 'bot'; spec: BotSpec }
-  | { kind: 'human'; spec: ModelSpec; career: number }
+  | { kind: 'human'; spec: ModelSpec; career: number; pointsBonusBps?: number }
   | { kind: 'seeker' };
 
 /** Sums over games. Payouts and rewards are in basis points of the bet, so the sums are exact. */
@@ -31,16 +37,27 @@ export interface GamesStats {
   losses: number;
   cashouts: number;
   steps: number;
+  /** Steps of the games that ended in a cash-out. */
+  cashSteps: number;
   sumPayout: number;
   sumPayoutSq: number;
   /** Games that ended in a dead end holding a chest. */
   chests: number;
+  /** Σ rewards of the dead-end chests. */
+  sumDeadReward: number;
+  /** Path chests found (rule 2). */
+  pathChests: number;
+  /** Σ rewards of the path chests. */
+  sumPathReward: number;
+  /** Σ per-game chest reward, path and dead-end chests together. */
   sumReward: number;
   sumRewardSq: number;
-  /** Σ (payout + chest reward)²: the money version's second moment (a chest only comes with a payout of 0). */
+  /** Σ (payout + per-game chest reward)²: the money version's second moment. */
   sumTotalSq: number;
-  /** Points awarded at the job's bet. */
+  /** Points of the dead-end chests at the job's bet. */
   points: number;
+  /** Points of the path chests at the job's bet. */
+  pathPoints: number;
 }
 
 export interface GamesJob {
@@ -53,6 +70,8 @@ export interface GamesJob {
   games: number;
   /** Decimal wei: the bet the points are computed for. */
   betWei: string;
+  /** The chest rule the games are played under. */
+  rule: number;
 }
 
 export interface SessionsJob {
@@ -69,9 +88,11 @@ export interface SessionsJob {
   bankrollBets: number;
   gameCap: number;
   betWei: string;
+  rule: number;
 }
 
 export interface SessionColumns {
+  /** Games of each session, and the chests (of both kinds) and points found in it. */
   games: Uint16Array;
   chests: Uint16Array;
   points: Float64Array;
@@ -88,6 +109,7 @@ export interface PairedJob {
   player: PlayerSpec;
   first: number;
   games: number;
+  rule: number;
 }
 
 export interface PairedStats {
@@ -124,13 +146,18 @@ export function emptyGames(): GamesStats {
     losses: 0,
     cashouts: 0,
     steps: 0,
+    cashSteps: 0,
     sumPayout: 0,
     sumPayoutSq: 0,
     chests: 0,
+    sumDeadReward: 0,
+    pathChests: 0,
+    sumPathReward: 0,
     sumReward: 0,
     sumRewardSq: 0,
     sumTotalSq: 0,
     points: 0,
+    pathPoints: 0,
   };
 }
 
@@ -146,6 +173,45 @@ export function mergePaired(into: PairedStats, from: PairedStats): void {
   for (const key of Object.keys(into) as (keyof PairedStats)[]) into[key] += from[key];
 }
 
+/**
+ * A person who also counts points. Before each decision it lowers what cashing out now is worth
+ * to it by `bonusBps`, the chest value it expects from walking on, and asks the model inside; the
+ * table is put back before the engine reads it. Everything else is the model inside.
+ */
+export class PointsMinded implements HumanPolicy {
+  constructor(
+    private readonly inner: HumanPolicy,
+    readonly bonusBps: number,
+  ) {}
+
+  newPlayer(rng: Rng): void {
+    this.inner.newPlayer(rng);
+  }
+
+  startGame(rng: Rng): void {
+    this.inner.startGame(rng);
+  }
+
+  endGame(g: Game): void {
+    this.inner.endGame(g);
+  }
+
+  begin(g: Game): void {
+    this.inner.begin(g);
+  }
+
+  decide(g: Game): number {
+    const at = g.k;
+    const refund = g.refund[at];
+    g.refund[at] = refund - this.bonusBps;
+    try {
+      return this.inner.decide(g);
+    } finally {
+      g.refund[at] = refund;
+    }
+  }
+}
+
 /** A player bound to one `Game`, with the per-game noise of the people models. */
 class Seat {
   readonly bot: Bot;
@@ -155,7 +221,8 @@ class Seat {
 
   constructor(spec: PlayerSpec, g: Game, noiseKey: string) {
     if (spec.kind === 'human') {
-      const policy = createPolicy(spec.spec, g);
+      const model = createPolicy(spec.spec, g);
+      const policy = spec.pointsBonusBps === undefined ? model : new PointsMinded(model, spec.pointsBonusBps);
       this.bot = policy;
       this.human = policy;
       this.careerLength = spec.career;
@@ -179,11 +246,41 @@ class Seat {
   }
 }
 
-/** The chest a game ended with: its reward in bps, or 0 when it did not end in a chest. */
-function rewardOf(g: Game, index: number): number {
-  if (g.outcome !== OUTCOME_LOSS) return 0;
-  const draw = chestOfGame(g.w, g.h, index, g.cell);
-  return draw.placed ? draw.rewardBps : 0;
+/** The chests of a game just played: path chests (count, Σ reward, Σ points) and the dead end's reward. */
+interface GameChests {
+  pathCount: number;
+  pathReward: number;
+  pathPoints: number;
+  deadReward: number;
+  deadPoints: number;
+}
+
+/**
+ * Asks the chest rule about the cells game `index` entered, in order: under rule 2 every entered
+ * cell before the last, and the last unless the game ended on the exit or in a dead end, as a path
+ * cell; the dead end of a loss as a dead end. In a tree maze a cell the game walked on through has
+ * a way on besides the way back, so it is a path cell, and so is the cell of a cash-out.
+ */
+function chestsOf(g: Game, index: number, rule: number, bet: bigint): GameChests {
+  const out: GameChests = { pathCount: 0, pathReward: 0, pathPoints: 0, deadReward: 0, deadPoints: 0 };
+  const lastPath = g.outcome === OUTCOME_CASH ? g.k : g.k - 1;
+  if (rule >= 2) {
+    for (let i = 1; i <= lastPath; i++) {
+      const draw = chestOfGame(g.w, g.h, index, g.path[i], rule, 'path');
+      if (!draw.placed) continue;
+      out.pathCount += 1;
+      out.pathReward += draw.rewardBps;
+      out.pathPoints += Number(chestPoints(bet, draw.rewardBps));
+    }
+  }
+  if (g.outcome === OUTCOME_LOSS) {
+    const draw = chestOfGame(g.w, g.h, index, g.cell, rule, 'dead-end');
+    if (draw.placed) {
+      out.deadReward = draw.rewardBps;
+      out.deadPoints = Number(chestPoints(bet, draw.rewardBps));
+    }
+  }
+  return out;
 }
 
 export function playGames(job: GamesJob): GamesStats {
@@ -198,20 +295,27 @@ export function playGames(job: GamesJob): GamesStats {
     // Per-game rows: a new person every game, or every `career` games for the learning model.
     seat.play(g, feed, index, seat.careerLength === 0 || i % seat.careerLength === 0);
     const payout = g.payoutBps;
-    const reward = rewardOf(g, index);
+    const found = chestsOf(g, index, job.rule, bet);
+    const reward = found.pathReward + found.deadReward;
     stats.games += 1;
     stats.steps += g.k;
     if (g.outcome === OUTCOME_EXIT) stats.wins += 1;
-    else if (g.outcome === OUTCOME_CASH) stats.cashouts += 1;
-    else stats.losses += 1;
+    else if (g.outcome === OUTCOME_CASH) {
+      stats.cashouts += 1;
+      stats.cashSteps += g.k;
+    } else stats.losses += 1;
     stats.sumPayout += payout;
     stats.sumPayoutSq += payout * payout;
-    if (reward > 0) {
+    if (found.deadReward > 0) {
       stats.chests += 1;
-      stats.sumReward += reward;
-      stats.sumRewardSq += reward * reward;
-      stats.points += Number(chestPoints(bet, reward));
+      stats.sumDeadReward += found.deadReward;
+      stats.points += found.deadPoints;
     }
+    stats.pathChests += found.pathCount;
+    stats.sumPathReward += found.pathReward;
+    stats.pathPoints += found.pathPoints;
+    stats.sumReward += reward;
+    stats.sumRewardSq += reward * reward;
     stats.sumTotalSq += (payout + reward) * (payout + reward);
   }
   return stats;
@@ -241,11 +345,9 @@ export function playSessions(job: SessionsJob): SessionColumns {
       // One person plays the whole session (a learning person keeps what it learnt).
       seat.play(g, feed, index, games === 0);
       bankroll += g.payoutBps - 10_000;
-      const reward = rewardOf(g, index);
-      if (reward > 0) {
-        chests += 1;
-        points += Number(chestPoints(bet, reward));
-      }
+      const found = chestsOf(g, index, job.rule, bet);
+      chests += found.pathCount + (found.deadReward > 0 ? 1 : 0);
+      points += found.pathPoints + found.deadPoints;
       games += 1;
     }
     out.games[s] = games;
@@ -269,7 +371,8 @@ export function playPaired(job: PairedJob): PairedStats {
     seatA.play(gA, feed, index, false);
     const a = gA.payoutBps;
     seatB.play(gB, feed, index, false);
-    const b = gB.payoutBps + rewardOf(gB, index);
+    const found = chestsOf(gB, index, job.rule, 0n);
+    const b = gB.payoutBps + found.pathReward + found.deadReward;
     if (gB.outcome === OUTCOME_EXIT) stats.winsB += 1;
     stats.games += 1;
     stats.sumA += a;

@@ -2,15 +2,16 @@
 //
 //   pnpm sim:chest [--tables <file>,<file>] [--players <id>,<id>] [--games <n>] [--sessions <n>]
 //                  [--bankroll <bets>] [--game-cap <n>] [--check-games <n>] [--bet <wei>]
-//                  [--seed <n>] [--workers <n>] [--out <dir>] [--quick]
+//                  [--rule <1|2>] [--seed <n>] [--workers <n>] [--out <dir>] [--quick]
 //
 // Without options it reports on the production table and the house-max table for every player
-// type at the tables' minimum bet, with sizes that finish in a few minutes on four worker
-// threads. The strongest strategy (value-lsm) is played with the value table its certification
+// type at the tables' minimum bet under the current chest rule (2: path chests and dead-end
+// chests), with sizes that finish in a few minutes on four worker threads. The strongest strategy (value-lsm) is played with the value table its certification
 // used, read from packages/sim/reports (nothing there is written). Output goes to
 // `.data/sim-chest/<run>/` (git-ignored): chest.json with every number, chest.md with the tables.
 
 import { existsSync } from 'node:fs';
+import { CHEST_RULE_VERSION } from '@maze/shared';
 import { basename, join, relative, resolve } from 'node:path';
 import { ATTACK_TABLES, certifiedTiers, type AttackTableName } from '../attack/context';
 import { simPackageRoot } from '../codehash';
@@ -45,6 +46,7 @@ const USAGE = `usage: pnpm sim:chest [options]
   --game-cap <n>           most games of a session (default ${DEFAULTS.gameCap})
   --check-games <n>        paired games of the money-version multiplier check per size, 0 = none (default ${DEFAULTS.checkGames})
   --bet <wei>              the bet points are counted for (default: the first table's minimum bet)
+  --rule <1|2>             the chest rule the games are played under (default ${CHEST_RULE_VERSION})
   --seed <n>               moves every game range to fresh mazes (default ${DEFAULTS.seed})
   --workers <n>            worker threads, 0 = this thread only (default ${DEFAULTS.workers})
   --out <dir>              output directory (default .data/sim-chest/<run>/)
@@ -150,7 +152,9 @@ async function main(argv: string[]): Promise<number> {
     reachGames: base.reachGames,
     betWei: bet,
     seed: whole(options, 'seed', base.seed, 0),
+    rule: whole(options, 'rule', CHEST_RULE_VERSION, 1),
   };
+  if (request.rule > CHEST_RULE_VERSION) throw new UsageError(`--rule must be 1 .. ${CHEST_RULE_VERSION}`);
   const workers = whole(options, 'workers', base.workers, 0);
   const executor: ChestExecutor = workers === 0 ? new InlineChestExecutor() : new ChestWorkerPool(workers);
   const started = Date.now();
@@ -167,7 +171,7 @@ async function main(argv: string[]): Promise<number> {
     seconds: (Date.now() - started) / 1000,
     workers,
   };
-  const name = `${stamp(now)}-seed${request.seed}${quick ? '-quick' : ''}`;
+  const name = `${stamp(now)}-seed${request.seed}${request.rule === CHEST_RULE_VERSION ? '' : `-rule${request.rule}`}${quick ? '-quick' : ''}`;
   let directory = options.has('out') ? resolve(options.get('out')!) : join(REPOSITORY, '.data', 'sim-chest', name);
   if (!options.has('out')) {
     for (let attempt = 2; existsSync(directory); attempt++) directory = join(REPOSITORY, '.data', 'sim-chest', `${name}-${attempt}`);

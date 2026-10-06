@@ -1,7 +1,11 @@
-// AC-P6: what the page shows of treasure chests. The chest appears on the board and on the result
-// screen only once the move into its dead end has ended the game; the points are labelled as
+// AC-P6: what the page shows of treasure chests. A dead end's chest appears on the board and on
+// the result screen only once the move into it has ended the game; the points are labelled as
 // having no cash value; the header shows the wallet's balance; the verify screen lists every
 // chest after the reveal and checks the server's chest against the seed.
+// AC-P11 (chest rule 2): a path chest appears on its cell, with the points just earned, the moment
+// the move enters it; the game's running total and the header balance follow; the result screen
+// lists every chest of the game; the verify screen shows every chest with its kind and checks all
+// the chests the player was given; the play record keeps them.
 
 import { createHash } from 'node:crypto';
 import { cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -18,6 +22,8 @@ import {
   replayMoves,
   type ChestFound,
   type Dir,
+  type FoundChest,
+  type GameView,
   type Hex,
   type Maze,
 } from '@maze/shared';
@@ -25,7 +31,7 @@ import { GameApp } from '../../src/client/GameApp';
 import { VerifyView } from '../../src/client/components/VerifyView';
 import { DIR_NAMES } from '../../src/client/board-view';
 import { formatPoints } from '../../src/client/format';
-import { loadRecord, parseRecord, saveRecord, type PlayRecord } from '../../src/client/record';
+import { loadRecord, parseRecord, saveRecord, withView, type PlayRecord } from '../../src/client/record';
 import { CHEST_CONFIG, FakeWorld, PLAYER, SERVER_SEED, TABLE, firstGameId, planDeadEnd } from './helpers';
 
 configure({ asyncUtilTimeout: 3000 });
@@ -54,11 +60,11 @@ interface Planned {
 /**
  * A client seed for game `gameId` (by default the first game of a `FakeWorld`) whose dead-end
  * route (the one `planDeadEnd` takes, at least two moves) ends in a dead end that holds a chest
- * (`withChest`) or holds none.
+ * (`withChest`) or holds none, and passes at least one path chest (`pathChest`) or none.
  */
-function plan(withChest: boolean, gameId: Hex = firstGameId): Planned {
-  for (let i = 0; i < 400; i++) {
-    const clientSeed = seedOf(`client chest ${withChest} ${i}`);
+function plan(withChest: boolean, gameId: Hex = firstGameId, pathChest = false): Planned {
+  for (let i = 0; i < 2000; i++) {
+    const clientSeed = seedOf(`client chest ${withChest} ${pathChest} ${i}`);
     const finalSeed = deriveFinalSeed({ serverSeed: SERVER_SEED, clientSeed, gameId });
     const maze = generateMaze(finalSeed, N);
     let moves: Dir[];
@@ -68,11 +74,36 @@ function plan(withChest: boolean, gameId: Hex = firstGameId): Planned {
       continue;
     }
     if (moves.length < 2) continue;
-    const end = replayMoves(maze, moves).path.at(-1)!;
-    if ((chestAt(finalSeed, maze, end) !== null) === withChest) return { clientSeed, maze, finalSeed, moves, end };
+    const cells = replayMoves(maze, moves).path;
+    const end = cells.at(-1)!;
+    const passes = cells.slice(1, -1).some((cell) => chestAt(finalSeed, maze, cell) !== null);
+    if ((chestAt(finalSeed, maze, end) !== null) === withChest && passes === pathChest) {
+      return { clientSeed, maze, finalSeed, moves, end };
+    }
   }
-  throw new Error('no such client seed among 400');
+  throw new Error('no such client seed among 2000');
 }
+
+/** The chests the planned route enters, in order, as the server lists them. */
+function routeChests(planned: Planned): FoundChest[] {
+  return replayMoves(planned.maze, planned.moves).path.flatMap((cell, step) => {
+    const chest = step === 0 ? null : chestAt(planned.finalSeed, planned.maze, cell);
+    return chest === null
+      ? []
+      : [
+          {
+            cell: { x: cell % N, y: Math.floor(cell / N) },
+            kind: chest.kind,
+            rewardBps: chest.rewardBps,
+            points: chestPoints(BET, chest.rewardBps).toString(),
+            step,
+          },
+        ];
+  });
+}
+
+const sumOf = (chests: readonly FoundChest[]): string =>
+  chests.reduce((sum, chest) => sum + BigInt(chest.points), 0n).toString();
 
 async function openAndBet(world: FakeWorld, clientSeed: Hex): Promise<Hex> {
   render(<GameApp deps={world.deps()} />);
@@ -106,7 +137,7 @@ function expectNoChestShown(): void {
 
 describe('AC-P6: chests on the page', () => {
   it('AC-P6 the move into a chest dead end reveals the chest on the board and the points on the result screen, and the header balance follows', async () => {
-    const planned = plan(true);
+    const planned = plan(true, firstGameId, false);
     const chest = chestAt(planned.finalSeed, planned.maze, planned.end)!;
     const points = chestPoints(BET, chest.rewardBps).toString();
     const world = new FakeWorld({ chest: CHEST_CONFIG });
@@ -138,11 +169,11 @@ describe('AC-P6: chests on the page', () => {
 
     await waitFor(() => expect(attr('points-balance', 'data-points')).toBe(points));
     // The record keeps the server's word on the chest for the verify screen.
-    expect(loadRecord(gameId)?.terminal).toMatchObject({ chestRule: 1, chest: { rewardBps: chest.rewardBps, points } });
+    expect(loadRecord(gameId)?.terminal).toMatchObject({ chestRule: 2, chest: { rewardBps: chest.rewardBps, points } });
   });
 
   it('AC-P6 an empty dead end says so, shows no chest and adds no points', async () => {
-    const planned = plan(false);
+    const planned = plan(false, firstGameId, false);
     const world = new FakeWorld({ chest: CHEST_CONFIG });
     await openAndBet(world, planned.clientSeed);
     await walk(planned.moves);
@@ -154,10 +185,11 @@ describe('AC-P6: chests on the page', () => {
   });
 
   it('AC-P6 a cash-out shows no chest, and a server without chests gets no points request', async () => {
-    const planned = plan(true);
+    const planned = plan(true, firstGameId, false);
     const world = new FakeWorld();
     await openAndBet(world, planned.clientSeed);
     expect(screen.queryByTestId('points-balance')).toBeNull();
+    expect(screen.queryByTestId('game-points')).toBeNull();
     await walk(planned.moves);
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('loss');
     expectNoChestShown();
@@ -171,6 +203,103 @@ describe('AC-P6: chests on the page', () => {
     fireEvent.click(screen.getByTestId('cashout-button'));
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('cashout');
     expectNoChestShown();
+  });
+});
+
+describe('AC-P11: path chests on the page', () => {
+  it('AC-P11 a path chest shows on its cell the moment the move enters it, with the points just earned, the running total and the header balance', async () => {
+    const planned = plan(true, firstGameId, true);
+    const expected = routeChests(planned);
+    expect(expected.filter((chest) => chest.kind === 'path').length).toBeGreaterThan(0);
+    const world = new FakeWorld({ chest: CHEST_CONFIG });
+    const gameId = await openAndBet(world, planned.clientSeed);
+    await waitFor(() => expect(attr('points-balance', 'data-points')).toBe('0'));
+    expect(attr('game-points', 'data-points')).toBe('0');
+
+    let total = 0n;
+    for (let k = 0; k < planned.moves.length - 1; k++) {
+      await walk([planned.moves[k]]);
+      const fresh = expected.find((chest) => chest.step === k + 1);
+      if (fresh !== undefined) {
+        total += BigInt(fresh.points);
+        const { x, y } = fresh.cell;
+        const just = await screen.findByTestId('chest-just-found');
+        expect(just.getAttribute('data-kind')).toBe('path');
+        expect(just.getAttribute('data-points')).toBe(fresh.points);
+        expect(just.getAttribute('data-reward-bps')).toBe(String(fresh.rewardBps));
+        expect([just.getAttribute('data-x'), just.getAttribute('data-y')]).toEqual([String(x), String(y)]);
+        expect(just.textContent).toContain(`보물상자 발견! +${formatPoints(fresh.points)} 포인트`);
+        // On the board: the points over the cell, and the chest mark that stays.
+        expect([attr('chest-pop', 'data-x'), attr('chest-pop', 'data-y')]).toEqual([String(x), String(y)]);
+        expect(screen.getByTestId('chest-pop').textContent).toBe(`+${formatPoints(fresh.points)}`);
+        expect(attr(`chest-cell-${x}-${y}`, 'data-points')).toBe(fresh.points);
+        expect(attr(`cell-${x}-${y}`, 'data-chest-kind')).toBe('path');
+      } else {
+        expect(screen.queryByTestId('chest-just-found')).toBeNull();
+        expect(screen.queryByTestId('chest-pop')).toBeNull();
+      }
+      expect(attr('game-points', 'data-points')).toBe(total.toString());
+      await waitFor(() => expect(attr('points-balance', 'data-points')).toBe(total.toString()));
+      // Only cells already entered carry a chest mark.
+      const marked = [...document.querySelectorAll('[data-testid="board"] [data-chest]')].map((cell) =>
+        cell.getAttribute('data-testid'),
+      );
+      const entered = expected.filter((chest) => chest.step <= k + 1).map((chest) => `cell-${chest.cell.x}-${chest.cell.y}`);
+      expect(marked.sort()).toEqual(entered.sort());
+    }
+    expect(loadRecord(gameId)?.chests).toEqual(expected.filter((chest) => chest.kind === 'path'));
+    expect(loadRecord(gameId)?.chestRule).toBe(2);
+  });
+
+  it('AC-P11 the result screen lists every chest of the game, path chests and the dead-end chest, with their total', async () => {
+    const planned = plan(true, firstGameId, true);
+    const expected = routeChests(planned);
+    const world = new FakeWorld({ chest: CHEST_CONFIG });
+    const gameId = await openAndBet(world, planned.clientSeed);
+    await walk(planned.moves);
+
+    expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('loss');
+    expect(attr('result-payout', 'data-wei')).toBe('0');
+    const dead = expected.at(-1)!;
+    expect(dead.kind).toBe('dead-end');
+    expect(attr('chest-found', 'data-points')).toBe(dead.points);
+    const list = screen.getByTestId('game-chests');
+    expect(list.getAttribute('data-count')).toBe(String(expected.length));
+    expect(list.getAttribute('data-points')).toBe(sumOf(expected));
+    expected.forEach((chest, k) => {
+      const item = screen.getByTestId(`game-chest-${k}`);
+      expect(item.getAttribute('data-kind')).toBe(chest.kind);
+      expect([item.getAttribute('data-x'), item.getAttribute('data-y')]).toEqual([String(chest.cell.x), String(chest.cell.y)]);
+      expect(item.getAttribute('data-step')).toBe(String(chest.step));
+      expect(item.getAttribute('data-points')).toBe(chest.points);
+      expect(item.textContent).toContain(chest.kind === 'path' ? '길 상자' : '막다른 칸 상자');
+    });
+    expect(attr('game-points-total', 'data-points')).toBe(sumOf(expected));
+    expect(screen.getByTestId('game-points-total').textContent).toContain('현금 가치 없음');
+    await waitFor(() => expect(attr('points-balance', 'data-points')).toBe(sumOf(expected)));
+    // The board keeps every chest: the path chests and the dead end's.
+    expect(attr('chest-reveal', 'data-x')).toBe(String(dead.cell.x));
+    expect(document.querySelectorAll('[data-testid="board"] [data-chest]')).toHaveLength(expected.length);
+    expect(screen.queryByTestId('chest-pop')).toBeNull();
+    expect(loadRecord(gameId)?.chests).toEqual(expected);
+  });
+
+  it('AC-P11 path chests found before a cash-out stay on the result screen and in the balance', async () => {
+    const planned = plan(true, firstGameId, true);
+    const first = routeChests(planned).find((chest) => chest.kind === 'path')!;
+    const world = new FakeWorld({ chest: CHEST_CONFIG });
+    await openAndBet(world, planned.clientSeed);
+    await walk(planned.moves.slice(0, first.step));
+    expect(attr('chest-just-found', 'data-points')).toBe(first.points);
+    fireEvent.click(screen.getByTestId('cashout-button'));
+
+    expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('cashout');
+    const found = routeChests(planned).filter((chest) => chest.step <= first.step);
+    expect(attr('game-chests', 'data-count')).toBe(String(found.length));
+    expect(attr('game-chest-0', 'data-kind')).toBe('path');
+    expect(screen.queryByTestId('chest-found')).toBeNull();
+    expect(screen.queryByTestId('chest-none')).toBeNull();
+    await waitFor(() => expect(attr('points-balance', 'data-points')).toBe(sumOf(found)));
   });
 });
 
@@ -234,7 +363,9 @@ describe('AC-P6: chests on the verify screen', () => {
     render(<VerifyView gameId={GAME} deps={worldWith(record).deps()} />);
 
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('true'));
-    const all = chestsOf(planned.finalSeed, planned.maze);
+    // A rule 1 record is checked under rule 1: chests in dead ends only.
+    const all = chestsOf(planned.finalSeed, planned.maze, 1);
+    expect(all.every((entry) => entry.kind === 'dead-end')).toBe(true);
     expect(attr('verify-chests', 'data-cells')).toBe(all.map((entry) => entry.cell).join(','));
     expect(attr('verify-chests', 'data-count')).toBe(String(all.length));
     expect(attr('verify-chests', 'data-rule')).toBe('1');
@@ -276,5 +407,91 @@ describe('AC-P6: chests on the verify screen', () => {
     const bad = JSON.parse(JSON.stringify(record)) as { terminal: { chest: { points: string } } };
     bad.terminal.chest.points = 'lots';
     expect(() => parseRecord(bad)).toThrow('terminal.chest');
+  });
+});
+
+/** The record a rule 2 dead-end game leaves: every chest the server showed, and its dead-end claim. */
+function ruleTwoRecord(planned: Planned, gameId: Hex, chests: FoundChest[]): PlayRecord {
+  const dead = chests.find((chest) => chest.kind === 'dead-end') ?? null;
+  const record = lossRecord(
+    planned,
+    gameId,
+    dead === null ? null : { cell: dead.cell, rewardBps: dead.rewardBps, points: dead.points },
+  );
+  return { ...record, terminal: { ...record.terminal!, chestRule: 2 }, chestRule: 2, chests };
+}
+
+describe('AC-P11: path chests on the verify screen and in the play record', () => {
+  const GAME: Hex = `0x${'7d'.repeat(32)}`;
+
+  it('AC-P11 the verify screen lists every chest with its kind and confirms every chest the player was given', async () => {
+    const planned = plan(true, GAME, true);
+    const record = ruleTwoRecord(planned, GAME, routeChests(planned));
+    saveRecord(record);
+    render(<VerifyView gameId={GAME} deps={worldWith(record).deps()} />);
+
+    await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('true'));
+    const all = chestsOf(planned.finalSeed, planned.maze, 2);
+    expect(attr('verify-chests', 'data-rule')).toBe('2');
+    expect(attr('verify-chests', 'data-cells')).toBe(all.map((entry) => entry.cell).join(','));
+    expect(attr('verify-chests', 'data-path-count')).toBe(String(all.filter((entry) => entry.kind === 'path').length));
+    expect(attr('verify-chests', 'data-dead-end-count')).toBe(
+      String(all.filter((entry) => entry.kind === 'dead-end').length),
+    );
+    const marked = [...document.querySelectorAll('[data-testid="verify-maze"] [data-chest="true"]')];
+    expect(marked.map((cell) => cell.getAttribute('data-chest-kind'))).toEqual(all.map((entry) => entry.kind));
+    expect(screen.getByTestId('verify-chest-match').textContent).toContain('길 상자');
+    expect(attr('verify-cells-match', 'data-match')).toBe('true');
+  });
+
+  it('AC-P11 flags a path chest the server withheld, and one it invented', async () => {
+    const planned = plan(true, GAME, true);
+    const chests = routeChests(planned);
+    const withheld = ruleTwoRecord(
+      planned,
+      GAME,
+      chests.filter((chest) => chest !== chests.find((entry) => entry.kind === 'path')),
+    );
+    saveRecord(withheld);
+    const { unmount } = render(<VerifyView gameId={GAME} deps={worldWith(withheld).deps()} />);
+    await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('false'));
+    unmount();
+
+    // A chest on an entered cell where the seed puts none.
+    const cells = replayMoves(planned.maze, planned.moves).path;
+    const empty = cells.slice(1, -1).find((cell) => chestAt(planned.finalSeed, planned.maze, cell) === null);
+    expect(empty).toBeDefined();
+    const invented = ruleTwoRecord(planned, GAME, [
+      ...chests,
+      { cell: { x: empty! % N, y: Math.floor(empty! / N) }, kind: 'path', rewardBps: 300, points: '300', step: 1 },
+    ]);
+    saveRecord(invented);
+    render(<VerifyView gameId={GAME} deps={worldWith(invented).deps()} />);
+    await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('false'));
+  });
+
+  it('AC-P11 a play record keeps the chests the server showed, never overwrites one, and refuses a malformed one', () => {
+    const planned = plan(true, GAME, true);
+    const chests = routeChests(planned);
+    const record = ruleTwoRecord(planned, GAME, chests);
+    expect(parseRecord(JSON.parse(JSON.stringify(record)))).toMatchObject({ chestRule: 2, chests });
+
+    // A later answer adds new chests and leaves recorded ones as they were.
+    const first = { ...record, chests: chests.slice(0, 1) };
+    const view = {
+      gameId: GAME,
+      step: record.moves.length,
+      cell: { x: planned.end % N, y: Math.floor(planned.end / N) },
+      open: planned.maze.open[planned.end],
+      chestRule: 2,
+      chests: [{ ...chests[0], points: '999999' }, ...chests.slice(1)],
+    } as unknown as GameView;
+    expect(withView(first, view).chests).toEqual(chests);
+
+    const bad = JSON.parse(JSON.stringify(record)) as { chests: { kind: string }[] };
+    bad.chests[0].kind = 'secret';
+    expect(() => parseRecord(bad)).toThrow('chests[0]');
+    const badRule = { ...JSON.parse(JSON.stringify(record)), chestRule: 0 };
+    expect(() => parseRecord(badRule)).toThrow('chestRule');
   });
 });

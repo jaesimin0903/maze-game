@@ -1,0 +1,6259 @@
+{
+  "chestRule": 2,
+  "note": "Fixed vectors of chest rule v2. A cell other than the start (0) and the exit (n*n-1) is a dead end when it has exactly one opening, a path cell otherwise. Dead end: h = sha256(DEAD_END_TAG || finalSeed || uint16be(cell)), placed = uint128be(h[0..16]) mod 10000 < 3000, rewardBps = 1000 + uint128be(h[16..32]) mod 2001 (as in rule v1). Path cell: h = sha256(PATH_TAG || finalSeed || uint16be(cell)), placed = uint128be(h[0..16]) mod 10000 < 1000, rewardBps = 200 + uint128be(h[16..32]) mod 301. points = floor(bet * rewardBps / (10000 * 10^12)). Produced by test/vectors/make-chest-v2-vectors.ts, an independent reference implementation (node:crypto, tags from `cast keccak \"MazeBet.chest.v1\"` and `cast keccak \"MazeBet.chest.v2\"`, cell kinds counted from the open masks of maze-v1.json), not by the module under test.",
+  "deadEndTag": "0x3c8b942a79c7fa68d1656db6f4b84d2924c6d9c8748cf22e58e2f7e7f8c9b50e",
+  "pathTag": "0xba87334dd820c7bbc6b8f10f9621856f71e979d0e3a9ce15af711b52c42ea8ce",
+  "bets": [
+    "1000000000000000",
+    "12345678901234567",
+    "100000000000000000"
+  ],
+  "raw": [
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 0,
+      "kind": "path",
+      "placed": false,
+      "rewardBps": 472,
+      "hash": "0x4e76f9a0f7b1c03e13f41869f4c405c8af396bf59df80e4b834fe1736c1cc5a3"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 1,
+      "kind": "path",
+      "placed": false,
+      "rewardBps": 320,
+      "hash": "0x5b57cd94a8e2e4e527bb378de8497d05b7ba6384b9a42d78cdae10f7bc36fd27"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 24,
+      "kind": "path",
+      "placed": false,
+      "rewardBps": 225,
+      "hash": "0xe3ebe0d62851a577b3d427e9c034ac5655eb89ec5a7a7d11d5f2f2a5b368084a"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 255,
+      "kind": "path",
+      "placed": false,
+      "rewardBps": 293,
+      "hash": "0x0ceb46539c15af08edcf60cd91d72c978b2ddbc7fb2d73662e40bb75d6e15220"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 256,
+      "kind": "path",
+      "placed": true,
+      "rewardBps": 365,
+      "hash": "0x935de618ff7a04f9e69ac474ec5c1e3284963f5fa7ed7b1405919faee52d088e"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 4097,
+      "kind": "path",
+      "placed": false,
+      "rewardBps": 306,
+      "hash": "0xa1dce3571b4be8e719a80ed5d93e1de0708cb5a0edf60f08338878d58a807b9a"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 65535,
+      "kind": "path",
+      "placed": false,
+      "rewardBps": 258,
+      "hash": "0x7a0d5d908d4a4ef20fc2c4c4b4610262cb51106ff36b2e1316f4c9cbf17365d7"
+    }
+  ],
+  "games": [
+    {
+      "mazeVector": 1,
+      "n": 5,
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 320
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 355
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 214
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 461
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 340
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 320
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 308
+        },
+        {
+          "cell": 8,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2427
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 438
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 292
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 372
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 382
+        },
+        {
+          "cell": 13,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2975
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 205
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 337
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 407
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 254
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 290
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 249
+        },
+        {
+          "cell": 20,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 229
+        },
+        {
+          "cell": 21,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1611
+        },
+        {
+          "cell": 22,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1695
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 429
+        }
+      ],
+      "chests": [],
+      "points": []
+    },
+    {
+      "mazeVector": 2,
+      "n": 5,
+      "finalSeed": "0x00c4767a9cd76849e218c19b01bbe6078b3eb6922e552df3d6d2092eb8f212ec",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1981
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 498
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 483
+        },
+        {
+          "cell": 4,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1991
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 496
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 211
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 277
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 462
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 321
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 474
+        },
+        {
+          "cell": 11,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1433
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 291
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 387
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 249
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 353
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 323
+        },
+        {
+          "cell": 17,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1127
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 265
+        },
+        {
+          "cell": 19,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2240
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1404
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 346
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 432
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 425
+        }
+      ],
+      "chests": [
+        {
+          "cell": 4,
+          "kind": "dead-end",
+          "rewardBps": 1991
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "rewardBps": 249
+        },
+        {
+          "cell": 19,
+          "kind": "dead-end",
+          "rewardBps": 2240
+        }
+      ],
+      "points": [
+        {
+          "cell": 4,
+          "byBet": [
+            "199",
+            "2458",
+            "19910"
+          ]
+        },
+        {
+          "cell": 14,
+          "byBet": [
+            "24",
+            "307",
+            "2490"
+          ]
+        },
+        {
+          "cell": 19,
+          "byBet": [
+            "224",
+            "2765",
+            "22400"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 3,
+      "n": 5,
+      "finalSeed": "0x6b3c5e2120a2758d3545c1a3e02c32a3e0256b18bc0eb66ffa6b4cbaaa4df71e",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 379
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 264
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 359
+        },
+        {
+          "cell": 4,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1324
+        },
+        {
+          "cell": 5,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1924
+        },
+        {
+          "cell": 6,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2422
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 455
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 353
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2886
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 238
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 457
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 496
+        },
+        {
+          "cell": 13,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2913
+        },
+        {
+          "cell": 14,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2493
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 264
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 230
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 419
+        },
+        {
+          "cell": 18,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2377
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 414
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1072
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 217
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 231
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 230
+        }
+      ],
+      "chests": [
+        {
+          "cell": 4,
+          "kind": "dead-end",
+          "rewardBps": 1324
+        },
+        {
+          "cell": 6,
+          "kind": "dead-end",
+          "rewardBps": 2422
+        }
+      ],
+      "points": [
+        {
+          "cell": 4,
+          "byBet": [
+            "132",
+            "1634",
+            "13240"
+          ]
+        },
+        {
+          "cell": 6,
+          "byBet": [
+            "242",
+            "2990",
+            "24220"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 4,
+      "n": 7,
+      "finalSeed": "0x14669cccc2cdf32db33f2bcb44ee5e3d7c1bb58ffd4f56da3497b4db70e76769",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 364
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 467
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 273
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 223
+        },
+        {
+          "cell": 5,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2915
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 439
+        },
+        {
+          "cell": 7,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2190
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 411
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 324
+        },
+        {
+          "cell": 10,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2639
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 464
+        },
+        {
+          "cell": 12,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1397
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 270
+        },
+        {
+          "cell": 14,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2391
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 277
+        },
+        {
+          "cell": 16,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1590
+        },
+        {
+          "cell": 17,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1868
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 456
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 240
+        },
+        {
+          "cell": 20,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 224
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 270
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 350
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 235
+        },
+        {
+          "cell": 24,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 301
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 248
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 245
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 299
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 481
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 462
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 443
+        },
+        {
+          "cell": 31,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1002
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 422
+        },
+        {
+          "cell": 33,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 221
+        },
+        {
+          "cell": 34,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1367
+        },
+        {
+          "cell": 35,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2726
+        },
+        {
+          "cell": 36,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 491
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 426
+        },
+        {
+          "cell": 38,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 405
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 333
+        },
+        {
+          "cell": 40,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 488
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 397
+        },
+        {
+          "cell": 42,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2297
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 204
+        },
+        {
+          "cell": 44,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2788
+        },
+        {
+          "cell": 45,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 427
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 357
+        },
+        {
+          "cell": 47,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1402
+        }
+      ],
+      "chests": [
+        {
+          "cell": 14,
+          "kind": "dead-end",
+          "rewardBps": 2391
+        },
+        {
+          "cell": 17,
+          "kind": "dead-end",
+          "rewardBps": 1868
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "rewardBps": 240
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "rewardBps": 270
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "rewardBps": 245
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "rewardBps": 422
+        },
+        {
+          "cell": 35,
+          "kind": "dead-end",
+          "rewardBps": 2726
+        },
+        {
+          "cell": 42,
+          "kind": "dead-end",
+          "rewardBps": 2297
+        },
+        {
+          "cell": 44,
+          "kind": "dead-end",
+          "rewardBps": 2788
+        }
+      ],
+      "points": [
+        {
+          "cell": 14,
+          "byBet": [
+            "239",
+            "2951",
+            "23910"
+          ]
+        },
+        {
+          "cell": 17,
+          "byBet": [
+            "186",
+            "2306",
+            "18680"
+          ]
+        },
+        {
+          "cell": 19,
+          "byBet": [
+            "24",
+            "296",
+            "2400"
+          ]
+        },
+        {
+          "cell": 21,
+          "byBet": [
+            "27",
+            "333",
+            "2700"
+          ]
+        },
+        {
+          "cell": 26,
+          "byBet": [
+            "24",
+            "302",
+            "2450"
+          ]
+        },
+        {
+          "cell": 32,
+          "byBet": [
+            "42",
+            "520",
+            "4220"
+          ]
+        },
+        {
+          "cell": 35,
+          "byBet": [
+            "272",
+            "3365",
+            "27260"
+          ]
+        },
+        {
+          "cell": 42,
+          "byBet": [
+            "229",
+            "2835",
+            "22970"
+          ]
+        },
+        {
+          "cell": 44,
+          "byBet": [
+            "278",
+            "3441",
+            "27880"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 5,
+      "n": 7,
+      "finalSeed": "0x856cf86857538fc8c8ec024adfe86d519f8cff255f2e621cd0f27cd4e2d6be13",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 256
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 221
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 318
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 342
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 369
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 474
+        },
+        {
+          "cell": 7,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2422
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 466
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 382
+        },
+        {
+          "cell": 10,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2073
+        },
+        {
+          "cell": 11,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1026
+        },
+        {
+          "cell": 12,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2112
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 250
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 348
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 500
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 264
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 211
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 393
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 268
+        },
+        {
+          "cell": 20,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 322
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 295
+        },
+        {
+          "cell": 22,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2312
+        },
+        {
+          "cell": 23,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1172
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2090
+        },
+        {
+          "cell": 25,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2908
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 214
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 465
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 228
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 440
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 417
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 389
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 225
+        },
+        {
+          "cell": 33,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 372
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 353
+        },
+        {
+          "cell": 35,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1611
+        },
+        {
+          "cell": 36,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 431
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 332
+        },
+        {
+          "cell": 38,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2185
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 349
+        },
+        {
+          "cell": 40,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1583
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 461
+        },
+        {
+          "cell": 42,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2604
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 203
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 369
+        },
+        {
+          "cell": 45,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1914
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 378
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 500
+        }
+      ],
+      "chests": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "rewardBps": 256
+        },
+        {
+          "cell": 7,
+          "kind": "dead-end",
+          "rewardBps": 2422
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "rewardBps": 466
+        },
+        {
+          "cell": 12,
+          "kind": "dead-end",
+          "rewardBps": 2112
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "rewardBps": 228
+        },
+        {
+          "cell": 42,
+          "kind": "dead-end",
+          "rewardBps": 2604
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "rewardBps": 203
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "rewardBps": 378
+        }
+      ],
+      "points": [
+        {
+          "cell": 1,
+          "byBet": [
+            "25",
+            "316",
+            "2560"
+          ]
+        },
+        {
+          "cell": 7,
+          "byBet": [
+            "242",
+            "2990",
+            "24220"
+          ]
+        },
+        {
+          "cell": 8,
+          "byBet": [
+            "46",
+            "575",
+            "4660"
+          ]
+        },
+        {
+          "cell": 12,
+          "byBet": [
+            "211",
+            "2607",
+            "21120"
+          ]
+        },
+        {
+          "cell": 28,
+          "byBet": [
+            "22",
+            "281",
+            "2280"
+          ]
+        },
+        {
+          "cell": 42,
+          "byBet": [
+            "260",
+            "3214",
+            "26040"
+          ]
+        },
+        {
+          "cell": 43,
+          "byBet": [
+            "20",
+            "250",
+            "2030"
+          ]
+        },
+        {
+          "cell": 46,
+          "byBet": [
+            "37",
+            "466",
+            "3780"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 6,
+      "n": 7,
+      "finalSeed": "0x0616d2d29cba123f4368c802e324f3c67acf29b9690b67946b35027cc87352a3",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1354
+        },
+        {
+          "cell": 2,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2640
+        },
+        {
+          "cell": 3,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2031
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 382
+        },
+        {
+          "cell": 5,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2470
+        },
+        {
+          "cell": 6,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1836
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 247
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 468
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 322
+        },
+        {
+          "cell": 10,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2161
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 233
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 418
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 428
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 479
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 302
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 401
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 235
+        },
+        {
+          "cell": 18,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2338
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 217
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1779
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 201
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 233
+        },
+        {
+          "cell": 23,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1622
+        },
+        {
+          "cell": 24,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 416
+        },
+        {
+          "cell": 25,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2129
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 365
+        },
+        {
+          "cell": 27,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2619
+        },
+        {
+          "cell": 28,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2792
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 458
+        },
+        {
+          "cell": 30,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2552
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 382
+        },
+        {
+          "cell": 32,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1286
+        },
+        {
+          "cell": 33,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 259
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 393
+        },
+        {
+          "cell": 35,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 338
+        },
+        {
+          "cell": 36,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 264
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 250
+        },
+        {
+          "cell": 38,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 242
+        },
+        {
+          "cell": 39,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2386
+        },
+        {
+          "cell": 40,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1285
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 377
+        },
+        {
+          "cell": 42,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2698
+        },
+        {
+          "cell": 43,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1535
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 404
+        },
+        {
+          "cell": 45,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 424
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 246
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 242
+        }
+      ],
+      "chests": [
+        {
+          "cell": 1,
+          "kind": "dead-end",
+          "rewardBps": 1354
+        },
+        {
+          "cell": 5,
+          "kind": "dead-end",
+          "rewardBps": 2470
+        },
+        {
+          "cell": 6,
+          "kind": "dead-end",
+          "rewardBps": 1836
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "rewardBps": 247
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "rewardBps": 322
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "rewardBps": 217
+        },
+        {
+          "cell": 23,
+          "kind": "dead-end",
+          "rewardBps": 1622
+        },
+        {
+          "cell": 25,
+          "kind": "dead-end",
+          "rewardBps": 2129
+        },
+        {
+          "cell": 27,
+          "kind": "dead-end",
+          "rewardBps": 2619
+        },
+        {
+          "cell": 32,
+          "kind": "dead-end",
+          "rewardBps": 1286
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "rewardBps": 246
+        }
+      ],
+      "points": [
+        {
+          "cell": 1,
+          "byBet": [
+            "135",
+            "1671",
+            "13540"
+          ]
+        },
+        {
+          "cell": 5,
+          "byBet": [
+            "247",
+            "3049",
+            "24700"
+          ]
+        },
+        {
+          "cell": 6,
+          "byBet": [
+            "183",
+            "2266",
+            "18360"
+          ]
+        },
+        {
+          "cell": 7,
+          "byBet": [
+            "24",
+            "304",
+            "2470"
+          ]
+        },
+        {
+          "cell": 9,
+          "byBet": [
+            "32",
+            "397",
+            "3220"
+          ]
+        },
+        {
+          "cell": 19,
+          "byBet": [
+            "21",
+            "267",
+            "2170"
+          ]
+        },
+        {
+          "cell": 23,
+          "byBet": [
+            "162",
+            "2002",
+            "16220"
+          ]
+        },
+        {
+          "cell": 25,
+          "byBet": [
+            "212",
+            "2628",
+            "21290"
+          ]
+        },
+        {
+          "cell": 27,
+          "byBet": [
+            "261",
+            "3233",
+            "26190"
+          ]
+        },
+        {
+          "cell": 32,
+          "byBet": [
+            "128",
+            "1587",
+            "12860"
+          ]
+        },
+        {
+          "cell": 46,
+          "byBet": [
+            "24",
+            "303",
+            "2460"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 7,
+      "n": 10,
+      "finalSeed": "0xcd821897a1a81fef32bf588316495a086d690b717b9279617ec015e8de30af6b",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 485
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 451
+        },
+        {
+          "cell": 3,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1427
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 250
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 376
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 265
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 441
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 425
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1476
+        },
+        {
+          "cell": 10,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1200
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 267
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 375
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 375
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 266
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 416
+        },
+        {
+          "cell": 16,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2289
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 210
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 372
+        },
+        {
+          "cell": 19,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2454
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2382
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 427
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 483
+        },
+        {
+          "cell": 23,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2939
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1688
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 229
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 281
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 420
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 476
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 385
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 369
+        },
+        {
+          "cell": 31,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1215
+        },
+        {
+          "cell": 32,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1346
+        },
+        {
+          "cell": 33,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2986
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 234
+        },
+        {
+          "cell": 35,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 294
+        },
+        {
+          "cell": 36,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2602
+        },
+        {
+          "cell": 37,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1790
+        },
+        {
+          "cell": 38,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 308
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 319
+        },
+        {
+          "cell": 40,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 382
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 411
+        },
+        {
+          "cell": 42,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 377
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 281
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 432
+        },
+        {
+          "cell": 45,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 283
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 449
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 454
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 368
+        },
+        {
+          "cell": 49,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 458
+        },
+        {
+          "cell": 50,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 420
+        },
+        {
+          "cell": 51,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 226
+        },
+        {
+          "cell": 52,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 488
+        },
+        {
+          "cell": 53,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1022
+        },
+        {
+          "cell": 54,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 295
+        },
+        {
+          "cell": 55,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1607
+        },
+        {
+          "cell": 56,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 291
+        },
+        {
+          "cell": 57,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2065
+        },
+        {
+          "cell": 58,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1736
+        },
+        {
+          "cell": 59,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 394
+        },
+        {
+          "cell": 60,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 203
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 311
+        },
+        {
+          "cell": 62,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 423
+        },
+        {
+          "cell": 63,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2813
+        },
+        {
+          "cell": 64,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 208
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 389
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 482
+        },
+        {
+          "cell": 67,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 332
+        },
+        {
+          "cell": 68,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2473
+        },
+        {
+          "cell": 69,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 330
+        },
+        {
+          "cell": 70,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 294
+        },
+        {
+          "cell": 71,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2714
+        },
+        {
+          "cell": 72,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 376
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 288
+        },
+        {
+          "cell": 74,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 228
+        },
+        {
+          "cell": 75,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2149
+        },
+        {
+          "cell": 76,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1661
+        },
+        {
+          "cell": 77,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 428
+        },
+        {
+          "cell": 78,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1070
+        },
+        {
+          "cell": 79,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 205
+        },
+        {
+          "cell": 80,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 499
+        },
+        {
+          "cell": 81,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 431
+        },
+        {
+          "cell": 82,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 220
+        },
+        {
+          "cell": 83,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 432
+        },
+        {
+          "cell": 84,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 429
+        },
+        {
+          "cell": 85,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1618
+        },
+        {
+          "cell": 86,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 367
+        },
+        {
+          "cell": 87,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 276
+        },
+        {
+          "cell": 88,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2906
+        },
+        {
+          "cell": 89,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 489
+        },
+        {
+          "cell": 90,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1994
+        },
+        {
+          "cell": 91,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2579
+        },
+        {
+          "cell": 92,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2919
+        },
+        {
+          "cell": 93,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 484
+        },
+        {
+          "cell": 94,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 397
+        },
+        {
+          "cell": 95,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 364
+        },
+        {
+          "cell": 96,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 425
+        },
+        {
+          "cell": 97,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 303
+        },
+        {
+          "cell": 98,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 231
+        }
+      ],
+      "chests": [
+        {
+          "cell": 3,
+          "kind": "dead-end",
+          "rewardBps": 1427
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "rewardBps": 250
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "rewardBps": 425
+        },
+        {
+          "cell": 16,
+          "kind": "dead-end",
+          "rewardBps": 2289
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "rewardBps": 1688
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "rewardBps": 420
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "rewardBps": 385
+        },
+        {
+          "cell": 36,
+          "kind": "dead-end",
+          "rewardBps": 2602
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "rewardBps": 411
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "rewardBps": 281
+        },
+        {
+          "cell": 55,
+          "kind": "dead-end",
+          "rewardBps": 1607
+        },
+        {
+          "cell": 64,
+          "kind": "path",
+          "rewardBps": 208
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "rewardBps": 482
+        },
+        {
+          "cell": 68,
+          "kind": "dead-end",
+          "rewardBps": 2473
+        },
+        {
+          "cell": 69,
+          "kind": "path",
+          "rewardBps": 330
+        },
+        {
+          "cell": 85,
+          "kind": "dead-end",
+          "rewardBps": 1618
+        },
+        {
+          "cell": 90,
+          "kind": "dead-end",
+          "rewardBps": 1994
+        },
+        {
+          "cell": 98,
+          "kind": "path",
+          "rewardBps": 231
+        }
+      ],
+      "points": [
+        {
+          "cell": 3,
+          "byBet": [
+            "142",
+            "1761",
+            "14270"
+          ]
+        },
+        {
+          "cell": 4,
+          "byBet": [
+            "25",
+            "308",
+            "2500"
+          ]
+        },
+        {
+          "cell": 8,
+          "byBet": [
+            "42",
+            "524",
+            "4250"
+          ]
+        },
+        {
+          "cell": 16,
+          "byBet": [
+            "228",
+            "2825",
+            "22890"
+          ]
+        },
+        {
+          "cell": 24,
+          "byBet": [
+            "168",
+            "2083",
+            "16880"
+          ]
+        },
+        {
+          "cell": 27,
+          "byBet": [
+            "42",
+            "518",
+            "4200"
+          ]
+        },
+        {
+          "cell": 29,
+          "byBet": [
+            "38",
+            "475",
+            "3850"
+          ]
+        },
+        {
+          "cell": 36,
+          "byBet": [
+            "260",
+            "3212",
+            "26020"
+          ]
+        },
+        {
+          "cell": 41,
+          "byBet": [
+            "41",
+            "507",
+            "4110"
+          ]
+        },
+        {
+          "cell": 43,
+          "byBet": [
+            "28",
+            "346",
+            "2810"
+          ]
+        },
+        {
+          "cell": 55,
+          "byBet": [
+            "160",
+            "1983",
+            "16070"
+          ]
+        },
+        {
+          "cell": 64,
+          "byBet": [
+            "20",
+            "256",
+            "2080"
+          ]
+        },
+        {
+          "cell": 66,
+          "byBet": [
+            "48",
+            "595",
+            "4820"
+          ]
+        },
+        {
+          "cell": 68,
+          "byBet": [
+            "247",
+            "3053",
+            "24730"
+          ]
+        },
+        {
+          "cell": 69,
+          "byBet": [
+            "33",
+            "407",
+            "3300"
+          ]
+        },
+        {
+          "cell": 85,
+          "byBet": [
+            "161",
+            "1997",
+            "16180"
+          ]
+        },
+        {
+          "cell": 90,
+          "byBet": [
+            "199",
+            "2461",
+            "19940"
+          ]
+        },
+        {
+          "cell": 98,
+          "byBet": [
+            "23",
+            "285",
+            "2310"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 8,
+      "n": 10,
+      "finalSeed": "0x095e0ad850772d42be82f4e40d0418184d06d05a6b1ffe6ee8943a99c2396539",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 331
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 215
+        },
+        {
+          "cell": 3,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2985
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 307
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 440
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 497
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 219
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 317
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2791
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 302
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 474
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 282
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 257
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 326
+        },
+        {
+          "cell": 15,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1436
+        },
+        {
+          "cell": 16,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2918
+        },
+        {
+          "cell": 17,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1961
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 312
+        },
+        {
+          "cell": 19,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2697
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1079
+        },
+        {
+          "cell": 21,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2590
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 378
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 360
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2542
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 447
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 390
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 404
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 449
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 489
+        },
+        {
+          "cell": 30,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2586
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 451
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 313
+        },
+        {
+          "cell": 33,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 252
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 220
+        },
+        {
+          "cell": 35,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2912
+        },
+        {
+          "cell": 36,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 274
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 456
+        },
+        {
+          "cell": 38,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1810
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 259
+        },
+        {
+          "cell": 40,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2585
+        },
+        {
+          "cell": 41,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2900
+        },
+        {
+          "cell": 42,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 444
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 256
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 401
+        },
+        {
+          "cell": 45,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 412
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 350
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 205
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 467
+        },
+        {
+          "cell": 49,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 330
+        },
+        {
+          "cell": 50,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 339
+        },
+        {
+          "cell": 51,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 395
+        },
+        {
+          "cell": 52,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 343
+        },
+        {
+          "cell": 53,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 367
+        },
+        {
+          "cell": 54,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1806
+        },
+        {
+          "cell": 55,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1767
+        },
+        {
+          "cell": 56,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2206
+        },
+        {
+          "cell": 57,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1215
+        },
+        {
+          "cell": 58,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 203
+        },
+        {
+          "cell": 59,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 452
+        },
+        {
+          "cell": 60,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 242
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 366
+        },
+        {
+          "cell": 62,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 496
+        },
+        {
+          "cell": 63,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 378
+        },
+        {
+          "cell": 64,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2219
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 270
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 236
+        },
+        {
+          "cell": 67,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 276
+        },
+        {
+          "cell": 68,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 411
+        },
+        {
+          "cell": 69,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1960
+        },
+        {
+          "cell": 70,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 334
+        },
+        {
+          "cell": 71,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1347
+        },
+        {
+          "cell": 72,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 339
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 234
+        },
+        {
+          "cell": 74,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1486
+        },
+        {
+          "cell": 75,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1222
+        },
+        {
+          "cell": 76,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 423
+        },
+        {
+          "cell": 77,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 230
+        },
+        {
+          "cell": 78,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 498
+        },
+        {
+          "cell": 79,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 276
+        },
+        {
+          "cell": 80,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 222
+        },
+        {
+          "cell": 81,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 219
+        },
+        {
+          "cell": 82,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 238
+        },
+        {
+          "cell": 83,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 494
+        },
+        {
+          "cell": 84,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 463
+        },
+        {
+          "cell": 85,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 375
+        },
+        {
+          "cell": 86,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 345
+        },
+        {
+          "cell": 87,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1985
+        },
+        {
+          "cell": 88,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 263
+        },
+        {
+          "cell": 89,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 269
+        },
+        {
+          "cell": 90,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 443
+        },
+        {
+          "cell": 91,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 348
+        },
+        {
+          "cell": 92,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 346
+        },
+        {
+          "cell": 93,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 338
+        },
+        {
+          "cell": 94,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1266
+        },
+        {
+          "cell": 95,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2942
+        },
+        {
+          "cell": 96,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 452
+        },
+        {
+          "cell": 97,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1413
+        },
+        {
+          "cell": 98,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1360
+        }
+      ],
+      "chests": [
+        {
+          "cell": 11,
+          "kind": "path",
+          "rewardBps": 474
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "rewardBps": 257
+        },
+        {
+          "cell": 21,
+          "kind": "dead-end",
+          "rewardBps": 2590
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "rewardBps": 360
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "rewardBps": 2542
+        },
+        {
+          "cell": 30,
+          "kind": "dead-end",
+          "rewardBps": 2586
+        },
+        {
+          "cell": 38,
+          "kind": "dead-end",
+          "rewardBps": 1810
+        },
+        {
+          "cell": 41,
+          "kind": "dead-end",
+          "rewardBps": 2900
+        },
+        {
+          "cell": 54,
+          "kind": "dead-end",
+          "rewardBps": 1806
+        },
+        {
+          "cell": 56,
+          "kind": "dead-end",
+          "rewardBps": 2206
+        },
+        {
+          "cell": 58,
+          "kind": "path",
+          "rewardBps": 203
+        },
+        {
+          "cell": 69,
+          "kind": "dead-end",
+          "rewardBps": 1960
+        },
+        {
+          "cell": 88,
+          "kind": "path",
+          "rewardBps": 263
+        },
+        {
+          "cell": 90,
+          "kind": "path",
+          "rewardBps": 443
+        }
+      ],
+      "points": [
+        {
+          "cell": 11,
+          "byBet": [
+            "47",
+            "585",
+            "4740"
+          ]
+        },
+        {
+          "cell": 13,
+          "byBet": [
+            "25",
+            "317",
+            "2570"
+          ]
+        },
+        {
+          "cell": 21,
+          "byBet": [
+            "259",
+            "3197",
+            "25900"
+          ]
+        },
+        {
+          "cell": 23,
+          "byBet": [
+            "36",
+            "444",
+            "3600"
+          ]
+        },
+        {
+          "cell": 24,
+          "byBet": [
+            "254",
+            "3138",
+            "25420"
+          ]
+        },
+        {
+          "cell": 30,
+          "byBet": [
+            "258",
+            "3192",
+            "25860"
+          ]
+        },
+        {
+          "cell": 38,
+          "byBet": [
+            "181",
+            "2234",
+            "18100"
+          ]
+        },
+        {
+          "cell": 41,
+          "byBet": [
+            "290",
+            "3580",
+            "29000"
+          ]
+        },
+        {
+          "cell": 54,
+          "byBet": [
+            "180",
+            "2229",
+            "18060"
+          ]
+        },
+        {
+          "cell": 56,
+          "byBet": [
+            "220",
+            "2723",
+            "22060"
+          ]
+        },
+        {
+          "cell": 58,
+          "byBet": [
+            "20",
+            "250",
+            "2030"
+          ]
+        },
+        {
+          "cell": 69,
+          "byBet": [
+            "196",
+            "2419",
+            "19600"
+          ]
+        },
+        {
+          "cell": 88,
+          "byBet": [
+            "26",
+            "324",
+            "2630"
+          ]
+        },
+        {
+          "cell": 90,
+          "byBet": [
+            "44",
+            "546",
+            "4430"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 9,
+      "n": 10,
+      "finalSeed": "0x22410e221376d54afe57bd9e257ed7b7a03e8e41d6ca6e582e1cb81b969aaf95",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 365
+        },
+        {
+          "cell": 2,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1303
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 253
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 256
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 456
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 285
+        },
+        {
+          "cell": 7,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1539
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 312
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2677
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 338
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 308
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 284
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 381
+        },
+        {
+          "cell": 14,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2787
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 237
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 385
+        },
+        {
+          "cell": 17,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2982
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 433
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 213
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1185
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 432
+        },
+        {
+          "cell": 22,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 445
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 330
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1561
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 206
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 387
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 490
+        },
+        {
+          "cell": 28,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2139
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 426
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 203
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 473
+        },
+        {
+          "cell": 32,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1116
+        },
+        {
+          "cell": 33,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 414
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 233
+        },
+        {
+          "cell": 35,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 294
+        },
+        {
+          "cell": 36,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2557
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 483
+        },
+        {
+          "cell": 38,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 320
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 279
+        },
+        {
+          "cell": 40,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 223
+        },
+        {
+          "cell": 41,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2789
+        },
+        {
+          "cell": 42,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 302
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 401
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 243
+        },
+        {
+          "cell": 45,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 419
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 423
+        },
+        {
+          "cell": 47,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1907
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 450
+        },
+        {
+          "cell": 49,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 407
+        },
+        {
+          "cell": 50,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 424
+        },
+        {
+          "cell": 51,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 335
+        },
+        {
+          "cell": 52,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 463
+        },
+        {
+          "cell": 53,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 264
+        },
+        {
+          "cell": 54,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 240
+        },
+        {
+          "cell": 55,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2117
+        },
+        {
+          "cell": 56,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2624
+        },
+        {
+          "cell": 57,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 409
+        },
+        {
+          "cell": 58,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 380
+        },
+        {
+          "cell": 59,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 493
+        },
+        {
+          "cell": 60,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 373
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 232
+        },
+        {
+          "cell": 62,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1351
+        },
+        {
+          "cell": 63,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 443
+        },
+        {
+          "cell": 64,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 443
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 414
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 214
+        },
+        {
+          "cell": 67,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2585
+        },
+        {
+          "cell": 68,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1809
+        },
+        {
+          "cell": 69,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 201
+        },
+        {
+          "cell": 70,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2262
+        },
+        {
+          "cell": 71,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 365
+        },
+        {
+          "cell": 72,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2278
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 490
+        },
+        {
+          "cell": 74,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2130
+        },
+        {
+          "cell": 75,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1125
+        },
+        {
+          "cell": 76,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 447
+        },
+        {
+          "cell": 77,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 348
+        },
+        {
+          "cell": 78,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 492
+        },
+        {
+          "cell": 79,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 467
+        },
+        {
+          "cell": 80,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 420
+        },
+        {
+          "cell": 81,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 317
+        },
+        {
+          "cell": 82,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1527
+        },
+        {
+          "cell": 83,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2663
+        },
+        {
+          "cell": 84,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 219
+        },
+        {
+          "cell": 85,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1734
+        },
+        {
+          "cell": 86,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1550
+        },
+        {
+          "cell": 87,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 235
+        },
+        {
+          "cell": 88,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 436
+        },
+        {
+          "cell": 89,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 307
+        },
+        {
+          "cell": 90,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 498
+        },
+        {
+          "cell": 91,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 346
+        },
+        {
+          "cell": 92,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2809
+        },
+        {
+          "cell": 93,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 280
+        },
+        {
+          "cell": 94,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 222
+        },
+        {
+          "cell": 95,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 471
+        },
+        {
+          "cell": 96,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 243
+        },
+        {
+          "cell": 97,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 241
+        },
+        {
+          "cell": 98,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2098
+        }
+      ],
+      "chests": [
+        {
+          "cell": 2,
+          "kind": "dead-end",
+          "rewardBps": 1303
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "rewardBps": 312
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "rewardBps": 2677
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "rewardBps": 284
+        },
+        {
+          "cell": 17,
+          "kind": "dead-end",
+          "rewardBps": 2982
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "rewardBps": 213
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "rewardBps": 1561
+        },
+        {
+          "cell": 36,
+          "kind": "dead-end",
+          "rewardBps": 2557
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "rewardBps": 450
+        },
+        {
+          "cell": 53,
+          "kind": "path",
+          "rewardBps": 264
+        },
+        {
+          "cell": 63,
+          "kind": "path",
+          "rewardBps": 443
+        },
+        {
+          "cell": 68,
+          "kind": "dead-end",
+          "rewardBps": 1809
+        },
+        {
+          "cell": 75,
+          "kind": "dead-end",
+          "rewardBps": 1125
+        },
+        {
+          "cell": 78,
+          "kind": "path",
+          "rewardBps": 492
+        },
+        {
+          "cell": 85,
+          "kind": "dead-end",
+          "rewardBps": 1734
+        },
+        {
+          "cell": 93,
+          "kind": "path",
+          "rewardBps": 280
+        },
+        {
+          "cell": 98,
+          "kind": "dead-end",
+          "rewardBps": 2098
+        }
+      ],
+      "points": [
+        {
+          "cell": 2,
+          "byBet": [
+            "130",
+            "1608",
+            "13030"
+          ]
+        },
+        {
+          "cell": 8,
+          "byBet": [
+            "31",
+            "385",
+            "3120"
+          ]
+        },
+        {
+          "cell": 9,
+          "byBet": [
+            "267",
+            "3304",
+            "26770"
+          ]
+        },
+        {
+          "cell": 12,
+          "byBet": [
+            "28",
+            "350",
+            "2840"
+          ]
+        },
+        {
+          "cell": 17,
+          "byBet": [
+            "298",
+            "3681",
+            "29820"
+          ]
+        },
+        {
+          "cell": 19,
+          "byBet": [
+            "21",
+            "262",
+            "2130"
+          ]
+        },
+        {
+          "cell": 24,
+          "byBet": [
+            "156",
+            "1927",
+            "15610"
+          ]
+        },
+        {
+          "cell": 36,
+          "byBet": [
+            "255",
+            "3156",
+            "25570"
+          ]
+        },
+        {
+          "cell": 48,
+          "byBet": [
+            "45",
+            "555",
+            "4500"
+          ]
+        },
+        {
+          "cell": 53,
+          "byBet": [
+            "26",
+            "325",
+            "2640"
+          ]
+        },
+        {
+          "cell": 63,
+          "byBet": [
+            "44",
+            "546",
+            "4430"
+          ]
+        },
+        {
+          "cell": 68,
+          "byBet": [
+            "180",
+            "2233",
+            "18090"
+          ]
+        },
+        {
+          "cell": 75,
+          "byBet": [
+            "112",
+            "1388",
+            "11250"
+          ]
+        },
+        {
+          "cell": 78,
+          "byBet": [
+            "49",
+            "607",
+            "4920"
+          ]
+        },
+        {
+          "cell": 85,
+          "byBet": [
+            "173",
+            "2140",
+            "17340"
+          ]
+        },
+        {
+          "cell": 93,
+          "byBet": [
+            "28",
+            "345",
+            "2800"
+          ]
+        },
+        {
+          "cell": 98,
+          "byBet": [
+            "209",
+            "2590",
+            "20980"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 10,
+      "n": 9,
+      "finalSeed": "0x6847ea0738288f9ab1fbfafb709295f11dda1754783f754cfaba4d02e5cb3a72",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 450
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 334
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 382
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 480
+        },
+        {
+          "cell": 5,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2088
+        },
+        {
+          "cell": 6,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1418
+        },
+        {
+          "cell": 7,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 410
+        },
+        {
+          "cell": 8,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 262
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 476
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 361
+        },
+        {
+          "cell": 11,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1631
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 378
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 405
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 259
+        },
+        {
+          "cell": 15,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2982
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 326
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 352
+        },
+        {
+          "cell": 18,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1159
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 279
+        },
+        {
+          "cell": 20,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 296
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 282
+        },
+        {
+          "cell": 22,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1407
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 365
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1880
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 290
+        },
+        {
+          "cell": 26,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2629
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 446
+        },
+        {
+          "cell": 28,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2820
+        },
+        {
+          "cell": 29,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2368
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 464
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 362
+        },
+        {
+          "cell": 32,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1679
+        },
+        {
+          "cell": 33,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1142
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 399
+        },
+        {
+          "cell": 35,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 397
+        },
+        {
+          "cell": 36,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 286
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 384
+        },
+        {
+          "cell": 38,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 420
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 328
+        },
+        {
+          "cell": 40,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 395
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 450
+        },
+        {
+          "cell": 42,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 379
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 300
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 458
+        },
+        {
+          "cell": 45,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2056
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 437
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 439
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 395
+        },
+        {
+          "cell": 49,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2599
+        },
+        {
+          "cell": 50,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2820
+        },
+        {
+          "cell": 51,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 461
+        },
+        {
+          "cell": 52,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 358
+        },
+        {
+          "cell": 53,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2039
+        },
+        {
+          "cell": 54,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 372
+        },
+        {
+          "cell": 55,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 301
+        },
+        {
+          "cell": 56,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 294
+        },
+        {
+          "cell": 57,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 482
+        },
+        {
+          "cell": 58,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 499
+        },
+        {
+          "cell": 59,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2390
+        },
+        {
+          "cell": 60,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 361
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 262
+        },
+        {
+          "cell": 62,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1287
+        },
+        {
+          "cell": 63,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1626
+        },
+        {
+          "cell": 64,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 277
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 455
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 265
+        },
+        {
+          "cell": 67,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 440
+        },
+        {
+          "cell": 68,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 349
+        },
+        {
+          "cell": 69,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 455
+        },
+        {
+          "cell": 70,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 429
+        },
+        {
+          "cell": 71,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 224
+        },
+        {
+          "cell": 72,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1940
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 379
+        },
+        {
+          "cell": 74,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2189
+        },
+        {
+          "cell": 75,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 300
+        },
+        {
+          "cell": 76,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1681
+        },
+        {
+          "cell": 77,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 310
+        },
+        {
+          "cell": 78,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1485
+        },
+        {
+          "cell": 79,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 393
+        }
+      ],
+      "chests": [
+        {
+          "cell": 6,
+          "kind": "dead-end",
+          "rewardBps": 1418
+        },
+        {
+          "cell": 9,
+          "kind": "path",
+          "rewardBps": 476
+        },
+        {
+          "cell": 15,
+          "kind": "dead-end",
+          "rewardBps": 2982
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "rewardBps": 326
+        },
+        {
+          "cell": 22,
+          "kind": "dead-end",
+          "rewardBps": 1407
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "rewardBps": 365
+        },
+        {
+          "cell": 32,
+          "kind": "dead-end",
+          "rewardBps": 1679
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "rewardBps": 328
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "rewardBps": 458
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "rewardBps": 395
+        },
+        {
+          "cell": 57,
+          "kind": "path",
+          "rewardBps": 482
+        },
+        {
+          "cell": 59,
+          "kind": "dead-end",
+          "rewardBps": 2390
+        },
+        {
+          "cell": 60,
+          "kind": "path",
+          "rewardBps": 361
+        },
+        {
+          "cell": 63,
+          "kind": "dead-end",
+          "rewardBps": 1626
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "rewardBps": 455
+        },
+        {
+          "cell": 76,
+          "kind": "dead-end",
+          "rewardBps": 1681
+        }
+      ],
+      "points": [
+        {
+          "cell": 6,
+          "byBet": [
+            "141",
+            "1750",
+            "14180"
+          ]
+        },
+        {
+          "cell": 9,
+          "byBet": [
+            "47",
+            "587",
+            "4760"
+          ]
+        },
+        {
+          "cell": 15,
+          "byBet": [
+            "298",
+            "3681",
+            "29820"
+          ]
+        },
+        {
+          "cell": 16,
+          "byBet": [
+            "32",
+            "402",
+            "3260"
+          ]
+        },
+        {
+          "cell": 22,
+          "byBet": [
+            "140",
+            "1737",
+            "14070"
+          ]
+        },
+        {
+          "cell": 23,
+          "byBet": [
+            "36",
+            "450",
+            "3650"
+          ]
+        },
+        {
+          "cell": 32,
+          "byBet": [
+            "167",
+            "2072",
+            "16790"
+          ]
+        },
+        {
+          "cell": 39,
+          "byBet": [
+            "32",
+            "404",
+            "3280"
+          ]
+        },
+        {
+          "cell": 44,
+          "byBet": [
+            "45",
+            "565",
+            "4580"
+          ]
+        },
+        {
+          "cell": 48,
+          "byBet": [
+            "39",
+            "487",
+            "3950"
+          ]
+        },
+        {
+          "cell": 57,
+          "byBet": [
+            "48",
+            "595",
+            "4820"
+          ]
+        },
+        {
+          "cell": 59,
+          "byBet": [
+            "239",
+            "2950",
+            "23900"
+          ]
+        },
+        {
+          "cell": 60,
+          "byBet": [
+            "36",
+            "445",
+            "3610"
+          ]
+        },
+        {
+          "cell": 63,
+          "byBet": [
+            "162",
+            "2007",
+            "16260"
+          ]
+        },
+        {
+          "cell": 65,
+          "byBet": [
+            "45",
+            "561",
+            "4550"
+          ]
+        },
+        {
+          "cell": 76,
+          "byBet": [
+            "168",
+            "2075",
+            "16810"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 11,
+      "n": 9,
+      "finalSeed": "0xec549e81d638e95a753f86f4b2cd773e80cf3df7dc78f3eb1d8840b5cca38c83",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 442
+        },
+        {
+          "cell": 2,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 470
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 473
+        },
+        {
+          "cell": 4,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2353
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 210
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 260
+        },
+        {
+          "cell": 7,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1627
+        },
+        {
+          "cell": 8,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1358
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2416
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 324
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 264
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 237
+        },
+        {
+          "cell": 13,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2297
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 304
+        },
+        {
+          "cell": 15,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1673
+        },
+        {
+          "cell": 16,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1500
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 276
+        },
+        {
+          "cell": 18,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1862
+        },
+        {
+          "cell": 19,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 493
+        },
+        {
+          "cell": 20,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1120
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 321
+        },
+        {
+          "cell": 22,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1014
+        },
+        {
+          "cell": 23,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 289
+        },
+        {
+          "cell": 24,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 247
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 223
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 331
+        },
+        {
+          "cell": 27,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2254
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 415
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 306
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 357
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 474
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 410
+        },
+        {
+          "cell": 33,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 395
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 475
+        },
+        {
+          "cell": 35,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1309
+        },
+        {
+          "cell": 36,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 397
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 423
+        },
+        {
+          "cell": 38,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2178
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 370
+        },
+        {
+          "cell": 40,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 246
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 204
+        },
+        {
+          "cell": 42,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 478
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 261
+        },
+        {
+          "cell": 44,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 267
+        },
+        {
+          "cell": 45,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 239
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 311
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 495
+        },
+        {
+          "cell": 48,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 431
+        },
+        {
+          "cell": 49,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2265
+        },
+        {
+          "cell": 50,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 222
+        },
+        {
+          "cell": 51,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 352
+        },
+        {
+          "cell": 52,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1256
+        },
+        {
+          "cell": 53,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 235
+        },
+        {
+          "cell": 54,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2742
+        },
+        {
+          "cell": 55,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2210
+        },
+        {
+          "cell": 56,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2291
+        },
+        {
+          "cell": 57,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 249
+        },
+        {
+          "cell": 58,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 488
+        },
+        {
+          "cell": 59,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 269
+        },
+        {
+          "cell": 60,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1203
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 394
+        },
+        {
+          "cell": 62,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 379
+        },
+        {
+          "cell": 63,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 410
+        },
+        {
+          "cell": 64,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2768
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 281
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 378
+        },
+        {
+          "cell": 67,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 280
+        },
+        {
+          "cell": 68,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 241
+        },
+        {
+          "cell": 69,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2160
+        },
+        {
+          "cell": 70,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 396
+        },
+        {
+          "cell": 71,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 255
+        },
+        {
+          "cell": 72,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 221
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 278
+        },
+        {
+          "cell": 74,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 414
+        },
+        {
+          "cell": 75,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2321
+        },
+        {
+          "cell": 76,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 202
+        },
+        {
+          "cell": 77,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 458
+        },
+        {
+          "cell": 78,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 395
+        },
+        {
+          "cell": 79,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 318
+        }
+      ],
+      "chests": [
+        {
+          "cell": 10,
+          "kind": "path",
+          "rewardBps": 324
+        },
+        {
+          "cell": 13,
+          "kind": "dead-end",
+          "rewardBps": 2297
+        },
+        {
+          "cell": 16,
+          "kind": "dead-end",
+          "rewardBps": 1500
+        },
+        {
+          "cell": 18,
+          "kind": "dead-end",
+          "rewardBps": 1862
+        },
+        {
+          "cell": 35,
+          "kind": "dead-end",
+          "rewardBps": 1309
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "rewardBps": 261
+        },
+        {
+          "cell": 49,
+          "kind": "dead-end",
+          "rewardBps": 2265
+        },
+        {
+          "cell": 52,
+          "kind": "dead-end",
+          "rewardBps": 1256
+        },
+        {
+          "cell": 56,
+          "kind": "dead-end",
+          "rewardBps": 2291
+        },
+        {
+          "cell": 58,
+          "kind": "path",
+          "rewardBps": 488
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "rewardBps": 394
+        },
+        {
+          "cell": 64,
+          "kind": "dead-end",
+          "rewardBps": 2768
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "rewardBps": 278
+        },
+        {
+          "cell": 78,
+          "kind": "path",
+          "rewardBps": 395
+        },
+        {
+          "cell": 79,
+          "kind": "path",
+          "rewardBps": 318
+        }
+      ],
+      "points": [
+        {
+          "cell": 10,
+          "byBet": [
+            "32",
+            "399",
+            "3240"
+          ]
+        },
+        {
+          "cell": 13,
+          "byBet": [
+            "229",
+            "2835",
+            "22970"
+          ]
+        },
+        {
+          "cell": 16,
+          "byBet": [
+            "150",
+            "1851",
+            "15000"
+          ]
+        },
+        {
+          "cell": 18,
+          "byBet": [
+            "186",
+            "2298",
+            "18620"
+          ]
+        },
+        {
+          "cell": 35,
+          "byBet": [
+            "130",
+            "1616",
+            "13090"
+          ]
+        },
+        {
+          "cell": 43,
+          "byBet": [
+            "26",
+            "322",
+            "2610"
+          ]
+        },
+        {
+          "cell": 49,
+          "byBet": [
+            "226",
+            "2796",
+            "22650"
+          ]
+        },
+        {
+          "cell": 52,
+          "byBet": [
+            "125",
+            "1550",
+            "12560"
+          ]
+        },
+        {
+          "cell": 56,
+          "byBet": [
+            "229",
+            "2828",
+            "22910"
+          ]
+        },
+        {
+          "cell": 58,
+          "byBet": [
+            "48",
+            "602",
+            "4880"
+          ]
+        },
+        {
+          "cell": 61,
+          "byBet": [
+            "39",
+            "486",
+            "3940"
+          ]
+        },
+        {
+          "cell": 64,
+          "byBet": [
+            "276",
+            "3417",
+            "27680"
+          ]
+        },
+        {
+          "cell": 73,
+          "byBet": [
+            "27",
+            "343",
+            "2780"
+          ]
+        },
+        {
+          "cell": 78,
+          "byBet": [
+            "39",
+            "487",
+            "3950"
+          ]
+        },
+        {
+          "cell": 79,
+          "byBet": [
+            "31",
+            "392",
+            "3180"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 12,
+      "n": 9,
+      "finalSeed": "0xd7c374340b7e8e035d7e14ba1be7ff09259f01f26259feda3086527346b28ba2",
+      "cells": [
+        {
+          "cell": 1,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 457
+        },
+        {
+          "cell": 2,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2963
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 452
+        },
+        {
+          "cell": 4,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 373
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 212
+        },
+        {
+          "cell": 6,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 356
+        },
+        {
+          "cell": 7,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2439
+        },
+        {
+          "cell": 8,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2788
+        },
+        {
+          "cell": 9,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1321
+        },
+        {
+          "cell": 10,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 499
+        },
+        {
+          "cell": 11,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 350
+        },
+        {
+          "cell": 12,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 441
+        },
+        {
+          "cell": 13,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 228
+        },
+        {
+          "cell": 14,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 383
+        },
+        {
+          "cell": 15,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 437
+        },
+        {
+          "cell": 16,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 417
+        },
+        {
+          "cell": 17,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 331
+        },
+        {
+          "cell": 18,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 334
+        },
+        {
+          "cell": 19,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1156
+        },
+        {
+          "cell": 20,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 493
+        },
+        {
+          "cell": 21,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 368
+        },
+        {
+          "cell": 22,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1081
+        },
+        {
+          "cell": 23,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2760
+        },
+        {
+          "cell": 24,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1906
+        },
+        {
+          "cell": 25,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 296
+        },
+        {
+          "cell": 26,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 316
+        },
+        {
+          "cell": 27,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 203
+        },
+        {
+          "cell": 28,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 390
+        },
+        {
+          "cell": 29,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 437
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 316
+        },
+        {
+          "cell": 31,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 449
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 494
+        },
+        {
+          "cell": 33,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2682
+        },
+        {
+          "cell": 34,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 490
+        },
+        {
+          "cell": 35,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 314
+        },
+        {
+          "cell": 36,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 2350
+        },
+        {
+          "cell": 37,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 419
+        },
+        {
+          "cell": 38,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 213
+        },
+        {
+          "cell": 39,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 341
+        },
+        {
+          "cell": 40,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 284
+        },
+        {
+          "cell": 41,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 454
+        },
+        {
+          "cell": 42,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 432
+        },
+        {
+          "cell": 43,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 217
+        },
+        {
+          "cell": 44,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1136
+        },
+        {
+          "cell": 45,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2926
+        },
+        {
+          "cell": 46,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 232
+        },
+        {
+          "cell": 47,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 290
+        },
+        {
+          "cell": 48,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2351
+        },
+        {
+          "cell": 49,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 350
+        },
+        {
+          "cell": 50,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 219
+        },
+        {
+          "cell": 51,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1768
+        },
+        {
+          "cell": 52,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 480
+        },
+        {
+          "cell": 53,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 227
+        },
+        {
+          "cell": 54,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 438
+        },
+        {
+          "cell": 55,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2862
+        },
+        {
+          "cell": 56,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 379
+        },
+        {
+          "cell": 57,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 211
+        },
+        {
+          "cell": 58,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1573
+        },
+        {
+          "cell": 59,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 237
+        },
+        {
+          "cell": 60,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1271
+        },
+        {
+          "cell": 61,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 412
+        },
+        {
+          "cell": 62,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 476
+        },
+        {
+          "cell": 63,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 380
+        },
+        {
+          "cell": 64,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 240
+        },
+        {
+          "cell": 65,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 312
+        },
+        {
+          "cell": 66,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 294
+        },
+        {
+          "cell": 67,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1011
+        },
+        {
+          "cell": 68,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 201
+        },
+        {
+          "cell": 69,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 261
+        },
+        {
+          "cell": 70,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 389
+        },
+        {
+          "cell": 71,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 244
+        },
+        {
+          "cell": 72,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1971
+        },
+        {
+          "cell": 73,
+          "kind": "path",
+          "placed": false,
+          "rewardBps": 213
+        },
+        {
+          "cell": 74,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1816
+        },
+        {
+          "cell": 75,
+          "kind": "path",
+          "placed": true,
+          "rewardBps": 220
+        },
+        {
+          "cell": 76,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1157
+        },
+        {
+          "cell": 77,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 2353
+        },
+        {
+          "cell": 78,
+          "kind": "dead-end",
+          "placed": true,
+          "rewardBps": 1832
+        },
+        {
+          "cell": 79,
+          "kind": "dead-end",
+          "placed": false,
+          "rewardBps": 1135
+        }
+      ],
+      "chests": [
+        {
+          "cell": 2,
+          "kind": "dead-end",
+          "rewardBps": 2963
+        },
+        {
+          "cell": 3,
+          "kind": "path",
+          "rewardBps": 452
+        },
+        {
+          "cell": 5,
+          "kind": "path",
+          "rewardBps": 212
+        },
+        {
+          "cell": 23,
+          "kind": "dead-end",
+          "rewardBps": 2760
+        },
+        {
+          "cell": 30,
+          "kind": "path",
+          "rewardBps": 316
+        },
+        {
+          "cell": 32,
+          "kind": "path",
+          "rewardBps": 494
+        },
+        {
+          "cell": 36,
+          "kind": "dead-end",
+          "rewardBps": 2350
+        },
+        {
+          "cell": 49,
+          "kind": "path",
+          "rewardBps": 350
+        },
+        {
+          "cell": 72,
+          "kind": "dead-end",
+          "rewardBps": 1971
+        },
+        {
+          "cell": 75,
+          "kind": "path",
+          "rewardBps": 220
+        },
+        {
+          "cell": 78,
+          "kind": "dead-end",
+          "rewardBps": 1832
+        }
+      ],
+      "points": [
+        {
+          "cell": 2,
+          "byBet": [
+            "296",
+            "3658",
+            "29630"
+          ]
+        },
+        {
+          "cell": 3,
+          "byBet": [
+            "45",
+            "558",
+            "4520"
+          ]
+        },
+        {
+          "cell": 5,
+          "byBet": [
+            "21",
+            "261",
+            "2120"
+          ]
+        },
+        {
+          "cell": 23,
+          "byBet": [
+            "276",
+            "3407",
+            "27600"
+          ]
+        },
+        {
+          "cell": 30,
+          "byBet": [
+            "31",
+            "390",
+            "3160"
+          ]
+        },
+        {
+          "cell": 32,
+          "byBet": [
+            "49",
+            "609",
+            "4940"
+          ]
+        },
+        {
+          "cell": 36,
+          "byBet": [
+            "235",
+            "2901",
+            "23500"
+          ]
+        },
+        {
+          "cell": 49,
+          "byBet": [
+            "35",
+            "432",
+            "3500"
+          ]
+        },
+        {
+          "cell": 72,
+          "byBet": [
+            "197",
+            "2433",
+            "19710"
+          ]
+        },
+        {
+          "cell": 75,
+          "byBet": [
+            "22",
+            "271",
+            "2200"
+          ]
+        },
+        {
+          "cell": 78,
+          "byBet": [
+            "183",
+            "2261",
+            "18320"
+          ]
+        }
+      ]
+    }
+  ]
+}

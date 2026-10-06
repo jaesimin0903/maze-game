@@ -1,7 +1,9 @@
 // AC-X3: the move handler reads the maze at the arrival cell only. The maze handed to the
 // server records every read of `maze.open`; nothing else can observe unvisited cells.
+// AC-P4: the chest rule is asked about the cell an accepted move enters and about no other cell,
+// with the kind that cell's own open mask gives it; nothing else ever asks.
 
-import { generateMaze, type Dir, type Maze } from '@maze/shared';
+import { chestKindOf, generateMaze, type ChestKind, type Dir, type Maze } from '@maze/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   api,
@@ -48,8 +50,13 @@ afterEach(async () => {
   await env.close();
 });
 
+interface ChestCall {
+  cell: number;
+  kind: ChestKind;
+}
+
 async function setup(
-  chestCalls: number[] = [],
+  chestCalls: ChestCall[] = [],
 ): Promise<{ rec: Recording; built: () => number; gameId: string; token: string }> {
   const rec = recording(BASE);
   let built = 0;
@@ -59,8 +66,8 @@ async function setup(
       return rec.maze;
     },
     // Every cell the chest rule is asked about. A chest everywhere, so an award is always possible.
-    chestDraw: (_finalSeed, cell) => {
-      chestCalls.push(cell);
+    chestDraw: (_finalSeed, cell, kind) => {
+      chestCalls.push({ cell, kind });
       return { placed: true, rewardBps: 1000 };
     },
   });
@@ -157,8 +164,8 @@ describe('AC-X3: maze access', () => {
 });
 
 describe('AC-P4: chest access', () => {
-  it('AC-P4 creating, starting, reading, refused moves and every move up to the exit never ask the chest rule', async () => {
-    const calls: number[] = [];
+  it('AC-P4 every move up to the exit asks the chest rule about the cell it enters and no other; creating, starting, reading and refused moves never ask', async () => {
+    const calls: ChestCall[] = [];
     const { gameId, token } = await setup(calls);
     expect((await api.start(gameId, token)).status).toBe(200);
     const route = exitRoute(BASE);
@@ -166,40 +173,66 @@ describe('AC-P4: chest access', () => {
     for (let k = 0; k < route.length; k++) {
       await api.move(gameId, token, { step: k, dir: wallDir(BASE, cells[k]) ?? 9 });
       await api.move(gameId, token, { step: k + 1, dir: route[k] });
+      await api.move(gameId, 'wrong-token', { step: k, dir: route[k] });
       await api.game(gameId, token);
+      // Refused requests and reads ask nothing.
+      expect(calls).toHaveLength(k);
       expect((await api.move(gameId, token, { step: k, dir: route[k] })).status).toBe(200);
+      // An accepted move asks about its arrival only; the exit holds no chest and is not asked about.
+      const arrival = cells[k + 1];
+      expect(calls.slice(k)).toEqual(k === route.length - 1 ? [] : [{ cell: arrival, kind: chestKindOf(BASE, arrival) }]);
     }
     expect((await api.game<{ status: string }>(gameId, token)).body.status).toBe('won');
-    expect(calls).toEqual([]);
+    expect(calls).toEqual(cells.slice(1, -1).map((cell) => ({ cell, kind: 'path' })));
   });
 
-  it('AC-P4 the move into a dead end asks the chest rule once, about that cell only; a cash-out and an idle auto cash-out never ask', async () => {
-    const calls: number[] = [];
+  it('AC-P4 the move into a dead end asks about that cell once, as a dead end; a cash-out and an idle auto cash-out never ask', async () => {
+    const calls: ChestCall[] = [];
     const first = await setup(calls);
     const route = deadEndRoute(BASE);
     const cells = cellsOf(BASE, route);
     for (let k = 0; k < route.length; k++) {
-      expect(calls).toEqual([]);
+      expect(calls).toHaveLength(k);
       await api.move(first.gameId, first.token, { step: k, dir: route[k] });
     }
-    expect(calls).toEqual([cells[route.length]]);
+    expect(calls).toEqual(
+      cells.slice(1).map((cell, i) => ({ cell, kind: i === route.length - 1 ? 'dead-end' : 'path' })),
+    );
     await api.game(first.gameId, first.token);
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(route.length);
     await env.close();
 
-    const cashCalls: number[] = [];
+    const cashCalls: ChestCall[] = [];
     const second = await setup(cashCalls);
     await api.move(second.gameId, second.token, { step: 0, dir: route[0] });
     expect((await api.cashout(second.gameId, second.token, { step: 1 })).status).toBe(200);
-    expect(cashCalls).toEqual([]);
+    expect(cashCalls).toEqual([{ cell: cells[1], kind: chestKindOf(BASE, cells[1]) }]);
     await env.close();
 
-    const idleCalls: number[] = [];
+    const idleCalls: ChestCall[] = [];
     const third = await setup(idleCalls);
     await api.move(third.gameId, third.token, { step: 0, dir: route[0] });
     env.advance(env.table.timing.idleTimeoutSec);
     await env.tick();
     expect((await api.game<{ status: string }>(third.gameId, third.token)).body.status).toBe('cashed_out');
-    expect(idleCalls).toEqual([]);
+    expect(idleCalls).toEqual([{ cell: cells[1], kind: chestKindOf(BASE, cells[1]) }]);
+  });
+
+  it('AC-P4 the chest rule is asked about the arrival only: no maze read beyond the arrival, whatever the chests', async () => {
+    const calls: ChestCall[] = [];
+    const { rec, gameId, token } = await setup(calls);
+    drain(rec);
+    const route = exitRoute(BASE);
+    const cells = cellsOf(BASE, route);
+    for (let k = 0; k < route.length - 1; k++) {
+      const reply = await api.move<{ chests: { cell: { x: number; y: number } }[] }>(gameId, token, { step: k, dir: route[k] });
+      expect(new Set(drain(rec))).toEqual(new Set([cells[k + 1]]));
+      // Every chest the answer lists stands on a cell already entered.
+      const entered = new Set(cells.slice(1, k + 2));
+      expect(reply.body.chests.every((chest) => entered.has(chest.cell.y * BASE.w + chest.cell.x))).toBe(true);
+      expect(reply.body.chests).toHaveLength(k + 1);
+    }
+    expect(calls.map((call) => call.cell)).toEqual(cells.slice(1, -1));
+    expect(rec.others).toEqual([]);
   });
 });

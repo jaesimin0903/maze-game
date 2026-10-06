@@ -2,19 +2,34 @@
 // the on-chain commitment, client seed and game id, the revealed server seed, and the player's
 // own record of what the server showed.
 
-import { chestAt, chestPoints, chestsOf, CHEST_RULE_VERSION, isKnownChestRule, type Chest } from './chest';
+import { chestAt, chestPoints, chestsOf, isKnownChestRule, type Chest, type ChestKind } from './chest';
 import { exitPayoutWei, refundWei } from './economics';
 import { commitmentOf, deriveFinalSeed } from './hash';
 import { generateMaze, solve } from './maze';
 import { replayMoves } from './replay';
 import { Outcome, type Dir, type Hex, type Maze, type TuningTable } from './types';
 
-/** What the server said about the chest of a game that ended in a dead end (`GameTerminal`). */
+/** A chest the server said the player found (`cell` is `y * n + x`). */
+export interface ClaimedChest {
+  cell: number;
+  /** Optional for a rule 1 claim, where every chest is a dead-end chest. */
+  kind?: ChestKind;
+  rewardBps: number;
+  points: string | bigint;
+}
+
+/** What the server said about the chests of a game (`GameTerminal`, `GameView.chests`). */
 export interface ChestClaim {
   /** The chest rule version the server applied. */
   rule: number;
-  /** The chest the server said the player found (`cell` is `y * n + x`), or `null` for none. */
-  found: { cell: number; rewardBps: number; points: string | bigint } | null;
+  /** The chest in the dead end the game ended in, or `null` for none (or no dead-end ending). */
+  found: ClaimedChest | null;
+  /**
+   * Every chest the server said the player found in this game, path chests and the dead-end
+   * chest, in any order. Required for rule 2 and later; absent for a rule 1 claim, whose only
+   * possible chest is `found`.
+   */
+  awards?: ClaimedChest[];
 }
 
 /** What the server showed after `step` moves: the player's cell (`y * n + x`) and its open mask. */
@@ -58,13 +73,40 @@ export interface VerifyReport {
    */
   expectedChest: (Chest & { points: bigint }) | null;
   /**
-   * The server's chest claim against the recomputation. `true`: a chest the server awarded is the
-   * one the seed puts in that dead end (cell, reward and, with a known bet, points), a dead end it
-   * called empty is empty, and a game that did not end in a dead end has no award. `false`: a
-   * chest was hidden, invented, moved or misvalued. `null`: nothing to compare (a game that ended
-   * in a dead end without a claim in the record, an unknown rule, or moves that do not replay).
+   * Every chest on a cell the recorded moves entered (path chests, and the dead-end chest when
+   * the game ended in one), in the order entered, with points for the settled bet (0 when the
+   * bet is not known). Empty when the rule is unknown or the moves do not replay.
+   */
+  expectedChests: (Chest & { points: bigint })[];
+  /**
+   * The server's chest claim against the recomputation. `true`: the chests the server awarded
+   * are exactly the chests the seed puts on the cells the player entered (cell, kind, reward and,
+   * with a known bet, points), none withheld and none invented. `false`: a chest was withheld,
+   * invented, moved or misvalued. `null`: nothing to compare (a game with expected chests but no
+   * claim in the record, an unknown rule, or moves that do not replay).
    */
   chestOk: boolean | null;
+}
+
+function claimedPointsOf(points: string | bigint): bigint | null {
+  return typeof points === 'bigint' ? points : /^\d+$/.test(String(points)) ? BigInt(points) : null;
+}
+
+/** True when `claimed` is exactly `expected`, as sets keyed by cell (points compared only with a known bet). */
+function sameChests(claimed: readonly ClaimedChest[], expected: readonly (Chest & { points: bigint })[], betKnown: boolean): boolean {
+  if (claimed.length !== expected.length) return false;
+  if (new Set(claimed.map((chest) => chest.cell)).size !== claimed.length) return false;
+  return expected.every((want) => {
+    const got = claimed.find((chest) => chest.cell === want.cell);
+    if (got === undefined) return false;
+    const points = claimedPointsOf(got.points);
+    return (
+      (got.kind === undefined || got.kind === want.kind) &&
+      got.rewardBps === want.rewardBps &&
+      points !== null &&
+      (!betKnown || points === want.points)
+    );
+  });
 }
 
 /**
@@ -82,8 +124,13 @@ export function verifyGame(p: {
   observations: Observation[];
   moves: Dir[];
   settled: { outcome: Outcome; steps: number; payoutWei: bigint; betWei: bigint };
-  /** The server's chest claim, when the record holds one (endings in a dead end only). */
+  /** The server's chest claim, when the record holds one. */
   chest?: ChestClaim;
+  /**
+   * The chest rule to list chests with when there is no claim. Default 1: a record without a
+   * claim is a rule 1 game that did not end in a dead end, or a game from before chests.
+   */
+  chestRule?: number;
 }): VerifyReport {
   const { table, tier, serverSeed, clientSeed, gameId } = p;
   if (!Number.isInteger(tier) || tier < 0 || tier >= table.tiers.length) {
@@ -121,30 +168,31 @@ export function verifyGame(p: {
     }
   }
 
-  const chestRule = p.chest?.rule ?? CHEST_RULE_VERSION;
+  const chestRule = p.chest?.rule ?? p.chestRule ?? 1;
   const knownRule = isKnownChestRule(chestRule);
   const replayed = replay.invalidAt === null;
-  const endedInDeadEnd = replayed && replay.outcome === Outcome.Loss;
-  const endChest =
-    knownRule && endedInDeadEnd ? chestAt(finalSeed, maze, replay.path[replay.path.length - 1], chestRule) : null;
   const betKnown = betWei > 0n;
-  const expectedChest =
-    endChest === null ? null : { ...endChest, points: betKnown ? chestPoints(betWei, endChest.rewardBps) : 0n };
+  // Every chest on a cell the player entered. A dead end can only be the last cell entered: the
+  // game ends there. Under rule 1 only that dead end can hold a chest.
+  const expectedChests =
+    knownRule && replayed
+      ? replay.path
+          .slice(1)
+          .map((cell) => chestAt(finalSeed, maze, cell, chestRule))
+          .filter((chest): chest is Chest => chest !== null)
+          .map((chest) => ({ ...chest, points: betKnown ? chestPoints(betWei, chest.rewardBps) : 0n }))
+      : [];
+  const expectedChest = expectedChests.find((chest) => chest.kind === 'dead-end') ?? null;
 
   let chestOk: boolean | null;
   if (!knownRule || !replayed) chestOk = null;
-  else if (p.chest === undefined) chestOk = endedInDeadEnd ? null : true;
-  else if (p.chest.found === null) chestOk = expectedChest === null;
+  else if (p.chest === undefined) chestOk = expectedChests.length === 0 ? true : null;
   else {
-    const { cell, rewardBps, points } = p.chest.found;
-    const claimedPoints =
-      typeof points === 'bigint' ? points : /^\d+$/.test(String(points)) ? BigInt(points) : null;
-    chestOk =
-      expectedChest !== null &&
-      cell === expectedChest.cell &&
-      rewardBps === expectedChest.rewardBps &&
-      claimedPoints !== null &&
-      (!betKnown || claimedPoints === expectedChest.points);
+    const { found } = p.chest;
+    const claimed = p.chest.awards ?? (found === null ? [] : [{ ...found, kind: found.kind ?? 'dead-end' }]);
+    // The dead-end chest named on its own must be the dead-end entry of the full list too.
+    const foundOk = found === null ? expectedChest === null : sameChests([found], expectedChest === null ? [] : [expectedChest], betKnown);
+    chestOk = foundOk && sameChests(claimed, expectedChests, betKnown);
   }
 
   return {
@@ -159,6 +207,7 @@ export function verifyGame(p: {
     chestRule,
     chests: knownRule ? chestsOf(finalSeed, maze, chestRule) : null,
     expectedChest,
+    expectedChests,
     chestOk,
   };
 }

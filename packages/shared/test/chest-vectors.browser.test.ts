@@ -4,7 +4,7 @@
 // chests in the browser, so the module must not depend on anything that only Node provides.
 
 import { describe, expect, it } from 'vitest';
-import { chestGames, expectChestGame } from './chest-vectors';
+import { chestGames, chestGamesV2, expectChestGame, expectChestGameV2 } from './chest-vectors';
 
 describe('chest vectors in a browser environment', () => {
   it('AC-P1 runs with a browser window and document', () => {
@@ -14,5 +14,9 @@ describe('chest vectors in a browser environment', () => {
 
   it.each(chestGames)('AC-P1 vector game $mazeVector (n = $n) is reproduced in the browser environment', (game) => {
     expectChestGame(game);
+  });
+
+  it.each(chestGamesV2)('AC-P9 v2 vector game $mazeVector (n = $n) is reproduced in the browser environment', (game) => {
+    expectChestGameV2(game);
   });
 });

@@ -1,14 +1,16 @@
 // AC-S7: every state transition is one JSON log line with `chainSec`, `gameId`, `event`,
 // `step`, `outcome` and `txHash`; the lines of one game rebuild its history.
 
-import type { GameView } from '@maze/shared';
+import { chestAt, deriveFinalSeed, type GameView } from '@maze/shared';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createLogger } from '../../src/server/log';
-import { api, exitRoute } from '../server/helpers';
+import { testServerSeed } from '../../src/server/test-hooks';
+import { api, cellsOf, exitRoute } from '../server/helpers';
 import {
   linesOf,
   openGame,
   playerOf,
+  SEED_SECRET,
   startHarness,
   startServer,
   until,
@@ -61,11 +63,18 @@ describe('AC-S7: structured logs', () => {
     const lines = await history(game.gameId);
     expectWellFormed(lines);
 
+    // A move into a cell that holds a path chest (chest rule 2) is followed by its award.
+    const finalSeed = deriveFinalSeed({
+      serverSeed: testServerSeed(SEED_SECRET, game.gameId),
+      clientSeed: game.clientSeed,
+      gameId: game.gameId,
+    });
+    const cells = cellsOf(game.maze, route);
     expect(lines.map((line) => line.event)).toEqual([
       'ticket-issued',
       'chain-created',
       'start',
-      ...route.map(() => 'move'),
+      ...route.flatMap((_, k) => (chestAt(finalSeed, game.maze, cells[k + 1]) === null ? ['move'] : ['move', 'chest-awarded'])),
       'ended',
       'settle-sent',
       'settle-mined',

@@ -2,7 +2,7 @@
 // shown. It is the evidence the verify screen checks against the revealed maze, so an
 // observation is never overwritten once recorded.
 
-import type { ChestFound, Dir, GameTerminal, GameView, Hex, Observation } from '@maze/shared';
+import type { ChestFound, Dir, FoundChest, GameTerminal, GameView, Hex, Observation } from '@maze/shared';
 import { isHex32 } from './seed';
 
 export interface PlayRecord {
@@ -27,6 +27,13 @@ export interface PlayRecord {
   createTxHash?: Hex;
   /** The bet was returned on chain by `reclaim`. `txHash` is null when someone else sent it. */
   reclaimed?: { txHash: Hex | null; amountWei: string };
+  /** The chest rule the server named for this game (rule 2 also puts chests on path cells). */
+  chestRule?: number;
+  /**
+   * Every chest the server showed in this game, in the order found. Evidence for the verify
+   * screen like the observations: a chest once recorded is never overwritten.
+   */
+  chests?: FoundChest[];
 }
 
 const RECORD_PREFIX = 'maze:record:';
@@ -150,11 +157,14 @@ export function parseRecord(raw: unknown): PlayRecord {
       settleTxHash: isHex32(t!.settleTxHash) ? t!.settleTxHash : null,
     };
     // The server's word on the chest of a dead-end ending. It is evidence for the verify screen,
-    // so a malformed one is refused rather than dropped.
+    // so a malformed one is refused rather than dropped. Under rule 2 every ending names the
+    // rule, and only an ending in a dead end names that dead end's chest.
     if (t!.chestRule !== undefined) {
       if (!isInt(t!.chestRule, 1, 65535)) fail('terminal.chestRule이 올바르지 않습니다');
       const chest = t!.chest as Partial<ChestFound> | null | undefined;
-      if (chest === null) {
+      if (chest === undefined && t!.chestRule >= 2) {
+        record.terminal.chestRule = t!.chestRule;
+      } else if (chest === null) {
         record.terminal.chestRule = t!.chestRule;
         record.terminal.chest = null;
       } else if (
@@ -184,6 +194,30 @@ export function parseRecord(raw: unknown): PlayRecord {
   }
   if (typeof r.auto === 'boolean') record.auto = r.auto;
   if (isHex32(r.createTxHash)) record.createTxHash = r.createTxHash;
+  if (r.chestRule !== undefined) {
+    if (!isInt(r.chestRule, 1, 65535)) fail('chestRule이 올바르지 않습니다');
+    record.chestRule = r.chestRule as number;
+  }
+  if (r.chests !== undefined) {
+    if (!Array.isArray(r.chests)) fail('chests가 배열이 아닙니다');
+    record.chests = (r.chests as unknown[]).map((entry, index) => {
+      const c = entry as Partial<FoundChest> | null;
+      if (
+        !c ||
+        !c.cell ||
+        !isInt(c.cell.x, 0, 254) ||
+        !isInt(c.cell.y, 0, 254) ||
+        (c.kind !== 'path' && c.kind !== 'dead-end') ||
+        !isInt(c.rewardBps, 0, 10_000) ||
+        typeof c.points !== 'string' ||
+        !/^\d+$/.test(c.points) ||
+        !isInt(c.step, 1, 65535)
+      ) {
+        fail(`chests[${index}]의 형식이 올바르지 않습니다`);
+      }
+      return { cell: { x: c!.cell!.x, y: c!.cell!.y }, kind: c!.kind!, rewardBps: c!.rewardBps!, points: c!.points!, step: c!.step! };
+    });
+  }
   const reclaimed = r.reclaimed as { txHash?: unknown; amountWei?: unknown } | undefined;
   if (reclaimed && typeof reclaimed.amountWei === 'string' && /^\d+$/.test(reclaimed.amountWei)) {
     record.reclaimed = {
@@ -230,6 +264,17 @@ export function withView(record: PlayRecord, view: GameView, dir?: Dir): PlayRec
   append(view.step, cellOf(view.cell), view.open, dir ?? null);
 
   const next: PlayRecord = { ...record, observations, moves };
+  if (view.chestRule !== undefined && next.chestRule === undefined) next.chestRule = view.chestRule;
+  if (view.chests !== undefined) {
+    // Chests already recorded stay as they were; only chests on cells not yet listed are added.
+    const chests = (record.chests ?? []).slice();
+    for (const chest of view.chests) {
+      if (!chests.some((known) => known.cell.x === chest.cell.x && known.cell.y === chest.cell.y)) {
+        chests.push({ ...chest, cell: { x: chest.cell.x, y: chest.cell.y } });
+      }
+    }
+    next.chests = chests;
+  }
   if (view.terminal) {
     next.terminal = view.terminal;
     next.auto = view.auto;

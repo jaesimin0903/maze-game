@@ -2,10 +2,12 @@
 // and exactly one settlement signature, and a refused request learns nothing.
 
 import {
+  chestPoints,
   generateMaze,
   neighbor,
   openDirs,
   refundWei,
+  type ChestKind,
   type Dir,
   type GameView,
   type Hex,
@@ -259,8 +261,10 @@ describe('AC-S5: one outcome and one signature', () => {
 });
 
 describe('AC-P3: one chest award per game, never two', () => {
-  /** Every dead end holds a chest worth 17% of the bet. */
-  const chestEverywhere = { chestDraw: () => ({ placed: true, rewardBps: 1700 }) };
+  /** Every dead end holds a chest worth 17% of the bet; no path cell holds one. */
+  const chestEverywhere = {
+    chestDraw: (_finalSeed: Hex, _cell: number, kind: ChestKind) => ({ placed: kind === 'dead-end', rewardBps: 1700 }),
+  };
   const POINTS = ((BET * 1700n) / 10n ** 16n).toString();
 
   async function awards(gameId: Hex): Promise<number> {
@@ -355,6 +359,72 @@ describe('AC-P3: one chest award per game, never two', () => {
     }
     expect(byMove).toBeGreaterThan(0);
     expect(byWorker).toBeGreaterThan(0);
+    env = await makeEnv();
+  });
+});
+
+describe('AC-P10: one award per path-chest cell, never two', () => {
+  /** Every path cell holds a chest worth 4% of the bet; no dead end holds one. */
+  const pathChests = {
+    chestDraw: (_finalSeed: Hex, _cell: number, kind: ChestKind) => ({ placed: kind === 'path', rewardBps: 400 }),
+  };
+  const EACH = chestPoints(BET, 400);
+
+  async function awards(gameId: Hex): Promise<number> {
+    return (await env.store.load()).filter((event) => event.type === 'chest-awarded' && event.gameId === gameId)
+      .length;
+  }
+
+  it('AC-P10 twelve identical moves into a path-chest cell: one move, one award', async () => {
+    env = await makeEnv(pathChests);
+    const game = await openGame(env);
+    const route = exitRoute(game.maze);
+
+    const replies = await Promise.all(
+      Array.from({ length: 12 }, () => api.move(game.gameId, game.token, { step: 0, dir: route[0] })),
+    );
+    const accepted = replies.filter((reply) => reply.status === 200);
+    expect(accepted).toHaveLength(1);
+    expect((accepted[0].body as GameView).chests).toHaveLength(1);
+    for (const reply of replies.filter((candidate) => candidate.status !== 200)) {
+      expect(codeOf(reply)).toBe('STALE_STEP');
+      expectNoState(reply);
+      expect(reply.text).not.toMatch(/chest|points/i);
+    }
+    expect(await moveCount(game.gameId)).toBe(1);
+    expect(await awards(game.gameId)).toBe(1);
+    expect((await api.points<PointsResponse>(game.player)).body.totalPoints).toBe(EACH.toString());
+    // Entering the cell again is refused: it has been visited.
+    expect(codeOf(await api.move(game.gameId, game.token, { step: 1, dir: ((route[0] + 2) % 4) as Dir }))).toBe(
+      'INVALID_MOVE_VISITED',
+    );
+    expect(await awards(game.gameId)).toBe(1);
+  });
+
+  it('AC-P10 a move into a path-chest cell raced with a cash-out: the chest is awarded exactly when the move won', async () => {
+    let byMove = 0;
+    let byCashOut = 0;
+    for (let trial = 0; trial < 12; trial++) {
+      env = await makeEnv(pathChests);
+      const game = await openGame(env);
+      const route = exitRoute(game.maze);
+      await walk(game, route.slice(0, 1));
+      const move = (): Promise<Reply> => api.move(game.gameId, game.token, { step: 1, dir: route[1] });
+      const cashout = (): Promise<Reply> => api.cashout(game.gameId, game.token, { step: 1 });
+      const [first, second] = await Promise.all(trial % 2 === 0 ? [move(), cashout()] : [cashout(), move()]);
+      const moved = (trial % 2 === 0 ? first : second).status === 200;
+
+      // Every accepted move into a chest cell has exactly one award; a refused one has none.
+      const moves = await moveCount(game.gameId);
+      expect(moves).toBe(moved ? 2 : 1);
+      expect(await awards(game.gameId)).toBe(moves);
+      expect((await api.points<PointsResponse>(game.player)).body.totalPoints).toBe((EACH * BigInt(moves)).toString());
+      if (moved) byMove += 1;
+      else byCashOut += 1;
+      await env.close();
+    }
+    expect(byMove + byCashOut).toBe(12);
+    expect(byMove).toBeGreaterThan(0);
     env = await makeEnv();
   });
 });

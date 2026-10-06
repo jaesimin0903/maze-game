@@ -88,20 +88,14 @@ function dirsOf(path: number[], w: number): Dir[] {
 describe('AC-P1: chest rule v1', () => {
   it('AC-P1 the tag is keccak256("MazeBet.chest.v1") as Foundry computes it, and the constants are the approved design', () => {
     expect(CHEST_TAG).toBe(chestVectors.chestTag);
-    expect(CHEST_RULE_VERSION).toBe(chestVectors.chestRule);
+    expect(chestVectors.chestRule).toBe(1);
     expect([CHEST_RATE_BPS, CHEST_REWARD_MIN_BPS, CHEST_REWARD_MAX_BPS]).toEqual([3000, 1000, 3000]);
     expect(POINT_UNIT_WEI).toBe(10n ** 12n);
-    expect(chestConfig()).toEqual({
-      ruleVersion: 1,
-      rateBps: 3000,
-      rewardMinBps: 1000,
-      rewardMaxBps: 3000,
-      pointUnitWei: '1000000000000',
-      cashValue: false,
-    });
     expect(isKnownChestRule(1)).toBe(true);
-    expect(isKnownChestRule(2)).toBe(false);
-    expect(() => chestDraw(mazeVectors[0].finalSeed, 1, 2)).toThrow(RangeError);
+    expect(isKnownChestRule(3)).toBe(false);
+    expect(() => chestDraw(mazeVectors[0].finalSeed, 1, 3)).toThrow(RangeError);
+    // Rule v1 has no path chests.
+    expect(chestDraw(mazeVectors[0].finalSeed, 1, 1, 'path')).toEqual({ placed: false, rewardBps: 0 });
   });
 
   it('AC-P1 the raw draws of the vectors pin the uint16be encoding of the cell', () => {
@@ -288,7 +282,7 @@ describe('AC-P2: the verifier and chests', () => {
     const report = verifyGame({ ...args(rich, lossOf(rich)), chest: { rule: 1, found: honestFound } });
     expect(report.outcomeOk).toBe(true);
     expect(report.chestRule).toBe(1);
-    expect(report.chests).toEqual(chestsOf(rich.finalSeed, rich.maze));
+    expect(report.chests).toEqual(chestsOf(rich.finalSeed, rich.maze, 1));
     expect(report.chests).toContainEqual(chest);
     expect(report.expectedChest).toEqual({ ...chest, points: chestPoints(BET, chest.rewardBps) });
     expect(report.chestOk).toBe(true);
@@ -333,10 +327,10 @@ describe('AC-P2: the verifier and chests', () => {
 
   it('AC-P2 nothing is compared without a claim for a dead end, with an unknown rule, or for moves that do not replay', () => {
     expect(verifyGame(args(rich, lossOf(rich))).chestOk).toBeNull();
-    const unknown = verifyGame({ ...args(rich, lossOf(rich)), chest: { rule: 2, found: honestFound } });
+    const unknown = verifyGame({ ...args(rich, lossOf(rich)), chest: { rule: 3, found: honestFound } });
     expect(unknown.chestOk).toBeNull();
     expect(unknown.chests).toBeNull();
-    expect(unknown.chestRule).toBe(2);
+    expect(unknown.chestRule).toBe(3);
     const broken = args(rich, lossOf(rich));
     broken.moves = [...rich.moves, 0];
     expect(verifyGame({ ...broken, chest: { rule: 1, found: honestFound } }).chestOk).toBeNull();

@@ -31,6 +31,7 @@ import {
   type CreateGameRequest,
   type Dir,
   type ErrorCode,
+  type FoundChest,
   type GameStatus,
   type GameTerminal,
   type GameView,
@@ -62,7 +63,10 @@ export const anvilAccount = (index: number) =>
     addressIndex: index,
   });
 
-/** The chest block of `/api/config`. A `FakeWorld` built with it awards chests in dead ends. */
+/**
+ * The chest block of `/api/config` (rule 2). A `FakeWorld` built with it awards path chests as
+ * moves enter them and the chest of a dead end that ends the game, as the real server does.
+ */
 export const CHEST_CONFIG = chestConfig();
 
 /** The id `FakeWorld` gives the first ticket it issues (its hashes count up from 1). */
@@ -145,6 +149,8 @@ interface ServerGame {
   status: GameStatus;
   auto: boolean;
   terminal: GameTerminal | null;
+  /** The chests found so far, in the order found. */
+  chests: FoundChest[];
 }
 
 export class FakeWorld {
@@ -230,9 +236,51 @@ export class FakeWorld {
       gameDeadlineSec: chain.createdAt + this.config.maxGameSec,
       settleDeadlineSec: chain.createdAt + this.config.settleWindowSec,
     };
+    if (this.config.chest !== undefined) {
+      view.chestRule = this.config.chest.ruleVersion;
+      view.chests = g.chests.map((chest) => ({ ...chest, cell: { ...chest.cell } }));
+    }
     if (withPath) view.path = g.path.map((c) => ({ ...point(c), open: maze.open[c] }));
     if (g.terminal) view.terminal = { ...g.terminal };
     return view;
+  }
+
+  /**
+   * Like the real server: the chest rule is asked about the cell a move has just entered, and a
+   * chest found there is awarded at once. Returns the chest, or `null`.
+   */
+  private award(g: ServerGame, cell: number, kind: 'path' | 'dead-end'): FoundChest | null {
+    const chain = g.onChain;
+    const rule = this.config.chest?.ruleVersion;
+    if (!chain || rule === undefined) return null;
+    const finalSeed = deriveFinalSeed({ serverSeed: SERVER_SEED, clientSeed: chain.clientSeed, gameId: g.gameId });
+    const chest = chestAt(finalSeed, chain.maze, cell, rule);
+    if (chest === null || chest.kind !== kind) return null;
+    const found: FoundChest = {
+      cell: { x: cell % g.n, y: Math.floor(cell / g.n) },
+      kind,
+      rewardBps: chest.rewardBps,
+      points: chestPoints(chain.bet, chest.rewardBps).toString(),
+      step: g.moves.length,
+    };
+    g.chests.push(found);
+    const key = g.player.toLowerCase();
+    this.awards.set(key, [
+      ...(this.awards.get(key) ?? []),
+      {
+        gameId: g.gameId,
+        n: g.n,
+        cell: found.cell,
+        betWei: chain.bet.toString(),
+        rewardBps: found.rewardBps,
+        points: found.points,
+        chestRule: rule,
+        atSec: this.chainNow,
+        kind,
+        step: found.step,
+      },
+    ]);
+    return found;
   }
 
   private end(g: ServerGame, outcome: 0 | 1 | 2, auto: boolean): void {
@@ -256,31 +304,13 @@ export class FakeWorld {
       signature: SIGNATURE,
       settleTxHash: null,
     };
-    // Like the real server: a dead end is asked about its chest, and only when the game ends there.
-    if (outcome === 2 && !auto && this.config.chest !== undefined) {
-      const cell = g.path[g.path.length - 1];
-      const finalSeed = deriveFinalSeed({ serverSeed: SERVER_SEED, clientSeed: chain.clientSeed, gameId: g.gameId });
-      const chest = chestAt(finalSeed, chain.maze, cell);
-      const xy = { x: cell % g.n, y: Math.floor(cell / g.n) };
-      g.terminal.chestRule = this.config.chest.ruleVersion;
-      g.terminal.chest =
-        chest === null ? null : { cell: xy, rewardBps: chest.rewardBps, points: chestPoints(chain.bet, chest.rewardBps).toString() };
-      if (chest !== null) {
-        const key = g.player.toLowerCase();
-        this.awards.set(key, [
-          ...(this.awards.get(key) ?? []),
-          {
-            gameId: g.gameId,
-            n: g.n,
-            cell: xy,
-            betWei: chain.bet.toString(),
-            rewardBps: chest.rewardBps,
-            points: chestPoints(chain.bet, chest.rewardBps).toString(),
-            chestRule: this.config.chest.ruleVersion,
-            atSec: this.chainNow,
-          },
-        ]);
-      }
+    // Like the real server: a dead end is asked about its chest, and only when the game ends
+    // there. Rule 2 names the rule on every ending.
+    const rule = this.config.chest?.ruleVersion;
+    if (rule !== undefined && (rule >= 2 || (outcome === 2 && !auto))) g.terminal.chestRule = rule;
+    if (outcome === 2 && !auto && rule !== undefined) {
+      const chest = this.award(g, g.path[g.path.length - 1], 'dead-end');
+      g.terminal.chest = chest === null ? null : { cell: chest.cell, rewardBps: chest.rewardBps, points: chest.points };
     }
   }
 
@@ -412,6 +442,7 @@ export class FakeWorld {
         status: 'active',
         auto: false,
         terminal: null,
+        chests: [],
       };
       this.games.set(g.gameId, g);
       return ticketOf(g);
@@ -470,6 +501,7 @@ export class FakeWorld {
       g.lastMoveAt = this.chainNow;
       if (target === exitCell(maze)) this.end(g, 0, false);
       else if (isDeadEnd(maze, target, cell)) this.end(g, 2, false);
+      else this.award(g, target, 'path');
       return json(200, this.view(g, false));
     }
     return error('BAD_REQUEST');

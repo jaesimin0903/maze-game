@@ -227,7 +227,8 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
               betWei: betWei ?? 0n,
             }
           : { outcome: Outcome.CashOut, steps: record.moves.length, payoutWei: 0n, betWei: 0n },
-        // What the server said about the chest of the dead end the game ended in, if it did.
+        // What the server said about the chests: the one in the dead end the game ended in, if it
+        // did, and every chest it showed during the game (rule 2 shows path chests as found).
         chest:
           terminal?.chestRule !== undefined
             ? {
@@ -240,8 +241,21 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
                         rewardBps: terminal.chest.rewardBps,
                         points: terminal.chest.points,
                       },
+                ...(record.chests === undefined
+                  ? {}
+                  : {
+                      awards: record.chests.map((chest) => ({
+                        cell: chest.cell.y * tier.n + chest.cell.x,
+                        kind: chest.kind,
+                        rewardBps: chest.rewardBps,
+                        points: chest.points,
+                      })),
+                    }),
               }
             : undefined,
+        // Without the server's claim (a game it did not end), the chests are listed under the
+        // rule the server named during play.
+        chestRule: record.chestRule,
       });
       const walk = replayMoves(
         report.maze,
@@ -372,7 +386,7 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
               <Check
                 testId="verify-chest-match"
                 ok={record.terminal ? verdict.report.chestOk : null}
-                label="보물상자 판정이 시드와 같은가 (막다른 칸의 상자를 숨기거나 지어내지 않았는가)"
+                label="보물상자 판정이 시드와 같은가 (들어간 칸의 상자를 숨기거나 지어내지 않았는가)"
               >
                 {chestDetail(record, verdict)}
               </Check>
@@ -386,21 +400,27 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
                 data-rule={verdict.report.chestRule}
                 data-count={verdict.report.chests?.length ?? ''}
                 data-cells={verdict.report.chests?.map((chest) => chest.cell).join(',') ?? ''}
+                data-path-count={verdict.report.chests?.filter((chest) => chest.kind === 'path').length ?? ''}
+                data-dead-end-count={verdict.report.chests?.filter((chest) => chest.kind === 'dead-end').length ?? ''}
               >
                 {verdict.report.chests === null
                   ? `이 검증기가 모르는 보물상자 규칙(v${verdict.report.chestRule})이라 위치를 계산하지 못했습니다.`
                   : verdict.report.chests.length === 0
                     ? `공개된 시드로 계산하면 이 미로에는 보물상자가 없습니다 (규칙 v${verdict.report.chestRule}).`
-                    : `공개된 시드로 계산한 보물상자 ${verdict.report.chests.length}개 (규칙 v${verdict.report.chestRule}, 막다른 칸에만 있음): ${verdict.report.chests
+                    : `공개된 시드로 계산한 보물상자 ${verdict.report.chests.length}개 (규칙 v${verdict.report.chestRule}${
+                        verdict.report.chestRule < 2 ? ', 막다른 칸에만 있음' : ''
+                      }): ${verdict.report.chests
                         .map(
                           (chest) =>
-                            `(${chest.cell % verdict.n},${Math.floor(chest.cell / verdict.n)}) 베팅액의 ${formatPercent(chest.rewardBps)}`,
+                            `(${chest.cell % verdict.n},${Math.floor(chest.cell / verdict.n)}) ${KIND_TEXT[chest.kind]} 베팅액의 ${formatPercent(chest.rewardBps)}`,
                         )
                         .join(', ')}`}
               </p>
               <p className="verify-chest-note">
-                보물상자는 막다른 칸에 들어서 판이 끝날 때만 열리고, 보상은 포인트입니다. 포인트는
-                현금 가치가 없습니다.
+                {verdict.report.chestRule < 2
+                  ? '보물상자는 막다른 칸에 들어서 판이 끝날 때만 열리고, 보상은 포인트입니다.'
+                  : '길 칸의 상자는 그 칸에 들어서는 순간 열리고, 막다른 칸의 상자는 그 칸에 들어서 판이 끝날 때 열립니다. 어느 칸에 상자가 있는지는 그 칸의 시드 해시와 그 칸 자신의 벽으로만 정해지므로, 상자를 찾았는지로 가 보지 않은 칸을 알 수 없습니다.'}{' '}
+                보상은 포인트이고, 포인트는 현금 가치가 없습니다.
               </p>
             </section>
 
@@ -538,29 +558,46 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
 }
 
 
+const KIND_TEXT = { path: '길 상자', 'dead-end': '막다른 칸 상자' } as const;
+
 /** The chest check in words: what the server said and what the seed says. */
 function chestDetail(record: PlayRecord, verdict: Verdict): string {
   const { report, n } = verdict;
   const at = (cell: number): string => `(${cell % n},${Math.floor(cell / n)})`;
   const terminal = record.terminal;
   if (!terminal) return '정산 없이 끝난 게임이라 보물상자를 판정하지 않았습니다';
-  const expected = report.expectedChest;
-  const seedSays =
-    expected === null
-      ? '시드로 계산하면 이 판이 끝난 칸에는 보물상자가 없습니다'
-      : `시드로 계산하면 ${at(expected.cell)}에 베팅액의 ${formatPercent(expected.rewardBps)}${
-          verdict.betWei !== null ? ` (+${formatPoints(expected.points)} 포인트)` : ''
-        } 보물상자가 있습니다`;
   if (report.chests === null) return `이 검증기가 모르는 보물상자 규칙(v${report.chestRule})입니다`;
+  const expected = report.expectedChests;
+  const seedSays =
+    expected.length === 0
+      ? '시드로 계산하면 이 판에서 들어간 칸에는 보물상자가 없습니다'
+      : `시드로 계산하면 들어간 칸의 보물상자는 ${expected.length}개입니다: ${expected
+          .map(
+            (chest) =>
+              `${at(chest.cell)} ${KIND_TEXT[chest.kind]} 베팅액의 ${formatPercent(chest.rewardBps)}${
+                verdict.betWei !== null ? ` (+${formatPoints(chest.points)} 포인트)` : ''
+              }`,
+          )
+          .join(', ')}`;
   if (terminal.chestRule === undefined) {
-    return terminal.outcome === Outcome.Loss
+    return expected.length > 0
       ? `이 기록에는 서버의 보물상자 판정이 없어 비교하지 못했습니다. ${seedSays}`
-      : '막다른 칸에서 끝나지 않은 판이라 보물상자가 없습니다';
+      : '들어간 칸에 보물상자가 없는 판입니다';
   }
+  const claimed =
+    record.chests ??
+    (terminal.chest == null ? [] : [{ ...terminal.chest, kind: 'dead-end' as const, step: terminal.steps }]);
   const serverSays =
-    terminal.chest == null
-      ? '서버는 이 막다른 칸에 보물상자가 없다고 했습니다'
-      : `서버는 (${terminal.chest.cell.x},${terminal.chest.cell.y})에서 베팅액의 ${formatPercent(terminal.chest.rewardBps)}, +${formatPoints(terminal.chest.points)} 포인트 보물상자를 줬습니다`;
+    claimed.length > 0
+      ? `서버가 준 보물상자 ${claimed.length}개: ${claimed
+          .map(
+            (chest) =>
+              `(${chest.cell.x},${chest.cell.y}) ${KIND_TEXT[chest.kind]} 베팅액의 ${formatPercent(chest.rewardBps)}, +${formatPoints(chest.points)} 포인트`,
+          )
+          .join(', ')}`
+      : terminal.chest === null
+        ? '서버는 이 막다른 칸에 보물상자가 없다고 했습니다'
+        : '서버는 이 판에서 보물상자를 주지 않았습니다';
   return `${serverSays}. ${seedSays}`;
 }
 
@@ -574,7 +611,7 @@ function VerifyMaze({ record, verdict }: { record: PlayRecord; verdict: Verdict 
   const stepOf = new Map<number, number>();
   walk.path.forEach((cell, step) => stepOf.set(cell, step));
   const solution = new Set(report.solution);
-  const chests = new Map((report.chests ?? []).map((chest) => [chest.cell, chest.rewardBps]));
+  const chests = new Map((report.chests ?? []).map((chest) => [chest.cell, chest]));
 
   const shown = new Map<number, { observed: number; match: boolean }>();
   record.observations.forEach((o, index) => {
@@ -613,7 +650,8 @@ function VerifyMaze({ record, verdict }: { record: PlayRecord; verdict: Verdict 
             data-start={cell === 0}
             data-exit={cell === n * n - 1}
             data-chest={chests.has(cell) ? 'true' : undefined}
-            data-chest-bps={chests.get(cell)}
+            data-chest-kind={chests.get(cell)?.kind}
+            data-chest-bps={chests.get(cell)?.rewardBps}
           >
             {step !== undefined && <span className="vstep">{step}</span>}
             {cell === 0 && <span className="mark mark-start">출발</span>}

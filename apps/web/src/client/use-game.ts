@@ -21,6 +21,7 @@ import {
   ticketRequestMessage,
   type ChestFound,
   type ConfigResponse,
+  type FoundChest,
   type Dir,
   type ErrorCode,
   type GameView,
@@ -77,6 +78,11 @@ export interface GameResult {
    * there, or `null` when it held none. `undefined` for every other ending.
    */
   chest?: ChestFound | null;
+  /**
+   * Every chest found in this game, in the order found (path chests during play, and the
+   * dead-end chest), as the server showed them. `undefined` for a game shown without chests.
+   */
+  chests?: FoundChest[];
 }
 
 export interface ReclaimInfo {
@@ -159,6 +165,7 @@ export function resultOf(s: GameState): GameResult | null {
       outcome: 'reclaimed',
       payoutWei: BigInt(record.reclaimed.amountWei),
       txHash: record.reclaimed.txHash,
+      ...(record.chests === undefined ? {} : { chests: record.chests }),
     };
   }
   const t = record.terminal;
@@ -168,7 +175,9 @@ export function resultOf(s: GameState): GameResult | null {
   // The server reports a settlement transaction as soon as it is sent; one that was sent is not
   // shown until the chain says it settled the game (`settledTx`).
   const result: GameResult = { outcome, payoutWei: BigInt(t.payoutWei), txHash: s.settledTx };
-  if (t.chestRule !== undefined) result.chest = t.chest ?? null;
+  // The terminal names the dead-end chest only for an ending in a dead end.
+  if (t.chestRule !== undefined && t.chest !== undefined) result.chest = t.chest;
+  if (record.chests !== undefined) result.chests = record.chests;
   return result;
 }
 

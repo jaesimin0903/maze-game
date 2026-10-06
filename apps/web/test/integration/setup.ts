@@ -316,12 +316,20 @@ export interface LiveGame {
 /**
  * Ticket, `createGame` on chain and, unless `start: false`, the first `/start`.
  * `deadEnd: true` picks a client seed whose maze has a dead end before the exit; `chest` also
- * fixes whether the dead end `deadEndRoute` leads into holds a chest.
+ * fixes whether the dead end `deadEndRoute` leads into holds a chest, and `pathChest` whether the
+ * route there passes a path chest.
  */
 export async function openGame(
   h: Harness,
   player: Player,
-  p: { tier?: number; betWei?: bigint; start?: boolean; deadEnd?: boolean; chest?: boolean } = {},
+  p: {
+    tier?: number;
+    betWei?: bigint;
+    start?: boolean;
+    deadEnd?: boolean;
+    chest?: boolean;
+    pathChest?: boolean;
+  } = {},
 ): Promise<LiveGame> {
   const { ticket, token } = await requestTicket(player, p.tier ?? 0);
   const betWei = p.betWei ?? BET;
@@ -332,6 +340,7 @@ export async function openGame(
     n,
     p.deadEnd ?? false,
     p.chest,
+    p.pathChest,
   );
   const created = await createOnChain(h, player, ticket, betWei, clientSeed);
   const game: LiveGame = {

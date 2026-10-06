@@ -63,6 +63,8 @@ export type StoreEvent =
       /** Open mask of the start cell, the first cell the player is shown. */
       startOpen: number;
       atSec: number;
+      /** The chest rule the game is played under. Absent in logs written before rule 2: rule 1. */
+      chestRule?: number;
     }
   | {
       type: 'move';
@@ -87,15 +89,17 @@ export type StoreEvent =
       cause: EndCause;
       atSec: number;
       /**
-       * Only on an ending in a dead end: the chest rule version applied to that dead end. Absent
-       * on every other ending and in logs written before chests existed.
+       * The chest rule version applied to this ending: for a rule 1 game only on an ending in a
+       * dead end, for a rule 2 game on every ending the server made itself. Absent otherwise and
+       * in logs written before chests existed.
        */
       chestRule?: number;
     }
   | {
       /**
-       * Points for the chest in the dead end that ended the game. Stored in the same line as the
-       * ending (and the move into the dead end), so the award and the ending exist together or
+       * Points for a chest the player found: a path chest, stored in the same line as the move
+       * that entered its cell, or the chest in the dead end that ended the game, stored in the
+       * same line as that move and the ending. The award and what caused it exist together or
        * not at all. The points ledger is rebuilt from these events alone. Points have no cash value.
        */
       type: 'chest-awarded';
@@ -103,7 +107,7 @@ export type StoreEvent =
       /** Checksummed address the ticket was issued to, on its wallet signature. */
       player: Hex;
       n: number;
-      /** The dead end, `y * n + x`. */
+      /** The cell, `y * n + x`: the cell the player entered. */
       cell: number;
       betWei: string;
       rewardBps: number;
@@ -111,6 +115,10 @@ export type StoreEvent =
       points: string;
       chestRule: number;
       atSec: number;
+      /** `'path'` or `'dead-end'`. Absent in logs written before rule 2: a dead-end chest. */
+      kind?: 'dead-end' | 'path';
+      /** Moves made when it was found. Absent in logs written before rule 2. */
+      step?: number;
     }
   | { type: 'settle-sent'; gameId: Hex; txHash: Hex; nonce: number; atSec: number }
   | { type: 'settle-mined'; gameId: Hex; txHash: Hex; blockNumber: string; atSec: number }

@@ -9,6 +9,7 @@ import {
   mazeBetDomain,
   tableHash as hashOfTable,
   type ChestDraw,
+  type ChestKind,
   type Hex,
   type Maze,
   type TuningTable,
@@ -47,8 +48,11 @@ export interface ContainerDeps {
   mazeFactory?: (finalSeed: Hex, n: number) => Maze;
   random32?: () => Hex;
   mazePadMs?: number;
-  /** The chest draws of a cell. Defaults to the current chest rule (tests place chests at will). */
-  chestDraw?: (finalSeed: Hex, cell: number) => ChestDraw;
+  /**
+   * The chest draws of a cell, for the kind of chest it can hold and the game's rule. Defaults to
+   * `chestDraw` (tests place chests at will).
+   */
+  chestDraw?: (finalSeed: Hex, cell: number, kind: ChestKind, rule: number) => ChestDraw;
   /** False: the server never reads the contract's game events. Default true. */
   watcher?: boolean;
   /** False: no polling loop; passes run only when `worker.tick()` is called. Default true. */

@@ -11,6 +11,7 @@ import { useGame } from './use-game';
 import type { WalletApi } from './wallet';
 import { BetPanel } from './components/BetPanel';
 import { Board } from './components/Board';
+import { GameChests } from './components/GameChests';
 import { MovePad } from './components/MovePad';
 import { PointsBalance } from './components/PointsBalance';
 import { ReclaimPanel } from './components/ReclaimPanel';
@@ -108,7 +109,8 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
           <PointsBalance
             api={deps.api}
             address={wallet?.address ?? null}
-            refreshKey={`${phase}:${state.onchain?.status ?? ''}:${record?.gameId ?? ''}`}
+            // A path chest adds points during play: every chest found asks again.
+            refreshKey={`${phase}:${state.onchain?.status ?? ''}:${record?.gameId ?? ''}:${record?.chests?.length ?? 0}`}
           />
         )}
       </header>
@@ -170,6 +172,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
               ended={phase === 'ended' ? (result?.outcome ?? null) : null}
               waiting={phase === 'playing' && record.observations.length === 0}
               chest={phase === 'ended' && result?.chest ? result.chest.cell : null}
+              found={record.chests}
             />
           </div>
 
@@ -188,6 +191,9 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
                   onMove={(dir) => void game.move(dir)}
                   active={view.status === 'active'}
                 />
+                {config.chest !== undefined && view.chests !== undefined && (
+                  <GameChests chests={view.chests} step={view.step} />
+                )}
               </>
             )}
             {phase === 'playing' && settledOnChain && (

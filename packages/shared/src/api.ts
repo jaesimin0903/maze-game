@@ -152,12 +152,27 @@ export interface GameTerminal {
   signature: Hex;
   settleTxHash: Hex | null;
   /**
-   * Only for a game that ended in a dead end: the chest rule version the server applied to that
-   * dead end. Absent for every other ending, and for a dead end no chest rule covered.
+   * The chest rule version the server applied to this game. Rule 1 games carry it only when they
+   * ended in a dead end; rule 2 games carry it on every ending the server made itself.
    */
   chestRule?: number;
-  /** Present exactly when `chestRule` is: the chest found in the dead end, or `null` for none. */
+  /**
+   * Only for a game that ended in a dead end and carries `chestRule`: the chest found in that dead
+   * end, or `null` for none. Path chests are in `GameView.chests`.
+   */
   chest?: ChestFound | null;
+}
+
+/** A chest the player found in this game, on a cell already entered. Points have no cash value. */
+export interface FoundChest {
+  cell: { x: number; y: number };
+  kind: 'dead-end' | 'path';
+  /** Reward in basis points of the bet. */
+  rewardBps: number;
+  /** Points awarded, decimal. */
+  points: string;
+  /** Moves made when it was found: the move that entered its cell. */
+  step: number;
 }
 
 /**
@@ -183,6 +198,10 @@ export interface GameView {
   idleDeadlineSec: number;
   gameDeadlineSec: number;
   settleDeadlineSec: number;
+  /** The chest rule of this game (rule 2 also places chests on path cells). */
+  chestRule?: number;
+  /** Every chest found in this game so far, in the order found: cells already entered only. */
+  chests?: FoundChest[];
   /** Only on `GET /api/games/:id`. Visited cells only, in visiting order. */
   path?: { x: number; y: number; open: number }[];
   /** Never present while `status === 'active'`. */
@@ -228,6 +247,11 @@ export interface ChestConfig {
   pointUnitWei: string;
   /** Points cannot be exchanged for money or for anything else. */
   cashValue: false;
+  /** Rule 2: share of path cells (neither start, exit nor dead end) that hold a chest, in basis points. */
+  pathRateBps?: number;
+  /** Rule 2: reward range of a path chest in basis points of the bet, both ends included. */
+  pathRewardMinBps?: number;
+  pathRewardMaxBps?: number;
 }
 
 /** The chest in the dead end that ended a game. */
@@ -253,8 +277,12 @@ export interface PointsAward {
   /** Decimal. */
   points: string;
   chestRule: number;
-  /** Chain second at which the game ended. */
+  /** Chain second at which the chest was found (the move into its cell). */
   atSec: number;
+  /** A path chest (found during play) or the dead-end chest that ended the game. */
+  kind: 'dead-end' | 'path';
+  /** Moves made when it was found. */
+  step: number;
 }
 
 /** `GET /api/points/:address` */

@@ -246,5 +246,7 @@ describe('X33: a flood of ticket requests', () => {
     expect(env.container.service.counts()).toEqual({ games: 0, uncreatedTickets: 0 });
     expect(accepted.every((ticket) => env.container.service.get(ticket.gameId) === undefined)).toBe(true);
     expect(env.storeFailures).toEqual([]);
-  });
+    // Over 2,000 requests through the real store: about 4.5 s alone, more under load, so the
+    // default 5 s limit made this a timing flake rather than a check of the limits.
+  }, 30_000);
 });

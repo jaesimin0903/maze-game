@@ -1,7 +1,17 @@
 // AC-X5, AC-S5, audit X14-X16: simultaneous requests for one game yield exactly one outcome
 // and exactly one settlement signature, and a refused request learns nothing.
 
-import { generateMaze, neighbor, openDirs, refundWei, type Dir, type GameView, type Hex, type Maze } from '@maze/shared';
+import {
+  generateMaze,
+  neighbor,
+  openDirs,
+  refundWei,
+  type Dir,
+  type GameView,
+  type Hex,
+  type Maze,
+  type PointsResponse,
+} from '@maze/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   api,
@@ -245,5 +255,106 @@ describe('AC-S5: one outcome and one signature', () => {
     await Promise.all([env.tick(), service.expireDue(), service.expireDue(), service.expireDue()]);
     expect(await endings(game.gameId)).toEqual([{ outcome: 1, steps: 0, auto: true }]);
     expect(env.signs.settlement).toBe(1);
+  });
+});
+
+describe('AC-P3: one chest award per game, never two', () => {
+  /** Every dead end holds a chest worth 17% of the bet. */
+  const chestEverywhere = { chestDraw: () => ({ placed: true, rewardBps: 1700 }) };
+  const POINTS = ((BET * 1700n) / 10n ** 16n).toString();
+
+  async function awards(gameId: Hex): Promise<number> {
+    return (await env.store.load()).filter((event) => event.type === 'chest-awarded' && event.gameId === gameId)
+      .length;
+  }
+
+  async function total(player: Hex): Promise<string> {
+    return (await api.points<PointsResponse>(player)).body.totalPoints;
+  }
+
+  it('AC-P3 twelve identical moves into a dead end that holds a chest: one ending, one award', async () => {
+    env = await makeEnv(chestEverywhere);
+    const game = await openGame(env, { deadEnd: true });
+    const route = deadEndRoute(game.maze);
+    const k = route.length - 1;
+    await walk(game, route.slice(0, k));
+
+    const replies = await Promise.all(
+      Array.from({ length: 12 }, () => api.move(game.gameId, game.token, { step: k, dir: route[k] })),
+    );
+    expect(replies.filter((reply) => reply.status === 200)).toHaveLength(1);
+    for (const reply of replies.filter((candidate) => candidate.status !== 200)) {
+      expect(['STALE_STEP', 'GAME_NOT_ACTIVE']).toContain(codeOf(reply));
+      expectNoState(reply);
+      expect(reply.text).not.toMatch(/chest|points/i);
+    }
+    expect(await endings(game.gameId)).toHaveLength(1);
+    expect(await awards(game.gameId)).toBe(1);
+    expect(await total(game.player)).toBe(POINTS);
+  });
+
+  it('AC-P3 a move into a chest dead end raced with a cash-out: the chest is awarded exactly when the move won', async () => {
+    let byMove = 0;
+    let byCashOut = 0;
+    for (let trial = 0; trial < 12; trial++) {
+      env = await makeEnv(chestEverywhere);
+      const game = await openGame(env, { deadEnd: true });
+      const route = deadEndRoute(game.maze);
+      const k = route.length - 1;
+      await walk(game, route.slice(0, k));
+      const move = (): Promise<Reply> => api.move(game.gameId, game.token, { step: k, dir: route[k] });
+      const cashout = (): Promise<Reply> => api.cashout(game.gameId, game.token, { step: k });
+      const [first, second] = await Promise.all(trial % 2 === 0 ? [move(), cashout()] : [cashout(), move()]);
+      const winner = (first.status === 200 ? first : second).body as GameView;
+
+      expect(await endings(game.gameId)).toHaveLength(1);
+      if (winner.status === 'lost') {
+        byMove += 1;
+        expect(winner.terminal?.chest).toMatchObject({ rewardBps: 1700, points: POINTS });
+        expect(await awards(game.gameId)).toBe(1);
+        expect(await total(game.player)).toBe(POINTS);
+      } else {
+        byCashOut += 1;
+        expect(winner.status).toBe('cashed_out');
+        expect(winner.terminal?.chest).toBeUndefined();
+        expect(await awards(game.gameId)).toBe(0);
+        expect(await total(game.player)).toBe('0');
+      }
+      await env.close();
+    }
+    expect(byMove + byCashOut).toBe(12);
+    expect(byMove).toBeGreaterThan(0);
+    env = await makeEnv();
+  });
+
+  it('AC-P3 a move into a chest dead end raced with the idle auto cash-out: an award only for the move', async () => {
+    let byMove = 0;
+    let byWorker = 0;
+    for (let micro = 0; micro < 40; micro++) {
+      env = await makeEnv(chestEverywhere);
+      const game = await openGame(env, { deadEnd: true });
+      const route = deadEndRoute(game.maze);
+      const k = route.length - 1;
+      await walk(game, route.slice(0, k));
+      const moving = api.move(game.gameId, game.token, { step: k, dir: route[k] });
+      for (let i = 0; i < micro; i++) await Promise.resolve();
+      env.advance(env.table.timing.idleTimeoutSec);
+      const [reply] = await Promise.all([moving, env.container.service.expireDue()]);
+
+      expect(await endings(game.gameId)).toHaveLength(1);
+      if (reply.status === 200) {
+        byMove += 1;
+        expect(await awards(game.gameId)).toBe(1);
+      } else {
+        byWorker += 1;
+        expectNoState(reply);
+        expect(await awards(game.gameId)).toBe(0);
+        expect(await total(game.player)).toBe('0');
+      }
+      await env.close();
+    }
+    expect(byMove).toBeGreaterThan(0);
+    expect(byWorker).toBeGreaterThan(0);
+    env = await makeEnv();
   });
 });

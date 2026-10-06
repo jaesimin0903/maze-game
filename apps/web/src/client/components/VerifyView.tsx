@@ -19,7 +19,7 @@ import { DIRS } from '../board-view';
 import type { OnchainGame } from '../chain';
 import { assertConfig, tableFromConfig } from '../config';
 import { defaultDeps, type ClientDeps } from '../deps';
-import { formatEth, shortHex } from '../format';
+import { formatEth, formatPercent, formatPoints, shortHex } from '../format';
 import { loadRecord, parseRecord, type PlayRecord } from '../record';
 import { isHex32 } from '../seed';
 import { TestBeacon } from './TestBeacon';
@@ -227,6 +227,21 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
               betWei: betWei ?? 0n,
             }
           : { outcome: Outcome.CashOut, steps: record.moves.length, payoutWei: 0n, betWei: 0n },
+        // What the server said about the chest of the dead end the game ended in, if it did.
+        chest:
+          terminal?.chestRule !== undefined
+            ? {
+                rule: terminal.chestRule,
+                found:
+                  terminal.chest == null
+                    ? null
+                    : {
+                        cell: terminal.chest.cell.y * tier.n + terminal.chest.cell.x,
+                        rewardBps: terminal.chest.rewardBps,
+                        points: terminal.chest.points,
+                      },
+              }
+            : undefined,
       });
       const walk = replayMoves(
         report.maze,
@@ -354,6 +369,39 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
                     : `베팅 ${formatEth(verdict.betWei)} ETH, 지급 ${formatEth(BigInt(record.terminal.payoutWei))} ETH`
                   : '정산 없이 끝난 게임입니다'}
               </Check>
+              <Check
+                testId="verify-chest-match"
+                ok={record.terminal ? verdict.report.chestOk : null}
+                label="보물상자 판정이 시드와 같은가 (막다른 칸의 상자를 숨기거나 지어내지 않았는가)"
+              >
+                {chestDetail(record, verdict)}
+              </Check>
+            </section>
+
+            <section className="verify-chests" aria-label="보물상자 위치">
+              <h2>보물상자 위치</h2>
+              <p
+                className="verify-chest-list"
+                data-testid="verify-chests"
+                data-rule={verdict.report.chestRule}
+                data-count={verdict.report.chests?.length ?? ''}
+                data-cells={verdict.report.chests?.map((chest) => chest.cell).join(',') ?? ''}
+              >
+                {verdict.report.chests === null
+                  ? `이 검증기가 모르는 보물상자 규칙(v${verdict.report.chestRule})이라 위치를 계산하지 못했습니다.`
+                  : verdict.report.chests.length === 0
+                    ? `공개된 시드로 계산하면 이 미로에는 보물상자가 없습니다 (규칙 v${verdict.report.chestRule}).`
+                    : `공개된 시드로 계산한 보물상자 ${verdict.report.chests.length}개 (규칙 v${verdict.report.chestRule}, 막다른 칸에만 있음): ${verdict.report.chests
+                        .map(
+                          (chest) =>
+                            `(${chest.cell % verdict.n},${Math.floor(chest.cell / verdict.n)}) 베팅액의 ${formatPercent(chest.rewardBps)}`,
+                        )
+                        .join(', ')}`}
+              </p>
+              <p className="verify-chest-note">
+                보물상자는 막다른 칸에 들어서 판이 끝날 때만 열리고, 보상은 포인트입니다. 포인트는
+                현금 가치가 없습니다.
+              </p>
             </section>
 
             <section className="verify-maze" aria-label="전체 미로">
@@ -490,15 +538,43 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
 }
 
 
+/** The chest check in words: what the server said and what the seed says. */
+function chestDetail(record: PlayRecord, verdict: Verdict): string {
+  const { report, n } = verdict;
+  const at = (cell: number): string => `(${cell % n},${Math.floor(cell / n)})`;
+  const terminal = record.terminal;
+  if (!terminal) return '정산 없이 끝난 게임이라 보물상자를 판정하지 않았습니다';
+  const expected = report.expectedChest;
+  const seedSays =
+    expected === null
+      ? '시드로 계산하면 이 판이 끝난 칸에는 보물상자가 없습니다'
+      : `시드로 계산하면 ${at(expected.cell)}에 베팅액의 ${formatPercent(expected.rewardBps)}${
+          verdict.betWei !== null ? ` (+${formatPoints(expected.points)} 포인트)` : ''
+        } 보물상자가 있습니다`;
+  if (report.chests === null) return `이 검증기가 모르는 보물상자 규칙(v${report.chestRule})입니다`;
+  if (terminal.chestRule === undefined) {
+    return terminal.outcome === Outcome.Loss
+      ? `이 기록에는 서버의 보물상자 판정이 없어 비교하지 못했습니다. ${seedSays}`
+      : '막다른 칸에서 끝나지 않은 판이라 보물상자가 없습니다';
+  }
+  const serverSays =
+    terminal.chest == null
+      ? '서버는 이 막다른 칸에 보물상자가 없다고 했습니다'
+      : `서버는 (${terminal.chest.cell.x},${terminal.chest.cell.y})에서 베팅액의 ${formatPercent(terminal.chest.rewardBps)}, +${formatPoints(terminal.chest.points)} 포인트 보물상자를 줬습니다`;
+  return `${serverSays}. ${seedSays}`;
+}
+
 /**
  * The whole maze with its real walls. A cell the player was shown carries `verify-cell-<x>-<y>`
  * and `data-match`; cells the player never saw have nothing to compare and carry neither.
+ * Chest cells, recomputed from the revealed seed, carry `data-chest`.
  */
 function VerifyMaze({ record, verdict }: { record: PlayRecord; verdict: Verdict }) {
   const { report, walk, n } = verdict;
   const stepOf = new Map<number, number>();
   walk.path.forEach((cell, step) => stepOf.set(cell, step));
   const solution = new Set(report.solution);
+  const chests = new Map((report.chests ?? []).map((chest) => [chest.cell, chest.rewardBps]));
 
   const shown = new Map<number, { observed: number; match: boolean }>();
   record.observations.forEach((o, index) => {
@@ -536,10 +612,13 @@ function VerifyMaze({ record, verdict }: { record: PlayRecord; verdict: Verdict 
             data-solution={solution.has(cell)}
             data-start={cell === 0}
             data-exit={cell === n * n - 1}
+            data-chest={chests.has(cell) ? 'true' : undefined}
+            data-chest-bps={chests.get(cell)}
           >
             {step !== undefined && <span className="vstep">{step}</span>}
             {cell === 0 && <span className="mark mark-start">출발</span>}
             {cell === n * n - 1 && <span className="mark mark-exit">출구</span>}
+            {chests.has(cell) && <span className="mark mark-chest">상자</span>}
           </div>
         );
       })}

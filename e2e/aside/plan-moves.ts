@@ -21,6 +21,9 @@
 //                 open, plus those two moves (`a`, `b`): the two-tab race of scenario 08
 //   invalid       a route of at least one move to a cell that has a wall inside the grid, plus
 //                 that wall's direction (`wall`) and the direction back (`visited`)
+//   chest         the shortest route into a dead end that holds a chest (chest rule of
+//                 @maze/shared, plan-chest.ts), plus that chest (`chest`: cell, x, y, rewardBps),
+//                 every chest of the maze (`chests`) and the rule version (`chestRule`)
 //
 // Output: one JSON object on stdout. `moves` are direction letters (N, E, S, W).
 // Exit codes: 0 planned, 3 this maze cannot serve the goal (the scenario starts another game),
@@ -41,6 +44,7 @@ import {
   type Hex,
   type Maze,
 } from '@maze/shared';
+import { planChest } from './plan-chest';
 
 const LETTERS = ['N', 'E', 'S', 'W'] as const;
 const DIRS: readonly Dir[] = [0, 1, 2, 3];
@@ -50,7 +54,7 @@ const OUTCOME_NAMES = ['exit', 'cashout', 'loss'] as const;
 function usage(message: string): never {
   console.error(`plan-moves: ${message}`);
   console.error(
-    'usage: plan-moves.ts --secret S --game-id 0x.. --client-seed 0x.. --n N --goal exit|deadend|cashout:<k>|junction|invalid',
+    'usage: plan-moves.ts --secret S --game-id 0x.. --client-seed 0x.. --n N --goal exit|deadend|cashout:<k>|junction|invalid|chest',
   );
   process.exit(2);
 }
@@ -193,12 +197,20 @@ if (!Number.isInteger(n) || n < 2 || n > 255) usage('--n must be the maze size')
 const goal = a.goal ?? usage('--goal is required');
 
 const serverSeed = testServerSeed(secret, gameId);
-const maze = generateMaze(deriveFinalSeed({ serverSeed, clientSeed, gameId }), n);
+const finalSeed = deriveFinalSeed({ serverSeed, clientSeed, gameId });
+const maze = generateMaze(finalSeed, n);
 
 let plan: Plan | null;
 let cashOutAt: number | undefined;
 if (goal === 'exit') plan = planExit(maze);
 else if (goal === 'deadend') plan = planDeadEnd(maze);
+else if (goal === 'chest') {
+  const chestPlan = planChest(maze, finalSeed);
+  plan =
+    chestPlan === null
+      ? null
+      : { cells: chestPlan.cells, extra: { chest: chestPlan.chest, chests: chestPlan.chests, chestRule: chestPlan.chestRule } };
+}
 else if (goal === 'junction') plan = planJunction(maze);
 else if (goal === 'invalid') plan = planInvalid(maze);
 else if (/^cashout:\d+$/.test(goal)) {

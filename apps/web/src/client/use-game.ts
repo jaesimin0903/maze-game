@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ONCHAIN_STATUS,
   ticketRequestMessage,
+  type ChestFound,
   type ConfigResponse,
   type Dir,
   type ErrorCode,
@@ -71,6 +72,11 @@ export interface GameResult {
   payoutWei: bigint;
   /** The transaction that settled or reclaimed the game on chain, once the chain has shown it. */
   txHash: Hex | null;
+  /**
+   * For a game that ended in a dead end the server applied a chest rule to: the chest found
+   * there, or `null` when it held none. `undefined` for every other ending.
+   */
+  chest?: ChestFound | null;
 }
 
 export interface ReclaimInfo {
@@ -161,7 +167,9 @@ export function resultOf(s: GameState): GameResult | null {
     t.outcome === 0 ? 'exit' : t.outcome === 2 ? 'loss' : record.auto ? 'auto-cashout' : 'cashout';
   // The server reports a settlement transaction as soon as it is sent; one that was sent is not
   // shown until the chain says it settled the game (`settledTx`).
-  return { outcome, payoutWei: BigInt(t.payoutWei), txHash: s.settledTx };
+  const result: GameResult = { outcome, payoutWei: BigInt(t.payoutWei), txHash: s.settledTx };
+  if (t.chestRule !== undefined) result.chest = t.chest ?? null;
+  return result;
 }
 
 /**

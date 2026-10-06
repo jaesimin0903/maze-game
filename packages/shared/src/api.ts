@@ -124,6 +124,8 @@ export interface ConfigResponse {
   settleWindowSec: number;
   chainNowSec: number;
   devWallet: boolean;
+  /** The treasure-chest rule of this server. Absent on a server without chests. */
+  chest?: ChestConfig;
 }
 
 /** `POST /api/games` -> 201 */
@@ -149,6 +151,13 @@ export interface GameTerminal {
   /** Server signature over the EIP-712 `Settlement` message. */
   signature: Hex;
   settleTxHash: Hex | null;
+  /**
+   * Only for a game that ended in a dead end: the chest rule version the server applied to that
+   * dead end. Absent for every other ending, and for a dead end no chest rule covered.
+   */
+  chestRule?: number;
+  /** Present exactly when `chestRule` is: the chest found in the dead end, or `null` for none. */
+  chest?: ChestFound | null;
 }
 
 /**
@@ -202,3 +211,61 @@ export interface UiSnapshot {
 
 /** Body of `POST /api/test/ui-snapshot` (test hooks only, otherwise 404). Answered with 204. */
 export type UiSnapshotInput = Omit<UiSnapshot, 'seq'>;
+
+// ---------------------------------------------------------------------------
+// Treasure chests and points (chest.ts). Points have no cash value.
+// ---------------------------------------------------------------------------
+
+/** `ConfigResponse.chest`: the chest rule the server applies to dead ends. */
+export interface ChestConfig {
+  ruleVersion: number;
+  /** Share of dead ends that hold a chest, in basis points. */
+  rateBps: number;
+  /** Reward range of a chest in basis points of the bet, both ends included. */
+  rewardMinBps: number;
+  rewardMaxBps: number;
+  /** Wei of bet one point stands for, decimal: points = floor(bet × rewardBps / 10000 / pointUnitWei). */
+  pointUnitWei: string;
+  /** Points cannot be exchanged for money or for anything else. */
+  cashValue: false;
+}
+
+/** The chest in the dead end that ended a game. */
+export interface ChestFound {
+  cell: { x: number; y: number };
+  /** Reward in basis points of the bet. */
+  rewardBps: number;
+  /** Points awarded, decimal. No cash value. */
+  points: string;
+}
+
+/** Most awards `GET /api/points/:address` lists. */
+export const POINTS_RECENT_LIMIT = 20;
+
+/** One entry of the points ledger: the game and the cell the points came from. */
+export interface PointsAward {
+  gameId: Hex;
+  /** Board size of the game, so that `cell` can be read. */
+  n: number;
+  cell: { x: number; y: number };
+  betWei: string;
+  rewardBps: number;
+  /** Decimal. */
+  points: string;
+  chestRule: number;
+  /** Chain second at which the game ended. */
+  atSec: number;
+}
+
+/** `GET /api/points/:address` */
+export interface PointsResponse {
+  /** Checksummed. */
+  address: Hex;
+  /** Decimal sum of every award of the address. */
+  totalPoints: string;
+  awardCount: number;
+  /** The most recent awards, newest first, at most `POINTS_RECENT_LIMIT`. */
+  awards: PointsAward[];
+  /** Points cannot be exchanged for money or for anything else. */
+  cashValue: false;
+}

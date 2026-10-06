@@ -86,6 +86,31 @@ export type StoreEvent =
       auto: boolean;
       cause: EndCause;
       atSec: number;
+      /**
+       * Only on an ending in a dead end: the chest rule version applied to that dead end. Absent
+       * on every other ending and in logs written before chests existed.
+       */
+      chestRule?: number;
+    }
+  | {
+      /**
+       * Points for the chest in the dead end that ended the game. Stored in the same line as the
+       * ending (and the move into the dead end), so the award and the ending exist together or
+       * not at all. The points ledger is rebuilt from these events alone. Points have no cash value.
+       */
+      type: 'chest-awarded';
+      gameId: Hex;
+      /** Checksummed address the ticket was issued to, on its wallet signature. */
+      player: Hex;
+      n: number;
+      /** The dead end, `y * n + x`. */
+      cell: number;
+      betWei: string;
+      rewardBps: number;
+      /** Decimal: floor(bet × rewardBps / 10000 / 10^12). */
+      points: string;
+      chestRule: number;
+      atSec: number;
     }
   | { type: 'settle-sent'; gameId: Hex; txHash: Hex; nonce: number; atSec: number }
   | { type: 'settle-mined'; gameId: Hex; txHash: Hex; blockNumber: string; atSec: number }
@@ -124,6 +149,7 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
   'chain-created',
   'move',
   'ended',
+  'chest-awarded',
   'settle-sent',
   'settle-mined',
   'reclaimed',

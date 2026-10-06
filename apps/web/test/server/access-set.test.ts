@@ -48,13 +48,20 @@ afterEach(async () => {
   await env.close();
 });
 
-async function setup(): Promise<{ rec: Recording; built: () => number; gameId: string; token: string }> {
+async function setup(
+  chestCalls: number[] = [],
+): Promise<{ rec: Recording; built: () => number; gameId: string; token: string }> {
   const rec = recording(BASE);
   let built = 0;
   env = await makeEnv({
     mazeFactory: () => {
       built += 1;
       return rec.maze;
+    },
+    // Every cell the chest rule is asked about. A chest everywhere, so an award is always possible.
+    chestDraw: (_finalSeed, cell) => {
+      chestCalls.push(cell);
+      return { placed: true, rewardBps: 1000 };
     },
   });
   const game = await openGame(env);
@@ -146,5 +153,53 @@ describe('AC-X3: maze access', () => {
     await env.tick();
     expect((await api.game<{ status: string }>(gameId, token)).body.status).toBe('cashed_out');
     expect(drain(rec)).toEqual([]);
+  });
+});
+
+describe('AC-P4: chest access', () => {
+  it('AC-P4 creating, starting, reading, refused moves and every move up to the exit never ask the chest rule', async () => {
+    const calls: number[] = [];
+    const { gameId, token } = await setup(calls);
+    expect((await api.start(gameId, token)).status).toBe(200);
+    const route = exitRoute(BASE);
+    const cells = cellsOf(BASE, route);
+    for (let k = 0; k < route.length; k++) {
+      await api.move(gameId, token, { step: k, dir: wallDir(BASE, cells[k]) ?? 9 });
+      await api.move(gameId, token, { step: k + 1, dir: route[k] });
+      await api.game(gameId, token);
+      expect((await api.move(gameId, token, { step: k, dir: route[k] })).status).toBe(200);
+    }
+    expect((await api.game<{ status: string }>(gameId, token)).body.status).toBe('won');
+    expect(calls).toEqual([]);
+  });
+
+  it('AC-P4 the move into a dead end asks the chest rule once, about that cell only; a cash-out and an idle auto cash-out never ask', async () => {
+    const calls: number[] = [];
+    const first = await setup(calls);
+    const route = deadEndRoute(BASE);
+    const cells = cellsOf(BASE, route);
+    for (let k = 0; k < route.length; k++) {
+      expect(calls).toEqual([]);
+      await api.move(first.gameId, first.token, { step: k, dir: route[k] });
+    }
+    expect(calls).toEqual([cells[route.length]]);
+    await api.game(first.gameId, first.token);
+    expect(calls).toHaveLength(1);
+    await env.close();
+
+    const cashCalls: number[] = [];
+    const second = await setup(cashCalls);
+    await api.move(second.gameId, second.token, { step: 0, dir: route[0] });
+    expect((await api.cashout(second.gameId, second.token, { step: 1 })).status).toBe(200);
+    expect(cashCalls).toEqual([]);
+    await env.close();
+
+    const idleCalls: number[] = [];
+    const third = await setup(idleCalls);
+    await api.move(third.gameId, third.token, { step: 0, dir: route[0] });
+    env.advance(env.table.timing.idleTimeoutSec);
+    await env.tick();
+    expect((await api.game<{ status: string }>(third.gameId, third.token)).body.status).toBe('cashed_out');
+    expect(idleCalls).toEqual([]);
   });
 });

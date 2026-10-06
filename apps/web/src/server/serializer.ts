@@ -7,18 +7,22 @@
 // place, behind the check that the game has ended.
 
 import {
+  chestConfig,
   exitPayoutWei,
+  POINTS_RECENT_LIMIT,
   refundWei,
   type ConfigResponse,
   type GameStatus,
   type GameView,
   type Hex,
+  type PointsResponse,
   type RevealReason,
   type RevealResponse,
   type TicketResponse,
   type TuningTable,
 } from '@maze/shared';
 import type { Game } from './game-service';
+import type { LedgerAccount } from './points';
 
 const STATUS_OF_OUTCOME: readonly GameStatus[] = ['won', 'cashed_out', 'lost'];
 
@@ -72,8 +76,39 @@ export function toPublicView(p: {
       signature: ended.signature,
       settleTxHash: game.settle.minedTxHash ?? game.settle.lastTxHash,
     };
+    // Only for an ending in a dead end, which is after the game: whether that dead end held a chest.
+    const chestRule = ended.chestRule ?? null;
+    if (chestRule !== null) {
+      const chest = game.chest ?? null;
+      view.terminal.chestRule = chestRule;
+      view.terminal.chest =
+        chest === null
+          ? null
+          : { cell: xy(chest.cell), rewardBps: chest.rewardBps, points: chest.points.toString() };
+    }
   }
   return view;
+}
+
+/** `GET /api/points/:address`. An address without awards has an empty account. */
+export function toPointsResponse(address: Hex, account: LedgerAccount | null): PointsResponse {
+  const awards = account === null ? [] : account.awards.slice(-POINTS_RECENT_LIMIT).reverse();
+  return {
+    address,
+    totalPoints: (account?.totalPoints ?? 0n).toString(),
+    awardCount: account?.awards.length ?? 0,
+    awards: awards.map((award) => ({
+      gameId: award.gameId,
+      n: award.n,
+      cell: { x: award.cell % award.n, y: Math.floor(award.cell / award.n) },
+      betWei: award.betWei.toString(),
+      rewardBps: award.rewardBps,
+      points: award.points.toString(),
+      chestRule: award.chestRule,
+      atSec: award.atSec,
+    })),
+    cashValue: false,
+  };
 }
 
 export function toTicketResponse(game: Game, signature: Hex): TicketResponse {
@@ -133,5 +168,6 @@ export function toConfigResponse(p: {
     settleWindowSec: table.timing.settleWindowSec,
     chainNowSec: p.nowSec,
     devWallet: p.devWallet,
+    chest: chestConfig(),
   };
 }

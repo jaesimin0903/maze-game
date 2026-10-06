@@ -8,6 +8,7 @@
 import {
   mazeBetDomain,
   tableHash as hashOfTable,
+  type ChestDraw,
   type Hex,
   type Maze,
   type TuningTable,
@@ -46,6 +47,8 @@ export interface ContainerDeps {
   mazeFactory?: (finalSeed: Hex, n: number) => Maze;
   random32?: () => Hex;
   mazePadMs?: number;
+  /** The chest draws of a cell. Defaults to the current chest rule (tests place chests at will). */
+  chestDraw?: (finalSeed: Hex, cell: number) => ChestDraw;
   /** False: the server never reads the contract's game events. Default true. */
   watcher?: boolean;
   /** False: no polling loop; passes run only when `worker.tick()` is called. Default true. */
@@ -218,6 +221,7 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
     mazeFactory: deps.mazeFactory,
     random32: deps.random32,
     mazePadMs: deps.mazePadMs,
+    chestDraw: deps.chestDraw,
     // The seed hook exists only while test hooks are on.
     testSeedSecret: config.testHooks ? config.testSeedSecret : null,
   });

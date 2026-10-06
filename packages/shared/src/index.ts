@@ -9,3 +9,4 @@ export * from './economics';
 export * from './tuning';
 export * from './replay';
 export * from './verify';
+export * from './chest';

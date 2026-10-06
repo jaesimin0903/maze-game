@@ -1,7 +1,7 @@
 'use client';
 
 import type { Hex } from '@maze/shared';
-import { formatEth } from '../format';
+import { formatEth, formatPercent, formatPoints } from '../format';
 import type { Busy, GameResult, ResultOutcome } from '../use-game';
 
 interface Props {
@@ -62,6 +62,35 @@ export function ResultPanel({
         {TITLE[result.outcome]}
       </h2>
       <p className="result-detail">{DETAIL[result.outcome]}</p>
+      {result.chest !== undefined && result.chest !== null && (
+        <div
+          className="result-chest"
+          data-testid="chest-found"
+          data-points={result.chest.points}
+          data-reward-bps={result.chest.rewardBps}
+          data-x={result.chest.cell.x}
+          data-y={result.chest.cell.y}
+        >
+          <p className="result-chest-title">
+            보물상자 발견: +{formatPoints(result.chest.points)} 포인트
+          </p>
+          <p className="result-chest-figure">
+            <strong className="figure" data-testid="chest-points" data-points={result.chest.points}>
+              +{formatPoints(result.chest.points)} 포인트
+            </strong>
+            <span className="money-sub">베팅액의 {formatPercent(result.chest.rewardBps)}</span>
+          </p>
+          <p className="result-chest-note" data-testid="chest-no-cash-value">
+            현금 가치 없음. 포인트는 이 지갑 주소에 쌓이며 돈으로 바꾸거나 출금할 수 없습니다. 받는
+            금액은 위 막다른 칸 규칙 그대로입니다.
+          </p>
+        </div>
+      )}
+      {result.chest === null && (
+        <p className="result-chest-none" data-testid="chest-none">
+          이 막다른 칸에는 보물상자가 없었습니다.
+        </p>
+      )}
       <p className="result-pay">
         <span className="money-label">받는 금액</span>
         <strong

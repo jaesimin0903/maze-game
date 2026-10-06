@@ -1,0 +1,2031 @@
+{
+  "chestRule": 1,
+  "note": "Fixed vectors of chest rule v1. h = sha256(CHEST_TAG || finalSeed || uint16be(cell)); placed = uint128be(h[0..16]) mod 10000 < 3000; rewardBps = 1000 + uint128be(h[16..32]) mod 2001; a chest site is a cell with exactly one opening that is neither the start (0) nor the exit (n*n-1); points = floor(bet * rewardBps / (10000 * 10^12)). Produced by test/vectors/make-chest-vectors.ts, an independent reference implementation (node:crypto, tag from `cast keccak \"MazeBet.chest.v1\"`, dead ends counted from the open masks of maze-v1.json), not by the module under test.",
+  "chestTag": "0x3c8b942a79c7fa68d1656db6f4b84d2924c6d9c8748cf22e58e2f7e7f8c9b50e",
+  "bets": [
+    "1000000000000000",
+    "12345678901234567",
+    "100000000000000000"
+  ],
+  "raw": [
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 0,
+      "placed": false,
+      "rewardBps": 1724,
+      "hash": "0xab3a90ae02cdde34a3e9158e10e29ac2b73d354150ac2fd99d053642665e37b1"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 1,
+      "placed": true,
+      "rewardBps": 1711,
+      "hash": "0x5955207f0b4d0ae8f72f0d477ac0bb01ee473a386eb0cace1046b64aabdbb7c8"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 24,
+      "placed": true,
+      "rewardBps": 1776,
+      "hash": "0x56beaf5b6c70ae6a4357e5c911560840d05a67e4199975cad5cfc5ff6190bbab"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 255,
+      "placed": false,
+      "rewardBps": 2346,
+      "hash": "0xbb1abeb1c161b6628b3de06d0c56e740f3307eb8a2a736a7e4a06c08fa5fb9b8"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 256,
+      "placed": false,
+      "rewardBps": 1481,
+      "hash": "0xebfbcb4aa348e4a6aa21a7da8917ed0d7e21919e5ff81c52e3387c6c983429d2"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 4097,
+      "placed": false,
+      "rewardBps": 1113,
+      "hash": "0xffeaefc24817b6bec64e34182c7704be19abb8a51fbae965b205f26bbbae1c01"
+    },
+    {
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "cell": 65535,
+      "placed": true,
+      "rewardBps": 1952,
+      "hash": "0x2934026c33c8c8393996a615f15cb6d6c4d09ba9d7c7c215ebda5f22489a71c0"
+    }
+  ],
+  "games": [
+    {
+      "mazeVector": 1,
+      "n": 5,
+      "finalSeed": "0x223f7a679204a3bdde9e4596cd7b927716b477b00737c5b00d2c0fa20c4937bb",
+      "sites": [
+        {
+          "cell": 8,
+          "placed": false,
+          "rewardBps": 2427
+        },
+        {
+          "cell": 13,
+          "placed": false,
+          "rewardBps": 2975
+        },
+        {
+          "cell": 21,
+          "placed": false,
+          "rewardBps": 1611
+        },
+        {
+          "cell": 22,
+          "placed": false,
+          "rewardBps": 1695
+        }
+      ],
+      "chests": [],
+      "points": []
+    },
+    {
+      "mazeVector": 2,
+      "n": 5,
+      "finalSeed": "0x00c4767a9cd76849e218c19b01bbe6078b3eb6922e552df3d6d2092eb8f212ec",
+      "sites": [
+        {
+          "cell": 1,
+          "placed": false,
+          "rewardBps": 1981
+        },
+        {
+          "cell": 4,
+          "placed": true,
+          "rewardBps": 1991
+        },
+        {
+          "cell": 11,
+          "placed": false,
+          "rewardBps": 1433
+        },
+        {
+          "cell": 17,
+          "placed": false,
+          "rewardBps": 1127
+        },
+        {
+          "cell": 19,
+          "placed": true,
+          "rewardBps": 2240
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 1404
+        }
+      ],
+      "chests": [
+        {
+          "cell": 4,
+          "rewardBps": 1991
+        },
+        {
+          "cell": 19,
+          "rewardBps": 2240
+        }
+      ],
+      "points": [
+        {
+          "cell": 4,
+          "byBet": [
+            "199",
+            "2458",
+            "19910"
+          ]
+        },
+        {
+          "cell": 19,
+          "byBet": [
+            "224",
+            "2765",
+            "22400"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 3,
+      "n": 5,
+      "finalSeed": "0x6b3c5e2120a2758d3545c1a3e02c32a3e0256b18bc0eb66ffa6b4cbaaa4df71e",
+      "sites": [
+        {
+          "cell": 4,
+          "placed": true,
+          "rewardBps": 1324
+        },
+        {
+          "cell": 5,
+          "placed": false,
+          "rewardBps": 1924
+        },
+        {
+          "cell": 6,
+          "placed": true,
+          "rewardBps": 2422
+        },
+        {
+          "cell": 9,
+          "placed": false,
+          "rewardBps": 2886
+        },
+        {
+          "cell": 13,
+          "placed": false,
+          "rewardBps": 2913
+        },
+        {
+          "cell": 14,
+          "placed": false,
+          "rewardBps": 2493
+        },
+        {
+          "cell": 18,
+          "placed": false,
+          "rewardBps": 2377
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 1072
+        }
+      ],
+      "chests": [
+        {
+          "cell": 4,
+          "rewardBps": 1324
+        },
+        {
+          "cell": 6,
+          "rewardBps": 2422
+        }
+      ],
+      "points": [
+        {
+          "cell": 4,
+          "byBet": [
+            "132",
+            "1634",
+            "13240"
+          ]
+        },
+        {
+          "cell": 6,
+          "byBet": [
+            "242",
+            "2990",
+            "24220"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 4,
+      "n": 7,
+      "finalSeed": "0x14669cccc2cdf32db33f2bcb44ee5e3d7c1bb58ffd4f56da3497b4db70e76769",
+      "sites": [
+        {
+          "cell": 5,
+          "placed": false,
+          "rewardBps": 2915
+        },
+        {
+          "cell": 7,
+          "placed": false,
+          "rewardBps": 2190
+        },
+        {
+          "cell": 10,
+          "placed": false,
+          "rewardBps": 2639
+        },
+        {
+          "cell": 12,
+          "placed": false,
+          "rewardBps": 1397
+        },
+        {
+          "cell": 14,
+          "placed": true,
+          "rewardBps": 2391
+        },
+        {
+          "cell": 16,
+          "placed": false,
+          "rewardBps": 1590
+        },
+        {
+          "cell": 17,
+          "placed": true,
+          "rewardBps": 1868
+        },
+        {
+          "cell": 31,
+          "placed": false,
+          "rewardBps": 1002
+        },
+        {
+          "cell": 34,
+          "placed": false,
+          "rewardBps": 1367
+        },
+        {
+          "cell": 35,
+          "placed": true,
+          "rewardBps": 2726
+        },
+        {
+          "cell": 42,
+          "placed": true,
+          "rewardBps": 2297
+        },
+        {
+          "cell": 44,
+          "placed": true,
+          "rewardBps": 2788
+        },
+        {
+          "cell": 47,
+          "placed": false,
+          "rewardBps": 1402
+        }
+      ],
+      "chests": [
+        {
+          "cell": 14,
+          "rewardBps": 2391
+        },
+        {
+          "cell": 17,
+          "rewardBps": 1868
+        },
+        {
+          "cell": 35,
+          "rewardBps": 2726
+        },
+        {
+          "cell": 42,
+          "rewardBps": 2297
+        },
+        {
+          "cell": 44,
+          "rewardBps": 2788
+        }
+      ],
+      "points": [
+        {
+          "cell": 14,
+          "byBet": [
+            "239",
+            "2951",
+            "23910"
+          ]
+        },
+        {
+          "cell": 17,
+          "byBet": [
+            "186",
+            "2306",
+            "18680"
+          ]
+        },
+        {
+          "cell": 35,
+          "byBet": [
+            "272",
+            "3365",
+            "27260"
+          ]
+        },
+        {
+          "cell": 42,
+          "byBet": [
+            "229",
+            "2835",
+            "22970"
+          ]
+        },
+        {
+          "cell": 44,
+          "byBet": [
+            "278",
+            "3441",
+            "27880"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 5,
+      "n": 7,
+      "finalSeed": "0x856cf86857538fc8c8ec024adfe86d519f8cff255f2e621cd0f27cd4e2d6be13",
+      "sites": [
+        {
+          "cell": 7,
+          "placed": true,
+          "rewardBps": 2422
+        },
+        {
+          "cell": 10,
+          "placed": false,
+          "rewardBps": 2073
+        },
+        {
+          "cell": 11,
+          "placed": false,
+          "rewardBps": 1026
+        },
+        {
+          "cell": 12,
+          "placed": true,
+          "rewardBps": 2112
+        },
+        {
+          "cell": 22,
+          "placed": false,
+          "rewardBps": 2312
+        },
+        {
+          "cell": 23,
+          "placed": false,
+          "rewardBps": 1172
+        },
+        {
+          "cell": 24,
+          "placed": false,
+          "rewardBps": 2090
+        },
+        {
+          "cell": 25,
+          "placed": false,
+          "rewardBps": 2908
+        },
+        {
+          "cell": 35,
+          "placed": false,
+          "rewardBps": 1611
+        },
+        {
+          "cell": 38,
+          "placed": false,
+          "rewardBps": 2185
+        },
+        {
+          "cell": 40,
+          "placed": false,
+          "rewardBps": 1583
+        },
+        {
+          "cell": 42,
+          "placed": true,
+          "rewardBps": 2604
+        },
+        {
+          "cell": 45,
+          "placed": false,
+          "rewardBps": 1914
+        }
+      ],
+      "chests": [
+        {
+          "cell": 7,
+          "rewardBps": 2422
+        },
+        {
+          "cell": 12,
+          "rewardBps": 2112
+        },
+        {
+          "cell": 42,
+          "rewardBps": 2604
+        }
+      ],
+      "points": [
+        {
+          "cell": 7,
+          "byBet": [
+            "242",
+            "2990",
+            "24220"
+          ]
+        },
+        {
+          "cell": 12,
+          "byBet": [
+            "211",
+            "2607",
+            "21120"
+          ]
+        },
+        {
+          "cell": 42,
+          "byBet": [
+            "260",
+            "3214",
+            "26040"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 6,
+      "n": 7,
+      "finalSeed": "0x0616d2d29cba123f4368c802e324f3c67acf29b9690b67946b35027cc87352a3",
+      "sites": [
+        {
+          "cell": 1,
+          "placed": true,
+          "rewardBps": 1354
+        },
+        {
+          "cell": 2,
+          "placed": false,
+          "rewardBps": 2640
+        },
+        {
+          "cell": 3,
+          "placed": false,
+          "rewardBps": 2031
+        },
+        {
+          "cell": 5,
+          "placed": true,
+          "rewardBps": 2470
+        },
+        {
+          "cell": 6,
+          "placed": true,
+          "rewardBps": 1836
+        },
+        {
+          "cell": 10,
+          "placed": false,
+          "rewardBps": 2161
+        },
+        {
+          "cell": 18,
+          "placed": false,
+          "rewardBps": 2338
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 1779
+        },
+        {
+          "cell": 23,
+          "placed": true,
+          "rewardBps": 1622
+        },
+        {
+          "cell": 25,
+          "placed": true,
+          "rewardBps": 2129
+        },
+        {
+          "cell": 27,
+          "placed": true,
+          "rewardBps": 2619
+        },
+        {
+          "cell": 28,
+          "placed": false,
+          "rewardBps": 2792
+        },
+        {
+          "cell": 30,
+          "placed": false,
+          "rewardBps": 2552
+        },
+        {
+          "cell": 32,
+          "placed": true,
+          "rewardBps": 1286
+        },
+        {
+          "cell": 39,
+          "placed": false,
+          "rewardBps": 2386
+        },
+        {
+          "cell": 40,
+          "placed": false,
+          "rewardBps": 1285
+        },
+        {
+          "cell": 42,
+          "placed": false,
+          "rewardBps": 2698
+        },
+        {
+          "cell": 43,
+          "placed": false,
+          "rewardBps": 1535
+        }
+      ],
+      "chests": [
+        {
+          "cell": 1,
+          "rewardBps": 1354
+        },
+        {
+          "cell": 5,
+          "rewardBps": 2470
+        },
+        {
+          "cell": 6,
+          "rewardBps": 1836
+        },
+        {
+          "cell": 23,
+          "rewardBps": 1622
+        },
+        {
+          "cell": 25,
+          "rewardBps": 2129
+        },
+        {
+          "cell": 27,
+          "rewardBps": 2619
+        },
+        {
+          "cell": 32,
+          "rewardBps": 1286
+        }
+      ],
+      "points": [
+        {
+          "cell": 1,
+          "byBet": [
+            "135",
+            "1671",
+            "13540"
+          ]
+        },
+        {
+          "cell": 5,
+          "byBet": [
+            "247",
+            "3049",
+            "24700"
+          ]
+        },
+        {
+          "cell": 6,
+          "byBet": [
+            "183",
+            "2266",
+            "18360"
+          ]
+        },
+        {
+          "cell": 23,
+          "byBet": [
+            "162",
+            "2002",
+            "16220"
+          ]
+        },
+        {
+          "cell": 25,
+          "byBet": [
+            "212",
+            "2628",
+            "21290"
+          ]
+        },
+        {
+          "cell": 27,
+          "byBet": [
+            "261",
+            "3233",
+            "26190"
+          ]
+        },
+        {
+          "cell": 32,
+          "byBet": [
+            "128",
+            "1587",
+            "12860"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 7,
+      "n": 10,
+      "finalSeed": "0xcd821897a1a81fef32bf588316495a086d690b717b9279617ec015e8de30af6b",
+      "sites": [
+        {
+          "cell": 3,
+          "placed": true,
+          "rewardBps": 1427
+        },
+        {
+          "cell": 9,
+          "placed": false,
+          "rewardBps": 1476
+        },
+        {
+          "cell": 10,
+          "placed": false,
+          "rewardBps": 1200
+        },
+        {
+          "cell": 16,
+          "placed": true,
+          "rewardBps": 2289
+        },
+        {
+          "cell": 19,
+          "placed": false,
+          "rewardBps": 2454
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 2382
+        },
+        {
+          "cell": 23,
+          "placed": false,
+          "rewardBps": 2939
+        },
+        {
+          "cell": 24,
+          "placed": true,
+          "rewardBps": 1688
+        },
+        {
+          "cell": 31,
+          "placed": false,
+          "rewardBps": 1215
+        },
+        {
+          "cell": 32,
+          "placed": false,
+          "rewardBps": 1346
+        },
+        {
+          "cell": 33,
+          "placed": false,
+          "rewardBps": 2986
+        },
+        {
+          "cell": 36,
+          "placed": true,
+          "rewardBps": 2602
+        },
+        {
+          "cell": 37,
+          "placed": false,
+          "rewardBps": 1790
+        },
+        {
+          "cell": 53,
+          "placed": false,
+          "rewardBps": 1022
+        },
+        {
+          "cell": 55,
+          "placed": true,
+          "rewardBps": 1607
+        },
+        {
+          "cell": 57,
+          "placed": false,
+          "rewardBps": 2065
+        },
+        {
+          "cell": 58,
+          "placed": false,
+          "rewardBps": 1736
+        },
+        {
+          "cell": 63,
+          "placed": false,
+          "rewardBps": 2813
+        },
+        {
+          "cell": 68,
+          "placed": true,
+          "rewardBps": 2473
+        },
+        {
+          "cell": 71,
+          "placed": false,
+          "rewardBps": 2714
+        },
+        {
+          "cell": 75,
+          "placed": false,
+          "rewardBps": 2149
+        },
+        {
+          "cell": 76,
+          "placed": false,
+          "rewardBps": 1661
+        },
+        {
+          "cell": 78,
+          "placed": false,
+          "rewardBps": 1070
+        },
+        {
+          "cell": 85,
+          "placed": true,
+          "rewardBps": 1618
+        },
+        {
+          "cell": 88,
+          "placed": false,
+          "rewardBps": 2906
+        },
+        {
+          "cell": 90,
+          "placed": true,
+          "rewardBps": 1994
+        },
+        {
+          "cell": 91,
+          "placed": false,
+          "rewardBps": 2579
+        },
+        {
+          "cell": 92,
+          "placed": false,
+          "rewardBps": 2919
+        }
+      ],
+      "chests": [
+        {
+          "cell": 3,
+          "rewardBps": 1427
+        },
+        {
+          "cell": 16,
+          "rewardBps": 2289
+        },
+        {
+          "cell": 24,
+          "rewardBps": 1688
+        },
+        {
+          "cell": 36,
+          "rewardBps": 2602
+        },
+        {
+          "cell": 55,
+          "rewardBps": 1607
+        },
+        {
+          "cell": 68,
+          "rewardBps": 2473
+        },
+        {
+          "cell": 85,
+          "rewardBps": 1618
+        },
+        {
+          "cell": 90,
+          "rewardBps": 1994
+        }
+      ],
+      "points": [
+        {
+          "cell": 3,
+          "byBet": [
+            "142",
+            "1761",
+            "14270"
+          ]
+        },
+        {
+          "cell": 16,
+          "byBet": [
+            "228",
+            "2825",
+            "22890"
+          ]
+        },
+        {
+          "cell": 24,
+          "byBet": [
+            "168",
+            "2083",
+            "16880"
+          ]
+        },
+        {
+          "cell": 36,
+          "byBet": [
+            "260",
+            "3212",
+            "26020"
+          ]
+        },
+        {
+          "cell": 55,
+          "byBet": [
+            "160",
+            "1983",
+            "16070"
+          ]
+        },
+        {
+          "cell": 68,
+          "byBet": [
+            "247",
+            "3053",
+            "24730"
+          ]
+        },
+        {
+          "cell": 85,
+          "byBet": [
+            "161",
+            "1997",
+            "16180"
+          ]
+        },
+        {
+          "cell": 90,
+          "byBet": [
+            "199",
+            "2461",
+            "19940"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 8,
+      "n": 10,
+      "finalSeed": "0x095e0ad850772d42be82f4e40d0418184d06d05a6b1ffe6ee8943a99c2396539",
+      "sites": [
+        {
+          "cell": 3,
+          "placed": false,
+          "rewardBps": 2985
+        },
+        {
+          "cell": 9,
+          "placed": false,
+          "rewardBps": 2791
+        },
+        {
+          "cell": 15,
+          "placed": false,
+          "rewardBps": 1436
+        },
+        {
+          "cell": 16,
+          "placed": false,
+          "rewardBps": 2918
+        },
+        {
+          "cell": 17,
+          "placed": false,
+          "rewardBps": 1961
+        },
+        {
+          "cell": 19,
+          "placed": false,
+          "rewardBps": 2697
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 1079
+        },
+        {
+          "cell": 21,
+          "placed": true,
+          "rewardBps": 2590
+        },
+        {
+          "cell": 24,
+          "placed": true,
+          "rewardBps": 2542
+        },
+        {
+          "cell": 30,
+          "placed": true,
+          "rewardBps": 2586
+        },
+        {
+          "cell": 35,
+          "placed": false,
+          "rewardBps": 2912
+        },
+        {
+          "cell": 38,
+          "placed": true,
+          "rewardBps": 1810
+        },
+        {
+          "cell": 40,
+          "placed": false,
+          "rewardBps": 2585
+        },
+        {
+          "cell": 41,
+          "placed": true,
+          "rewardBps": 2900
+        },
+        {
+          "cell": 54,
+          "placed": true,
+          "rewardBps": 1806
+        },
+        {
+          "cell": 55,
+          "placed": false,
+          "rewardBps": 1767
+        },
+        {
+          "cell": 56,
+          "placed": true,
+          "rewardBps": 2206
+        },
+        {
+          "cell": 57,
+          "placed": false,
+          "rewardBps": 1215
+        },
+        {
+          "cell": 64,
+          "placed": false,
+          "rewardBps": 2219
+        },
+        {
+          "cell": 69,
+          "placed": true,
+          "rewardBps": 1960
+        },
+        {
+          "cell": 71,
+          "placed": false,
+          "rewardBps": 1347
+        },
+        {
+          "cell": 74,
+          "placed": false,
+          "rewardBps": 1486
+        },
+        {
+          "cell": 75,
+          "placed": false,
+          "rewardBps": 1222
+        },
+        {
+          "cell": 87,
+          "placed": false,
+          "rewardBps": 1985
+        },
+        {
+          "cell": 94,
+          "placed": false,
+          "rewardBps": 1266
+        },
+        {
+          "cell": 95,
+          "placed": false,
+          "rewardBps": 2942
+        },
+        {
+          "cell": 97,
+          "placed": false,
+          "rewardBps": 1413
+        },
+        {
+          "cell": 98,
+          "placed": false,
+          "rewardBps": 1360
+        }
+      ],
+      "chests": [
+        {
+          "cell": 21,
+          "rewardBps": 2590
+        },
+        {
+          "cell": 24,
+          "rewardBps": 2542
+        },
+        {
+          "cell": 30,
+          "rewardBps": 2586
+        },
+        {
+          "cell": 38,
+          "rewardBps": 1810
+        },
+        {
+          "cell": 41,
+          "rewardBps": 2900
+        },
+        {
+          "cell": 54,
+          "rewardBps": 1806
+        },
+        {
+          "cell": 56,
+          "rewardBps": 2206
+        },
+        {
+          "cell": 69,
+          "rewardBps": 1960
+        }
+      ],
+      "points": [
+        {
+          "cell": 21,
+          "byBet": [
+            "259",
+            "3197",
+            "25900"
+          ]
+        },
+        {
+          "cell": 24,
+          "byBet": [
+            "254",
+            "3138",
+            "25420"
+          ]
+        },
+        {
+          "cell": 30,
+          "byBet": [
+            "258",
+            "3192",
+            "25860"
+          ]
+        },
+        {
+          "cell": 38,
+          "byBet": [
+            "181",
+            "2234",
+            "18100"
+          ]
+        },
+        {
+          "cell": 41,
+          "byBet": [
+            "290",
+            "3580",
+            "29000"
+          ]
+        },
+        {
+          "cell": 54,
+          "byBet": [
+            "180",
+            "2229",
+            "18060"
+          ]
+        },
+        {
+          "cell": 56,
+          "byBet": [
+            "220",
+            "2723",
+            "22060"
+          ]
+        },
+        {
+          "cell": 69,
+          "byBet": [
+            "196",
+            "2419",
+            "19600"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 9,
+      "n": 10,
+      "finalSeed": "0x22410e221376d54afe57bd9e257ed7b7a03e8e41d6ca6e582e1cb81b969aaf95",
+      "sites": [
+        {
+          "cell": 2,
+          "placed": true,
+          "rewardBps": 1303
+        },
+        {
+          "cell": 7,
+          "placed": false,
+          "rewardBps": 1539
+        },
+        {
+          "cell": 9,
+          "placed": true,
+          "rewardBps": 2677
+        },
+        {
+          "cell": 14,
+          "placed": false,
+          "rewardBps": 2787
+        },
+        {
+          "cell": 17,
+          "placed": true,
+          "rewardBps": 2982
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 1185
+        },
+        {
+          "cell": 24,
+          "placed": true,
+          "rewardBps": 1561
+        },
+        {
+          "cell": 28,
+          "placed": false,
+          "rewardBps": 2139
+        },
+        {
+          "cell": 32,
+          "placed": false,
+          "rewardBps": 1116
+        },
+        {
+          "cell": 36,
+          "placed": true,
+          "rewardBps": 2557
+        },
+        {
+          "cell": 41,
+          "placed": false,
+          "rewardBps": 2789
+        },
+        {
+          "cell": 47,
+          "placed": false,
+          "rewardBps": 1907
+        },
+        {
+          "cell": 55,
+          "placed": false,
+          "rewardBps": 2117
+        },
+        {
+          "cell": 56,
+          "placed": false,
+          "rewardBps": 2624
+        },
+        {
+          "cell": 62,
+          "placed": false,
+          "rewardBps": 1351
+        },
+        {
+          "cell": 67,
+          "placed": false,
+          "rewardBps": 2585
+        },
+        {
+          "cell": 68,
+          "placed": true,
+          "rewardBps": 1809
+        },
+        {
+          "cell": 70,
+          "placed": false,
+          "rewardBps": 2262
+        },
+        {
+          "cell": 72,
+          "placed": false,
+          "rewardBps": 2278
+        },
+        {
+          "cell": 74,
+          "placed": false,
+          "rewardBps": 2130
+        },
+        {
+          "cell": 75,
+          "placed": true,
+          "rewardBps": 1125
+        },
+        {
+          "cell": 82,
+          "placed": false,
+          "rewardBps": 1527
+        },
+        {
+          "cell": 83,
+          "placed": false,
+          "rewardBps": 2663
+        },
+        {
+          "cell": 85,
+          "placed": true,
+          "rewardBps": 1734
+        },
+        {
+          "cell": 86,
+          "placed": false,
+          "rewardBps": 1550
+        },
+        {
+          "cell": 92,
+          "placed": false,
+          "rewardBps": 2809
+        },
+        {
+          "cell": 98,
+          "placed": true,
+          "rewardBps": 2098
+        }
+      ],
+      "chests": [
+        {
+          "cell": 2,
+          "rewardBps": 1303
+        },
+        {
+          "cell": 9,
+          "rewardBps": 2677
+        },
+        {
+          "cell": 17,
+          "rewardBps": 2982
+        },
+        {
+          "cell": 24,
+          "rewardBps": 1561
+        },
+        {
+          "cell": 36,
+          "rewardBps": 2557
+        },
+        {
+          "cell": 68,
+          "rewardBps": 1809
+        },
+        {
+          "cell": 75,
+          "rewardBps": 1125
+        },
+        {
+          "cell": 85,
+          "rewardBps": 1734
+        },
+        {
+          "cell": 98,
+          "rewardBps": 2098
+        }
+      ],
+      "points": [
+        {
+          "cell": 2,
+          "byBet": [
+            "130",
+            "1608",
+            "13030"
+          ]
+        },
+        {
+          "cell": 9,
+          "byBet": [
+            "267",
+            "3304",
+            "26770"
+          ]
+        },
+        {
+          "cell": 17,
+          "byBet": [
+            "298",
+            "3681",
+            "29820"
+          ]
+        },
+        {
+          "cell": 24,
+          "byBet": [
+            "156",
+            "1927",
+            "15610"
+          ]
+        },
+        {
+          "cell": 36,
+          "byBet": [
+            "255",
+            "3156",
+            "25570"
+          ]
+        },
+        {
+          "cell": 68,
+          "byBet": [
+            "180",
+            "2233",
+            "18090"
+          ]
+        },
+        {
+          "cell": 75,
+          "byBet": [
+            "112",
+            "1388",
+            "11250"
+          ]
+        },
+        {
+          "cell": 85,
+          "byBet": [
+            "173",
+            "2140",
+            "17340"
+          ]
+        },
+        {
+          "cell": 98,
+          "byBet": [
+            "209",
+            "2590",
+            "20980"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 10,
+      "n": 9,
+      "finalSeed": "0x6847ea0738288f9ab1fbfafb709295f11dda1754783f754cfaba4d02e5cb3a72",
+      "sites": [
+        {
+          "cell": 5,
+          "placed": false,
+          "rewardBps": 2088
+        },
+        {
+          "cell": 6,
+          "placed": true,
+          "rewardBps": 1418
+        },
+        {
+          "cell": 11,
+          "placed": false,
+          "rewardBps": 1631
+        },
+        {
+          "cell": 15,
+          "placed": true,
+          "rewardBps": 2982
+        },
+        {
+          "cell": 18,
+          "placed": false,
+          "rewardBps": 1159
+        },
+        {
+          "cell": 22,
+          "placed": true,
+          "rewardBps": 1407
+        },
+        {
+          "cell": 24,
+          "placed": false,
+          "rewardBps": 1880
+        },
+        {
+          "cell": 26,
+          "placed": false,
+          "rewardBps": 2629
+        },
+        {
+          "cell": 28,
+          "placed": false,
+          "rewardBps": 2820
+        },
+        {
+          "cell": 29,
+          "placed": false,
+          "rewardBps": 2368
+        },
+        {
+          "cell": 32,
+          "placed": true,
+          "rewardBps": 1679
+        },
+        {
+          "cell": 33,
+          "placed": false,
+          "rewardBps": 1142
+        },
+        {
+          "cell": 45,
+          "placed": false,
+          "rewardBps": 2056
+        },
+        {
+          "cell": 49,
+          "placed": false,
+          "rewardBps": 2599
+        },
+        {
+          "cell": 50,
+          "placed": false,
+          "rewardBps": 2820
+        },
+        {
+          "cell": 53,
+          "placed": false,
+          "rewardBps": 2039
+        },
+        {
+          "cell": 59,
+          "placed": true,
+          "rewardBps": 2390
+        },
+        {
+          "cell": 62,
+          "placed": false,
+          "rewardBps": 1287
+        },
+        {
+          "cell": 63,
+          "placed": true,
+          "rewardBps": 1626
+        },
+        {
+          "cell": 72,
+          "placed": false,
+          "rewardBps": 1940
+        },
+        {
+          "cell": 74,
+          "placed": false,
+          "rewardBps": 2189
+        },
+        {
+          "cell": 76,
+          "placed": true,
+          "rewardBps": 1681
+        },
+        {
+          "cell": 78,
+          "placed": false,
+          "rewardBps": 1485
+        }
+      ],
+      "chests": [
+        {
+          "cell": 6,
+          "rewardBps": 1418
+        },
+        {
+          "cell": 15,
+          "rewardBps": 2982
+        },
+        {
+          "cell": 22,
+          "rewardBps": 1407
+        },
+        {
+          "cell": 32,
+          "rewardBps": 1679
+        },
+        {
+          "cell": 59,
+          "rewardBps": 2390
+        },
+        {
+          "cell": 63,
+          "rewardBps": 1626
+        },
+        {
+          "cell": 76,
+          "rewardBps": 1681
+        }
+      ],
+      "points": [
+        {
+          "cell": 6,
+          "byBet": [
+            "141",
+            "1750",
+            "14180"
+          ]
+        },
+        {
+          "cell": 15,
+          "byBet": [
+            "298",
+            "3681",
+            "29820"
+          ]
+        },
+        {
+          "cell": 22,
+          "byBet": [
+            "140",
+            "1737",
+            "14070"
+          ]
+        },
+        {
+          "cell": 32,
+          "byBet": [
+            "167",
+            "2072",
+            "16790"
+          ]
+        },
+        {
+          "cell": 59,
+          "byBet": [
+            "239",
+            "2950",
+            "23900"
+          ]
+        },
+        {
+          "cell": 63,
+          "byBet": [
+            "162",
+            "2007",
+            "16260"
+          ]
+        },
+        {
+          "cell": 76,
+          "byBet": [
+            "168",
+            "2075",
+            "16810"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 11,
+      "n": 9,
+      "finalSeed": "0xec549e81d638e95a753f86f4b2cd773e80cf3df7dc78f3eb1d8840b5cca38c83",
+      "sites": [
+        {
+          "cell": 4,
+          "placed": false,
+          "rewardBps": 2353
+        },
+        {
+          "cell": 7,
+          "placed": false,
+          "rewardBps": 1627
+        },
+        {
+          "cell": 8,
+          "placed": false,
+          "rewardBps": 1358
+        },
+        {
+          "cell": 9,
+          "placed": false,
+          "rewardBps": 2416
+        },
+        {
+          "cell": 13,
+          "placed": true,
+          "rewardBps": 2297
+        },
+        {
+          "cell": 15,
+          "placed": false,
+          "rewardBps": 1673
+        },
+        {
+          "cell": 16,
+          "placed": true,
+          "rewardBps": 1500
+        },
+        {
+          "cell": 18,
+          "placed": true,
+          "rewardBps": 1862
+        },
+        {
+          "cell": 20,
+          "placed": false,
+          "rewardBps": 1120
+        },
+        {
+          "cell": 22,
+          "placed": false,
+          "rewardBps": 1014
+        },
+        {
+          "cell": 27,
+          "placed": false,
+          "rewardBps": 2254
+        },
+        {
+          "cell": 35,
+          "placed": true,
+          "rewardBps": 1309
+        },
+        {
+          "cell": 38,
+          "placed": false,
+          "rewardBps": 2178
+        },
+        {
+          "cell": 49,
+          "placed": true,
+          "rewardBps": 2265
+        },
+        {
+          "cell": 52,
+          "placed": true,
+          "rewardBps": 1256
+        },
+        {
+          "cell": 54,
+          "placed": false,
+          "rewardBps": 2742
+        },
+        {
+          "cell": 55,
+          "placed": false,
+          "rewardBps": 2210
+        },
+        {
+          "cell": 56,
+          "placed": true,
+          "rewardBps": 2291
+        },
+        {
+          "cell": 60,
+          "placed": false,
+          "rewardBps": 1203
+        },
+        {
+          "cell": 64,
+          "placed": true,
+          "rewardBps": 2768
+        },
+        {
+          "cell": 69,
+          "placed": false,
+          "rewardBps": 2160
+        },
+        {
+          "cell": 75,
+          "placed": false,
+          "rewardBps": 2321
+        }
+      ],
+      "chests": [
+        {
+          "cell": 13,
+          "rewardBps": 2297
+        },
+        {
+          "cell": 16,
+          "rewardBps": 1500
+        },
+        {
+          "cell": 18,
+          "rewardBps": 1862
+        },
+        {
+          "cell": 35,
+          "rewardBps": 1309
+        },
+        {
+          "cell": 49,
+          "rewardBps": 2265
+        },
+        {
+          "cell": 52,
+          "rewardBps": 1256
+        },
+        {
+          "cell": 56,
+          "rewardBps": 2291
+        },
+        {
+          "cell": 64,
+          "rewardBps": 2768
+        }
+      ],
+      "points": [
+        {
+          "cell": 13,
+          "byBet": [
+            "229",
+            "2835",
+            "22970"
+          ]
+        },
+        {
+          "cell": 16,
+          "byBet": [
+            "150",
+            "1851",
+            "15000"
+          ]
+        },
+        {
+          "cell": 18,
+          "byBet": [
+            "186",
+            "2298",
+            "18620"
+          ]
+        },
+        {
+          "cell": 35,
+          "byBet": [
+            "130",
+            "1616",
+            "13090"
+          ]
+        },
+        {
+          "cell": 49,
+          "byBet": [
+            "226",
+            "2796",
+            "22650"
+          ]
+        },
+        {
+          "cell": 52,
+          "byBet": [
+            "125",
+            "1550",
+            "12560"
+          ]
+        },
+        {
+          "cell": 56,
+          "byBet": [
+            "229",
+            "2828",
+            "22910"
+          ]
+        },
+        {
+          "cell": 64,
+          "byBet": [
+            "276",
+            "3417",
+            "27680"
+          ]
+        }
+      ]
+    },
+    {
+      "mazeVector": 12,
+      "n": 9,
+      "finalSeed": "0xd7c374340b7e8e035d7e14ba1be7ff09259f01f26259feda3086527346b28ba2",
+      "sites": [
+        {
+          "cell": 2,
+          "placed": true,
+          "rewardBps": 2963
+        },
+        {
+          "cell": 7,
+          "placed": false,
+          "rewardBps": 2439
+        },
+        {
+          "cell": 8,
+          "placed": false,
+          "rewardBps": 2788
+        },
+        {
+          "cell": 9,
+          "placed": false,
+          "rewardBps": 1321
+        },
+        {
+          "cell": 19,
+          "placed": false,
+          "rewardBps": 1156
+        },
+        {
+          "cell": 22,
+          "placed": false,
+          "rewardBps": 1081
+        },
+        {
+          "cell": 23,
+          "placed": true,
+          "rewardBps": 2760
+        },
+        {
+          "cell": 24,
+          "placed": false,
+          "rewardBps": 1906
+        },
+        {
+          "cell": 33,
+          "placed": false,
+          "rewardBps": 2682
+        },
+        {
+          "cell": 36,
+          "placed": true,
+          "rewardBps": 2350
+        },
+        {
+          "cell": 44,
+          "placed": false,
+          "rewardBps": 1136
+        },
+        {
+          "cell": 45,
+          "placed": false,
+          "rewardBps": 2926
+        },
+        {
+          "cell": 48,
+          "placed": false,
+          "rewardBps": 2351
+        },
+        {
+          "cell": 51,
+          "placed": false,
+          "rewardBps": 1768
+        },
+        {
+          "cell": 55,
+          "placed": false,
+          "rewardBps": 2862
+        },
+        {
+          "cell": 58,
+          "placed": false,
+          "rewardBps": 1573
+        },
+        {
+          "cell": 60,
+          "placed": false,
+          "rewardBps": 1271
+        },
+        {
+          "cell": 67,
+          "placed": false,
+          "rewardBps": 1011
+        },
+        {
+          "cell": 72,
+          "placed": true,
+          "rewardBps": 1971
+        },
+        {
+          "cell": 74,
+          "placed": false,
+          "rewardBps": 1816
+        },
+        {
+          "cell": 76,
+          "placed": false,
+          "rewardBps": 1157
+        },
+        {
+          "cell": 77,
+          "placed": false,
+          "rewardBps": 2353
+        },
+        {
+          "cell": 78,
+          "placed": true,
+          "rewardBps": 1832
+        },
+        {
+          "cell": 79,
+          "placed": false,
+          "rewardBps": 1135
+        }
+      ],
+      "chests": [
+        {
+          "cell": 2,
+          "rewardBps": 2963
+        },
+        {
+          "cell": 23,
+          "rewardBps": 2760
+        },
+        {
+          "cell": 36,
+          "rewardBps": 2350
+        },
+        {
+          "cell": 72,
+          "rewardBps": 1971
+        },
+        {
+          "cell": 78,
+          "rewardBps": 1832
+        }
+      ],
+      "points": [
+        {
+          "cell": 2,
+          "byBet": [
+            "296",
+            "3658",
+            "29630"
+          ]
+        },
+        {
+          "cell": 23,
+          "byBet": [
+            "276",
+            "3407",
+            "27600"
+          ]
+        },
+        {
+          "cell": 36,
+          "byBet": [
+            "235",
+            "2901",
+            "23500"
+          ]
+        },
+        {
+          "cell": 72,
+          "byBet": [
+            "197",
+            "2433",
+            "19710"
+          ]
+        },
+        {
+          "cell": 78,
+          "byBet": [
+            "183",
+            "2261",
+            "18320"
+          ]
+        }
+      ]
+    }
+  ]
+}

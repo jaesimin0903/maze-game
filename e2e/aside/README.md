@@ -127,8 +127,9 @@ game and waits for the supervisor to bring it back.
 | 09 | `09-exploratory-agent.sh` | advisory, only with `--with-exec`: invariants after a model-driven agent tried to cheat | accounting, owner, signer, table hash | games unreadable without token, no early reveal | none (the plan defines none) |
 | 10 | `10-cli-reclaim.sh` | server killed: a third party reclaims with `scripts/reclaim.sh` | exit 1 `DeadlineNotReached` before, exit 0 after; Reclaimed, sent by #9, player + bet exactly; second reclaim refused; restarted server does not settle | unreachable; after restart reveal reason `reclaimed`, move refused | open page learns `reclaimed` from the chain; verify page after restart |
 | 11 | `11-dev-wallet-gating.sh` | dev wallet offered only when `/api/config` says so, same build | chain 31337, no game created | devWallet false, then true after a restart | option absent and bet disabled; after restart and reload present and connects #2 |
+| 12 | `12-chest.sh` | a planned route into a dead end that holds a treasure chest, middle size: points only, no cash value (`docs/treasure-chest.md`) | outcome 2, payout 0, balance unchanged, reserve back to 0, accounting | config chest rule 1 and `cashValue: false`; nothing about chests in any in-game answer and an empty ledger until the end; terminal chest; `GET /api/points/<player>` award (game, cell, bet, reward, points, rule) and total | nothing chest-like before the last move; `chest-found` with the planned points and "현금 가치 없음", `chest-reveal` on the dead end, `points-balance` updated; verify page: `verify-chest-match` true, `verify-chests` lists the planned chests |
 
-Order: 01 02 03 04 06 07 08 09 11, then the two that move the chain clock, 10 and 05 (05 last).
+Order: 01 02 03 04 06 07 08 09 11 12, then the two that move the chain clock, 10 and 05 (05 last).
 
 Sizes, multipliers and refund tables are read from `/api/config`, so the scenarios follow the
 table that is deployed: 01, 02 and 03 play its smallest, middle and largest size (5×5, 7×7 and
@@ -136,7 +137,10 @@ table that is deployed: 01, 02 and 03 play its smallest, middle and largest size
 
 Routes are planned offline by `plan-moves.ts`: the scenario reads the game id from the page,
 computes the server seed the test seed hook derives from it, rebuilds the maze with
-`@maze/shared` and gets the moves for `exit`, `deadend`, `cashout:<k>`, `junction` or `invalid`.
+`@maze/shared` and gets the moves for `exit`, `deadend`, `cashout:<k>`, `junction`, `invalid` or
+`chest` (the shortest route into a dead end that holds a chest under the shared chest rule, with
+every chest of the maze; the planning itself is `plan-chest.ts`, tested by
+`apps/web/test/server/chest-planner.test.ts`).
 There is no API that hands out a maze. Every scenario also asserts that the seed revealed after
 the game equals the one it planned with. A maze that cannot serve a goal is cashed out at step
 0 and another game is started (up to four).
@@ -155,7 +159,7 @@ the game equals the one it planned with. A maze that cannot serve a goal is cash
 ## Side effects on your browser
 
 - Tabs open in your Aside window and become the active tab while a scenario runs. They show
-  `http://127.0.0.1:3050` to `3061` only. The suite never lists, reads or touches other tabs,
+  `http://127.0.0.1:3050` to `3062` only. The suite never lists, reads or touches other tabs,
   with one exception below.
 - The suite never clicks `wallet-connect`. That button talks to whatever wallet extension the
   browser has; the scenarios use `wallet-dev-option` (Anvil account #2) only. Wallet extensions

@@ -10,6 +10,7 @@ import {
   type GameView,
   type Hex,
   type MoveRequest,
+  type PointsResponse,
   type RevealResponse,
   type TicketResponse,
   type UiSnapshotInput,
@@ -71,6 +72,8 @@ export interface ApiClient {
   /** Resume and polling read. The only response that carries `path`. */
   game(gameId: Hex, token: string): Promise<GameView>;
   reveal(gameId: Hex): Promise<RevealResponse>;
+  /** The points balance and recent chest awards of a wallet address. Points have no cash value. */
+  points(address: Hex): Promise<PointsResponse>;
   postSnapshot(body: UiSnapshotInput): Promise<void>;
 }
 
@@ -134,6 +137,7 @@ export function createApi(
     cashout: (gameId, token, body) => call('POST', gamePath(gameId, '/cashout'), { token, body }),
     game: (gameId, token) => call('GET', gamePath(gameId), { token }),
     reveal: (gameId) => call('GET', gamePath(gameId, '/reveal')),
+    points: (address) => call('GET', `/api/points/${address}`),
     postSnapshot: (body) => call('POST', '/api/test/ui-snapshot', { body, empty: true }),
   };
 }

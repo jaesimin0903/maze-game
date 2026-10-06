@@ -12,6 +12,9 @@ import {
   ERROR_STATUS,
   ONCHAIN_STATUS,
   Outcome,
+  chestAt,
+  chestConfig,
+  chestPoints,
   commitmentOf,
   deriveFinalSeed,
   exitCell,
@@ -33,6 +36,8 @@ import {
   type GameView,
   type Hex,
   type Maze,
+  type PointsAward,
+  type PointsResponse,
   type TuningTable,
   type UiSnapshotInput,
 } from '@maze/shared';
@@ -56,6 +61,12 @@ export const anvilAccount = (index: number) =>
   mnemonicToAccount('test test test test test test test test test test test junk', {
     addressIndex: index,
   });
+
+/** The chest block of `/api/config`. A `FakeWorld` built with it awards chests in dead ends. */
+export const CHEST_CONFIG = chestConfig();
+
+/** The id `FakeWorld` gives the first ticket it issues (its hashes count up from 1). */
+export const firstGameId: Hex = `0x9a3e${'1'.padStart(60, '0')}`;
 
 export function makeConfig(overrides: Partial<ConfigResponse> = {}): ConfigResponse {
   return {
@@ -174,6 +185,8 @@ export class FakeWorld {
 
   readonly games = new Map<Hex, ServerGame>();
   readonly onchain = new Map<Hex, OnchainGame>();
+  /** Chest awards by lower-cased address, oldest first, as the server's ledger keeps them. */
+  readonly awards = new Map<string, PointsAward[]>();
   private counter = 0;
 
   constructor(overrides: Partial<ConfigResponse> = {}) {
@@ -243,6 +256,44 @@ export class FakeWorld {
       signature: SIGNATURE,
       settleTxHash: null,
     };
+    // Like the real server: a dead end is asked about its chest, and only when the game ends there.
+    if (outcome === 2 && !auto && this.config.chest !== undefined) {
+      const cell = g.path[g.path.length - 1];
+      const finalSeed = deriveFinalSeed({ serverSeed: SERVER_SEED, clientSeed: chain.clientSeed, gameId: g.gameId });
+      const chest = chestAt(finalSeed, chain.maze, cell);
+      const xy = { x: cell % g.n, y: Math.floor(cell / g.n) };
+      g.terminal.chestRule = this.config.chest.ruleVersion;
+      g.terminal.chest =
+        chest === null ? null : { cell: xy, rewardBps: chest.rewardBps, points: chestPoints(chain.bet, chest.rewardBps).toString() };
+      if (chest !== null) {
+        const key = g.player.toLowerCase();
+        this.awards.set(key, [
+          ...(this.awards.get(key) ?? []),
+          {
+            gameId: g.gameId,
+            n: g.n,
+            cell: xy,
+            betWei: chain.bet.toString(),
+            rewardBps: chest.rewardBps,
+            points: chestPoints(chain.bet, chest.rewardBps).toString(),
+            chestRule: this.config.chest.ruleVersion,
+            atSec: this.chainNow,
+          },
+        ]);
+      }
+    }
+  }
+
+  /** What `GET /api/points/:address` answers. */
+  pointsOf(address: Hex): PointsResponse {
+    const awards = this.awards.get(address.toLowerCase()) ?? [];
+    return {
+      address,
+      totalPoints: awards.reduce((sum, award) => sum + BigInt(award.points), 0n).toString(),
+      awardCount: awards.length,
+      awards: awards.slice(-20).reverse(),
+      cashValue: false,
+    };
   }
 
   /** What the server's worker does on every block: settlements, then idle cash-outs. */
@@ -292,6 +343,12 @@ export class FakeWorld {
     const body: unknown = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
 
     if (input === '/api/config') return json(200, { ...this.config, chainNowSec: this.chainNow });
+
+    const points = /^\/api\/points\/(0x[0-9a-fA-F]{40})$/.exec(input);
+    if (points) {
+      if (this.config.chest === undefined) return error('NOT_FOUND');
+      return json(200, this.pointsOf(points[1] as Hex));
+    }
 
     if (input === '/api/test/ui-snapshot') {
       if (!this.config.testHooks) return error('NOT_FOUND');

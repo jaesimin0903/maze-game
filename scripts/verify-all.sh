@@ -325,7 +325,15 @@ AC-D1|T-report
 AC-D2|T-report
 AC-I1|T-abi
 AC-I2|T-own
-AC-I3|T-build'
+AC-I3|T-build
+AC-P1|T-shared
+AC-P2|T-shared
+AC-P3|T-web
+AC-P4|T-web
+AC-P5|T-web T-int
+AC-P6|T-web
+AC-P7|T-web T-aside
+AC-P8|T-sim'
 
 # Where the tests of a suite live; empty for suites that are not test suites.
 test_dirs() {

@@ -3,6 +3,7 @@
 
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  chestAt,
   deriveFinalSeed,
   generateMaze,
   mazeBetDomain,
@@ -27,6 +28,7 @@ import { POST as movePost } from '../../app/api/games/[id]/move/route';
 import { GET as revealGet } from '../../app/api/games/[id]/reveal/route';
 import { GET as healthGet } from '../../app/api/health/route';
 import { POST as startPost } from '../../app/api/games/[id]/start/route';
+import { GET as pointsGet } from '../../app/api/points/[address]/route';
 import { GET as snapshotGet, POST as snapshotPost } from '../../app/api/test/ui-snapshot/route';
 import type {
   ChainEvent,
@@ -348,6 +350,8 @@ export interface EnvOptions {
   chain?: FakeChain;
   store?: EventStore;
   mazeFactory?: ContainerDeps['mazeFactory'];
+  /** Where the chests are; the current chest rule by default. */
+  chestDraw?: ContainerDeps['chestDraw'];
   watcher?: boolean;
   /** False: the container is not made the process-wide instance. Default true. */
   install?: boolean;
@@ -401,6 +405,7 @@ export async function makeEnv(options: EnvOptions = {}): Promise<TestEnv> {
     signer,
     logSink: (line) => logs.push(JSON.parse(line) as Record<string, unknown>),
     mazeFactory: options.mazeFactory,
+    chestDraw: options.chestDraw,
     mazePadMs: 0,
     watcher: options.watcher,
     background: false,
@@ -442,7 +447,16 @@ export interface Reply<T = unknown> {
 
 async function call<T>(
   handler: RouteHandler,
-  p: { method: 'GET' | 'POST'; path: string; id?: string; token?: string | null; body?: unknown; rawBody?: string },
+  p: {
+    method: 'GET' | 'POST';
+    path: string;
+    id?: string;
+    /** Route parameters other than `id`. */
+    params?: Record<string, string>;
+    token?: string | null;
+    body?: unknown;
+    rawBody?: string;
+  },
 ): Promise<Reply<T>> {
   const headers: Record<string, string> = {};
   if (p.token !== undefined && p.token !== null) headers.authorization = `Bearer ${p.token}`;
@@ -451,7 +465,7 @@ async function call<T>(
   else if (p.body !== undefined) body = JSON.stringify(p.body);
   if (body !== undefined) headers['content-type'] = 'application/json';
   const request = new Request(`http://localhost${p.path}`, { method: p.method, headers, body });
-  const params: Record<string, string> = p.id === undefined ? {} : { id: p.id };
+  const params: Record<string, string> = p.params ?? (p.id === undefined ? {} : { id: p.id });
   const response = await handler(request, { params: Promise.resolve(params) });
   const text = await response.text();
   return { status: response.status, text, body: (text === '' ? null : JSON.parse(text)) as T };
@@ -474,6 +488,8 @@ export const api = {
     call<T>(gameGet, { method: 'GET', path: `/api/games/${id}`, id, token }),
   reveal: <T = unknown>(id: string) =>
     call<T>(revealGet, { method: 'GET', path: `/api/games/${id}/reveal`, id }),
+  points: <T = unknown>(address: string) =>
+    call<T>(pointsGet, { method: 'GET', path: `/api/points/${address}`, params: { address } }),
   snapshotPost: <T = unknown>(body: unknown) =>
     call<T>(snapshotPost, { method: 'POST', path: '/api/test/ui-snapshot', body }),
   snapshotGet: <T = unknown>() =>
@@ -561,24 +577,34 @@ export async function requestTicket(
 /**
  * A client seed for a ticket whose server seed the test knows. With `deadEnd`, one whose maze
  * has a dead end that can be walked into before the exit (about one 5×5 maze in a thousand
- * has none). A real player cannot do this: the server seed is secret until the game ends.
+ * has none). With `chest` as well, one where the dead end `deadEndRoute` leads into holds a
+ * chest under the current chest rule (`true`) or holds none (`false`). A real player cannot do
+ * this: the server seed is secret until the game ends.
  */
 export function pickClientSeed(
   ticket: TicketResponse,
   serverSeed: Hex,
   n: number,
   deadEnd: boolean,
+  chest?: boolean,
 ): { clientSeed: Hex; maze: Maze } {
   for (;;) {
     const clientSeed = hex32();
-    const maze = generateMaze(deriveFinalSeed({ serverSeed, clientSeed, gameId: ticket.gameId }), n);
-    if (!deadEnd || findDeadEndRoute(maze) !== null) return { clientSeed, maze };
+    const finalSeed = deriveFinalSeed({ serverSeed, clientSeed, gameId: ticket.gameId });
+    const maze = generateMaze(finalSeed, n);
+    if (!deadEnd && chest === undefined) return { clientSeed, maze };
+    const route = findDeadEndRoute(maze);
+    if (route === null) continue;
+    if (chest === undefined) return { clientSeed, maze };
+    const end = cellsOf(maze, route)[route.length];
+    if ((chestAt(finalSeed, maze, end) !== null) === chest) return { clientSeed, maze };
   }
 }
 
 /**
  * Ticket, `createGame` on the fake chain, and one worker pass so the server has seen it.
- * `deadEnd: true` guarantees that `deadEndRoute(game.maze)` exists.
+ * `deadEnd: true` guarantees that `deadEndRoute(game.maze)` exists; `chest` also fixes whether
+ * the dead end it leads into holds a chest under the current chest rule.
  */
 export async function openGame(
   env: TestEnv,
@@ -589,6 +615,7 @@ export async function openGame(
     clientSeed?: Hex;
     tick?: boolean;
     deadEnd?: boolean;
+    chest?: boolean;
   } = {},
 ): Promise<OpenedGame> {
   const { ticket, token } = await requestTicket(p);
@@ -596,7 +623,7 @@ export async function openGame(
   const n = env.table.tiers[ticket.tier].n;
   const serverSeed = env.container.service.get(ticket.gameId)!.serverSeed;
   const clientSeed =
-    p.clientSeed ?? pickClientSeed(ticket, serverSeed, n, p.deadEnd ?? false).clientSeed;
+    p.clientSeed ?? pickClientSeed(ticket, serverSeed, n, p.deadEnd ?? false, p.chest).clientSeed;
   env.chain.createGame({
     gameId: ticket.gameId,
     player: ticket.player,

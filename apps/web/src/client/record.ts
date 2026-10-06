@@ -2,7 +2,7 @@
 // shown. It is the evidence the verify screen checks against the revealed maze, so an
 // observation is never overwritten once recorded.
 
-import type { Dir, GameTerminal, GameView, Hex, Observation } from '@maze/shared';
+import type { ChestFound, Dir, GameTerminal, GameView, Hex, Observation } from '@maze/shared';
 import { isHex32 } from './seed';
 
 export interface PlayRecord {
@@ -149,6 +149,33 @@ export function parseRecord(raw: unknown): PlayRecord {
       signature: t!.signature!,
       settleTxHash: isHex32(t!.settleTxHash) ? t!.settleTxHash : null,
     };
+    // The server's word on the chest of a dead-end ending. It is evidence for the verify screen,
+    // so a malformed one is refused rather than dropped.
+    if (t!.chestRule !== undefined) {
+      if (!isInt(t!.chestRule, 1, 65535)) fail('terminal.chestRule이 올바르지 않습니다');
+      const chest = t!.chest as Partial<ChestFound> | null | undefined;
+      if (chest === null) {
+        record.terminal.chestRule = t!.chestRule;
+        record.terminal.chest = null;
+      } else if (
+        chest &&
+        chest.cell &&
+        isInt(chest.cell.x, 0, 254) &&
+        isInt(chest.cell.y, 0, 254) &&
+        isInt(chest.rewardBps, 0, 10_000) &&
+        typeof chest.points === 'string' &&
+        /^\d+$/.test(chest.points)
+      ) {
+        record.terminal.chestRule = t!.chestRule;
+        record.terminal.chest = {
+          cell: { x: chest.cell.x, y: chest.cell.y },
+          rewardBps: chest.rewardBps,
+          points: chest.points,
+        };
+      } else {
+        fail('terminal.chest의 형식이 올바르지 않습니다');
+      }
+    }
   }
 
   if (typeof r.betWei === 'string' && /^\d+$/.test(r.betWei)) record.betWei = r.betWei;

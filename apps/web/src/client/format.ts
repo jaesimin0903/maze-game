@@ -20,6 +20,11 @@ export function parseEthInput(text: string): bigint | null {
   return parseEther(trimmed);
 }
 
+/** A decimal count of points with thousands separators: "1234567" -> "1,234,567". */
+export function formatPoints(points: bigint | string): string {
+  return String(points).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 /** Basis points as a percentage: 9500 -> "95.00%". */
 export function formatPercent(bps: number): string {
   return `${(bps / 100).toFixed(2)}%`;

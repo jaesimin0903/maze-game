@@ -2,11 +2,20 @@
 // the on-chain commitment, client seed and game id, the revealed server seed, and the player's
 // own record of what the server showed.
 
+import { chestAt, chestPoints, chestsOf, CHEST_RULE_VERSION, isKnownChestRule, type Chest } from './chest';
 import { exitPayoutWei, refundWei } from './economics';
 import { commitmentOf, deriveFinalSeed } from './hash';
 import { generateMaze, solve } from './maze';
 import { replayMoves } from './replay';
 import { Outcome, type Dir, type Hex, type Maze, type TuningTable } from './types';
+
+/** What the server said about the chest of a game that ended in a dead end (`GameTerminal`). */
+export interface ChestClaim {
+  /** The chest rule version the server applied. */
+  rule: number;
+  /** The chest the server said the player found (`cell` is `y * n + x`), or `null` for none. */
+  found: { cell: number; rewardBps: number; points: string | bigint } | null;
+}
 
 /** What the server showed after `step` moves: the player's cell (`y * n + x`) and its open mask. */
 export interface Observation {
@@ -39,6 +48,23 @@ export interface VerifyReport {
   outcomeOk: boolean;
   /** The settled payout is what the table prescribes for the settled outcome and step count. */
   payoutOk: boolean;
+  /** The chest rule `chests` was computed with: the claim's, or the current one without a claim. */
+  chestRule: number;
+  /** Every chest of `maze` under `chestRule`, in cell order; `null` when that rule is unknown here. */
+  chests: Chest[] | null;
+  /**
+   * The chest of the dead end the recorded moves end in, with its points for the settled bet
+   * (0 when the bet is not known); `null` when the moves do not end the game in a chest.
+   */
+  expectedChest: (Chest & { points: bigint }) | null;
+  /**
+   * The server's chest claim against the recomputation. `true`: a chest the server awarded is the
+   * one the seed puts in that dead end (cell, reward and, with a known bet, points), a dead end it
+   * called empty is empty, and a game that did not end in a dead end has no award. `false`: a
+   * chest was hidden, invented, moved or misvalued. `null`: nothing to compare (a game that ended
+   * in a dead end without a claim in the record, an unknown rule, or moves that do not replay).
+   */
+  chestOk: boolean | null;
 }
 
 /**
@@ -56,6 +82,8 @@ export function verifyGame(p: {
   observations: Observation[];
   moves: Dir[];
   settled: { outcome: Outcome; steps: number; payoutWei: bigint; betWei: bigint };
+  /** The server's chest claim, when the record holds one (endings in a dead end only). */
+  chest?: ChestClaim;
 }): VerifyReport {
   const { table, tier, serverSeed, clientSeed, gameId } = p;
   if (!Number.isInteger(tier) || tier < 0 || tier >= table.tiers.length) {
@@ -93,6 +121,32 @@ export function verifyGame(p: {
     }
   }
 
+  const chestRule = p.chest?.rule ?? CHEST_RULE_VERSION;
+  const knownRule = isKnownChestRule(chestRule);
+  const replayed = replay.invalidAt === null;
+  const endedInDeadEnd = replayed && replay.outcome === Outcome.Loss;
+  const endChest =
+    knownRule && endedInDeadEnd ? chestAt(finalSeed, maze, replay.path[replay.path.length - 1], chestRule) : null;
+  const betKnown = betWei > 0n;
+  const expectedChest =
+    endChest === null ? null : { ...endChest, points: betKnown ? chestPoints(betWei, endChest.rewardBps) : 0n };
+
+  let chestOk: boolean | null;
+  if (!knownRule || !replayed) chestOk = null;
+  else if (p.chest === undefined) chestOk = endedInDeadEnd ? null : true;
+  else if (p.chest.found === null) chestOk = expectedChest === null;
+  else {
+    const { cell, rewardBps, points } = p.chest.found;
+    const claimedPoints =
+      typeof points === 'bigint' ? points : /^\d+$/.test(String(points)) ? BigInt(points) : null;
+    chestOk =
+      expectedChest !== null &&
+      cell === expectedChest.cell &&
+      rewardBps === expectedChest.rewardBps &&
+      claimedPoints !== null &&
+      (!betKnown || claimedPoints === expectedChest.points);
+  }
+
   return {
     commitmentOk,
     finalSeed,
@@ -102,5 +156,9 @@ export function verifyGame(p: {
     cellsOk: cells.length === 0 ? null : cells.every((cell) => cell.match),
     outcomeOk,
     payoutOk: expectedWei !== null && payoutWei === expectedWei,
+    chestRule,
+    chests: knownRule ? chestsOf(finalSeed, maze, chestRule) : null,
+    expectedChest,
+    chestOk,
   };
 }

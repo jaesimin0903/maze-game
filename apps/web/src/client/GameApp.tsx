@@ -12,6 +12,7 @@ import type { WalletApi } from './wallet';
 import { BetPanel } from './components/BetPanel';
 import { Board } from './components/Board';
 import { MovePad } from './components/MovePad';
+import { PointsBalance } from './components/PointsBalance';
 import { ReclaimPanel } from './components/ReclaimPanel';
 import { RefundSchedule } from './components/RefundSchedule';
 import { ResultPanel } from './components/ResultPanel';
@@ -103,6 +104,13 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
           onWallet={setWallet}
           refreshKey={`${phase}:${state.onchain?.status ?? ''}:${record?.gameId ?? ''}`}
         />
+        {config.chest !== undefined && (
+          <PointsBalance
+            api={deps.api}
+            address={wallet?.address ?? null}
+            refreshKey={`${phase}:${state.onchain?.status ?? ''}:${record?.gameId ?? ''}`}
+          />
+        )}
       </header>
 
       {config.testHooks && (
@@ -161,6 +169,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
               onMove={(dir) => void game.move(dir)}
               ended={phase === 'ended' ? (result?.outcome ?? null) : null}
               waiting={phase === 'playing' && record.observations.length === 0}
+              chest={phase === 'ended' && result?.chest ? result.chest.cell : null}
             />
           </div>
 

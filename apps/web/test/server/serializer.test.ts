@@ -289,7 +289,17 @@ describe('other responses', () => {
       'settleWindowSec',
       'chainNowSec',
       'devWallet',
+      'chest',
     ]);
+    // AC-P5: the chest rule version, and that points have no cash value.
+    expect(reply.body.chest).toEqual({
+      ruleVersion: 1,
+      rateBps: 3000,
+      rewardMinBps: 1000,
+      rewardMaxBps: 3000,
+      pointUnitWei: '1000000000000',
+      cashValue: false,
+    });
     expect(reply.body).toMatchObject({
       chainId: 31337,
       rpcUrl: 'http://127.0.0.1:8546',

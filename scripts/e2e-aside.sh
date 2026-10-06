@@ -23,9 +23,9 @@
 # dev_up in e2e/aside/lib.sh). The seed-hook secret is random and new for every run; set
 # MAZE_TEST_SEED_SECRET to repeat a run with the secret its log shows.
 #
-# Scenarios run one at a time, in this order: 01 02 03 04 06 07 08 09 11, then the two that move
-# the chain clock, 10 and 05 (05 last). By default one build (apps/web/.next-f-0) serves all of
-# them: the app reads its chain settings from /api/config at run time.
+# Scenarios run one at a time, in this order: 01 02 03 04 06 07 08 09 11 12, then the two that
+# move the chain clock, 10 and 05 (05 last). By default one build (apps/web/.next-f-0) serves all
+# of them: the app reads its chain settings from /api/config at run time.
 #
 # Verdicts (plan §9.1): PASS = the on-chain, HTTP and DOM assertions all ran and passed;
 # FAIL = an assertion that ran failed, or the scenario could not finish; BLOCKED = the DOM
@@ -45,7 +45,7 @@ E2E_DIR="$ROOT_DIR/e2e/aside"
 # shellcheck source=scripts/ports.sh
 . "$SCRIPT_DIR/ports.sh"
 
-ORDER="01 02 03 04 06 07 08 09 11 10 05"
+ORDER="01 02 03 04 06 07 08 09 11 12 10 05"
 ADVISORY="09"
 OUT_DIR="${MAZE_E2E_OUT_DIR:-$E2E_DIR/out}"
 CAP_FILE="$OUT_DIR/capabilities.json"

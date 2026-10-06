@@ -11,6 +11,9 @@
 //   sensitivity
 //   stats        [--table <file>] [--compare <file>] [--tier all|0,1,2] [--bots all|<name>,..] [--games <n>]
 //                [--seed <n>] [--sessions <n>] [--bankroll <bets>] [--out <dir>] [--open]
+//   attack       [--phases exact,trend,validate,search,book,cma] [--tables production,house-max] [--sizes 5,7,9]
+//                [--trend 5x5,6x5,6x6] [--trend-curves sm,l,hm] [--validate 6x6] [--pairs <n> | 5=<n>,7=<n>,default=<n>]
+//                [--strategies expectimax:2,..] [--book-*] [--cma-*] [--seed <n>] [--out <dir>]
 //
 //   common: --profile production|smoke   --workers <n> (0 = no worker threads)
 //           --rng fast|seed               --slice-minutes <m>   --reports <dir>
@@ -29,6 +32,8 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tableHash, type CurveParams, type TuningTable } from '@maze/shared';
 import { ASSUMPTIONS } from './assumptions';
+import { ATTACK_DEFAULTS, PHASES, runAttack, type AttackArguments, type Phase, type TablePolicy } from './attack/run';
+import type { AttackTableName } from './attack/context';
 import { formatBench, runBench } from './bench';
 import { CacheStore } from './cache';
 import { calibrateCandidate, type CalibrationSpec } from './calibrate';
@@ -69,7 +74,7 @@ const EXIT_BLOCKED = 3;
 /** `sim:stats` without options: enough games for a stable picture in well under a minute. */
 const STATS_DEFAULTS = { games: 100_000, seed: 1, sessions: 10_000, bankroll: ASSUMPTIONS.e11Bankroll };
 
-const USAGE = `usage: cli.js <bench | exact | calibrate | certify | tune | sensitivity | stats> [options]
+const USAGE = `usage: cli.js <bench | exact | calibrate | certify | tune | sensitivity | stats | attack> [options]
   bench        [--table <file>]
   exact        [--table <file>] [--variant 0..3] [--check]
   calibrate    --curve <i|ii|iii|point:<tier>:<aBps>:<phi>> [--base <file>] [--sizes 5,7,10] [--ceiling <bps>[,..]] [--variant 0..3] [--screen-last]
@@ -79,6 +84,14 @@ const USAGE = `usage: cli.js <bench | exact | calibrate | certify | tune | sensi
   stats        [--table <file>] [--compare <file>] [--tier all|0,1,2] [--bots all|${PLAYER_IDS.join(',')}]
                [--games <n>] [--seed <n>] [--sessions <n>] [--bankroll <bets>] [--out <dir>] [--open]
                defaults: the production table, every tier and bot, games ${STATS_DEFAULTS.games}, seed ${STATS_DEFAULTS.seed}, sessions ${STATS_DEFAULTS.sessions}, bankroll ${STATS_DEFAULTS.bankroll}, out .data/sim-stats/<run>/
+  attack       [--phases ${PHASES.join(',')}] [--tables production,house-max] [--sizes 5,7,9]
+               [--trend 5x5,6x5,6x6] [--trend-curves sm,l,hm] [--trend-train-games <n>] [--max-states <n>]
+               [--validate 6x6] [--validate-strategies expectimax:1,..] [--trend-from <trend.json>]
+               [--pairs <n> | 5=<n>,7=<n>,default=<n>]
+               [--strategies optimal|expectimax:<d>|deep:<d>:<shallow>:<margin>|open:<d>:<maxK>:<d2>|rollout:<d>,..] [--table-policy lsm|all]
+               [--book-depth <d>] [--book-k <k>] [--book-min-p <p>] [--book-samples <n>] [--book-z <z>]
+               [--cma-games <n>] [--cma-generations <n>] [--cma-lambda <n>] [--cma-sigma <s>] [--seed <n>] [--out <dir>] [--cache <dir>]
+               defaults: phases ${ATTACK_DEFAULTS.phases.join(',')}, the production table, trend 5x5 sm, ${ATTACK_DEFAULTS.pairs.default} pairs per tier with ${ATTACK_DEFAULTS.strategies.join(',')}, out .data/sim-attack/<run>/
   common:      --profile production|smoke  --workers <n>  --rng fast|seed  --slice-minutes <m>  --reports <dir>
 exit codes:    0 passed, 1 a gate failed or the command could not run, 2 not finished (call again), 3 BLOCKED`;
 
@@ -399,6 +412,90 @@ function statsArguments(options: Map<string, string>, argv: string[]): StatsArgu
   };
 }
 
+function tablePolicy(value: string): TablePolicy {
+  if (value !== 'lsm' && value !== 'all') throw new UsageError('--table-policy must be lsm or all');
+  return value;
+}
+
+function attackArguments(options: Map<string, string>, argv: string[], workers: number): AttackArguments {
+  const list = (name: string): string[] | null =>
+    options.has(name)
+      ? options
+          .get(name)!
+          .split(',')
+          .map((part) => part.trim())
+          .filter((part) => part.length > 0)
+      : null;
+  const number = (name: string, fallback: number, check: (value: number) => boolean, what: string): number => {
+    if (!options.has(name)) return fallback;
+    const value = Number(options.get(name));
+    if (!check(value)) throw new UsageError(`--${name} must be ${what}`);
+    return value;
+  };
+  const count = (name: string, fallback: number): number => number(name, fallback, (v) => Number.isInteger(v) && v >= 1, 'a positive integer');
+  const phases = list('phases') ?? ATTACK_DEFAULTS.phases;
+  if (phases.some((phase) => !(PHASES as readonly string[]).includes(phase))) throw new UsageError(`--phases must be a list of ${PHASES.join(', ')}`);
+  const tables = list('tables') ?? ATTACK_DEFAULTS.tables;
+  if (tables.some((table) => table !== 'production' && table !== 'house-max')) throw new UsageError('--tables must be a list of production, house-max');
+  const grids = (name: string, fallback: [number, number][]): [number, number][] =>
+    (list(name) ?? fallback.map(([w, h]) => `${w}x${h}`)).map((grid) => {
+      const match = /^(\d+)x(\d+)$/.exec(grid);
+      if (match === null) throw new UsageError(`--${name} grids look like 5x5, got "${grid}"`);
+      const w = Number(match[1]);
+      const h = Number(match[2]);
+      if (w < 2 || h < 2 || w > 10 || h > 10) throw new UsageError(`--${name} grids must be between 2x2 and 10x10`);
+      return [w, h];
+    });
+  const trendGrids = grids('trend', ATTACK_DEFAULTS.trendGrids);
+  const validateGrids = grids('validate', ATTACK_DEFAULTS.validateGrids);
+  const pairs: Record<string, number> = { ...ATTACK_DEFAULTS.pairs };
+  if (options.has('pairs')) {
+    for (const part of list('pairs')!) {
+      const [key, value] = part.includes('=') ? part.split('=') : ['default', part];
+      const games = Number(value);
+      if (!Number.isInteger(games) || games < 1 || (key !== 'default' && !/^\d+$/.test(key))) {
+        throw new UsageError('--pairs must be <games> or a list of <size>=<games> and default=<games>');
+      }
+      pairs[key] = games;
+    }
+  }
+  const book = ATTACK_DEFAULTS.book;
+  const cma = ATTACK_DEFAULTS.cma;
+  return {
+    phases: phases as Phase[],
+    tables: tables as AttackTableName[],
+    sizes: options.has('sizes') ? integerList(options.get('sizes')!, '--sizes') : null,
+    trendGrids,
+    trendCurves: list('trend-curves') ?? ATTACK_DEFAULTS.trendCurves,
+    trendTrainGames: count('trend-train-games', ATTACK_DEFAULTS.trendTrainGames),
+    trendFrom: options.has('trend-from') ? resolve(options.get('trend-from')!) : null,
+    validateGrids,
+    validateStrategies: list('validate-strategies') ?? ATTACK_DEFAULTS.validateStrategies,
+    maxStates: count('max-states', ATTACK_DEFAULTS.maxStates),
+    pairs,
+    strategies: list('strategies') ?? ATTACK_DEFAULTS.strategies,
+    tablePolicy: tablePolicy(options.get('table-policy') ?? ATTACK_DEFAULTS.tablePolicy),
+    book: {
+      baseDepth: number('book-depth', book.baseDepth, (v) => Number.isInteger(v) && v >= 0 && v <= 6, 'an integer in 0 .. 6'),
+      maxK: number('book-k', book.maxK, (v) => Number.isInteger(v) && v >= 0, 'a non-negative integer'),
+      minProbability: number('book-min-p', book.minProbability, (v) => v > 0 && v <= 1, 'a probability in (0, 1]'),
+      samples: count('book-samples', book.samples),
+      zOverride: number('book-z', book.zOverride, (v) => v >= 0, 'a non-negative number'),
+    },
+    cma: {
+      games: count('cma-games', cma.games),
+      generations: count('cma-generations', cma.generations),
+      lambda: number('cma-lambda', cma.lambda, (v) => Number.isInteger(v) && v >= 2, 'an integer >= 2'),
+      sigma0: number('cma-sigma', cma.sigma0, (v) => v > 0, 'a positive number'),
+    },
+    seed: number('seed', ATTACK_DEFAULTS.seed, (v) => Number.isInteger(v) && v >= 0 && v < 2 ** 32, 'an integer in 0 .. 2^32 - 1'),
+    workers,
+    out: options.has('out') ? resolve(options.get('out')!) : null,
+    cache: options.has('cache') ? resolve(options.get('cache')!) : null,
+    command: ['pnpm sim:attack', ...argv.slice(1)].join(' '),
+  };
+}
+
 /**
  * The code hash is computed from the sources, but what runs is the bundle. A bundle older than
  * a hashed source file would compute with old code under the new hash, so it is refused. The
@@ -442,6 +539,13 @@ async function main(argv: string[]): Promise<number> {
       assertFreshBuild();
       const { json, html } = await runStats(request, { profile, paths, workers, rngMode, log });
       console.log(`sim:stats RESULT exit=${EXIT_OK} json=${json} html=${html}`);
+      return EXIT_OK;
+    }
+    if (command === 'attack') {
+      const request = attackArguments(options, argv, workers);
+      assertFreshBuild();
+      const { directory, seconds } = await runAttack(request, log);
+      console.log(`sim:attack RESULT exit=${EXIT_OK} out=${directory} seconds=${seconds.toFixed(0)}`);
       return EXIT_OK;
     }
     const commands: Record<string, (context: Context) => Promise<number>> = {

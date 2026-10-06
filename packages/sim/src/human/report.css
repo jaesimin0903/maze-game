@@ -1,0 +1,82 @@
+/* Style sheet of the `sim:human` report, added after the `sim:stats` sheet (playstats-report.css). */
+
+/*
+ * Model colours: categorical slots 1-5 of the reference palette, in fixed order. Checked with the
+ * dataviz palette validator in both modes (light: every gate passes, three slots are below 3:1
+ * against the surface, so every chart has visible labels and a table view; dark: every gate
+ * passes). The sequential ramp is one hue, light to dark, reversed on the dark surface so that
+ * low values recede toward it.
+ */
+.viz-root {
+  --m-novice: #2a78d6;
+  --m-average: #eb6834;
+  --m-thoughtful: #1baf7a;
+  --m-learning: #eda100;
+  --m-best-rule: #e87ba4;
+  --m-other: #a3a299;
+  --seq-0: #cde2fb;
+  --seq-1: #9ec5f4;
+  --seq-2: #6da7ec;
+  --seq-3: #3987e5;
+  --seq-4: #256abf;
+  --seq-5: #184f95;
+  --seq-6: #0d366b;
+  --risk-high: #b32f2f;
+  --risk-mid: #8a5a00;
+  --risk-low: #006300;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) .viz-root {
+    --m-novice: #3987e5;
+    --m-average: #d95926;
+    --m-thoughtful: #199e70;
+    --m-learning: #c98500;
+    --m-best-rule: #d55181;
+    --m-other: #6b6a65;
+    --seq-0: #104281;
+    --seq-1: #184f95;
+    --seq-2: #256abf;
+    --seq-3: #3987e5;
+    --seq-4: #6da7ec;
+    --seq-5: #9ec5f4;
+    --seq-6: #cde2fb;
+    --risk-high: #e66767;
+    --risk-mid: #fab219;
+    --risk-low: #0ca30c;
+  }
+}
+:root[data-theme='dark'] .viz-root {
+  --m-novice: #3987e5;
+  --m-average: #d95926;
+  --m-thoughtful: #199e70;
+  --m-learning: #c98500;
+  --m-best-rule: #d55181;
+  --m-other: #6b6a65;
+  --seq-0: #104281;
+  --seq-1: #184f95;
+  --seq-2: #256abf;
+  --seq-3: #3987e5;
+  --seq-4: #6da7ec;
+  --seq-5: #9ec5f4;
+  --seq-6: #cde2fb;
+  --risk-high: #e66767;
+  --risk-mid: #fab219;
+  --risk-low: #0ca30c;
+}
+
+.verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin: 14px 0 0; }
+.verdict .tile .value { font-size: 20px; }
+.risk { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; }
+.risk::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.risk.high { color: var(--risk-high); }
+.risk.mid { color: var(--risk-mid); }
+.risk.low { color: var(--risk-low); }
+.rule-text { margin: 8px 0 0; padding: 10px 12px; border-left: 3px solid var(--m-best-rule); background: var(--wash); border-radius: 0 8px 8px 0; max-width: 100ch; }
+.scale { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+.scale .steps { display: inline-flex; gap: 2px; }
+.scale .steps span { width: 22px; height: 10px; border-radius: 2px; }
+td.prose, th.prose { white-space: normal; min-width: 240px; max-width: 520px; text-align: left; }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 48px; }
+  .controls { margin: 20px -16px 0; padding: 10px 16px; }
+}

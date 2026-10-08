@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import type { FoundChest, GameView, Hex, StartSide } from '@maze/shared';
 import type { Preset } from '../bet-form';
-import { formatClock, formatEth, formatPercent, formatPoints, shortHex } from '../format';
+import { formatApprox, formatClock, formatEth, formatPercent, formatPoints, shortHex } from '../format';
 import { explorerLink, useNetwork } from '../network';
 import type { BetStep, GameResult, ReclaimInfo, ResultOutcome } from '../use-game';
 import { DomInput } from './DomInput';
@@ -44,6 +44,8 @@ export type DockModel =
       shortWei: bigint | null;
       /** Where to get test coins, on a chain with a faucet. */
       faucetUrl: string | null;
+      /** What placing the bet typically costs in network fees, once the gas price is known. */
+      feeWei: bigint | null;
       /** The client seed. Never shown whole: the screen shows its look and short name. */
       seedText: string;
       /** The side the seed opens the start to, for the reroll button's label. */
@@ -331,6 +333,16 @@ function DockRows({ model: m }: { model: DockModel }) {
               aria-invalid={m.amountProblem !== null}
             />
             <span className="dunit">{symbol}</span>
+            {m.feeWei !== null && (
+              <span
+                className="dfee"
+                data-testid="dock-fee"
+                data-wei={m.feeWei.toString()}
+                title="What sending the bet typically costs in network fees, on top of the bet"
+              >
+                <span className="dwide">Network </span>fee ~{formatApprox(m.feeWei)} {symbol}
+              </span>
+            )}
           </div>
         </>
       );

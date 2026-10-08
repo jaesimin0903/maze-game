@@ -6,8 +6,12 @@ import { formatEth, parseEthInput } from './format';
 import type { BetStep } from './use-game';
 import type { WalletKind } from './wallet';
 
-/** The amounts, in ETH, the dock offers as chips next to the amount field. */
-const CHIPS = ['0.001', '0.005', '0.01'];
+/**
+ * The amounts the dock offers as chips next to the amount field, in the chain's coin. On Monad the
+ * bet transaction's fee is near 0.018 MON, so smaller chips would lose more to the fee than a
+ * win pays; a smaller amount can still be typed.
+ */
+const CHIPS = ['0.01', '0.05', '0.1'];
 
 export interface Preset {
   wei: bigint;
@@ -21,8 +25,8 @@ function chipLabel(wei: bigint): string {
 }
 
 /**
- * The chips 0.001, 0.005 and 0.01 ETH that lie within the table's limits; any other amount is
- * typed into the field. A table whose limits hold none of them gets its limits as chips.
+ * The chips 0.01, 0.05 and 0.1 that lie within the table's limits; any other amount is typed into
+ * the field. A table whose limits hold none of them gets its limits as chips.
  */
 export function betPresets(minWei: bigint, maxWei: bigint): Preset[] {
   let picks = CHIPS.map((eth) => parseEther(eth)).filter((wei) => wei >= minWei && wei <= maxWei);
@@ -43,9 +47,9 @@ export function stepPreset(presets: Preset[], wei: bigint | null, delta: 1 | -1)
   return presets[Math.max(0, Math.min(presets.length - 1, target))];
 }
 
-/** The amount the bet field starts with: 0.01 ETH, kept within the table's limits. */
+/** The amount the bet field starts with: 0.05, kept within the table's limits. */
 export function initialAmount(minWei: bigint, maxWei: bigint): string {
-  const preferred = parseEther('0.01');
+  const preferred = parseEther('0.05');
   return formatEther(preferred < minWei ? minWei : preferred > maxWei ? maxWei : preferred);
 }
 
@@ -70,6 +74,12 @@ export function readAmount(
  * comes after the signature, so the check counts this round figure. Monad charges the whole limit.
  */
 export const BET_GAS = 250_000n;
+
+/**
+ * The gas a bet transaction typically uses, for the fee the dock shows as a guide: 173,824 on
+ * Monad testnet. The balance check counts `BET_GAS` instead.
+ */
+export const TYPICAL_BET_GAS = 175_000n;
 
 /**
  * What the wallet lacks for `betWei` plus the bet transaction's fee, or `null` when the balance

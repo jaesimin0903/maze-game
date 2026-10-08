@@ -20,6 +20,11 @@ export interface EndFigures {
   payoutWei: bigint;
   /** The bet, when known: a dead end shows it as the loss. */
   betWei: bigint | null;
+  /**
+   * What the bet transaction cost in fees, from its receipt; `null` when the page does not have
+   * it (a game restored without its transaction, a receipt that could not be read).
+   */
+  feeWei: bigint | null;
   /** Treasure points found in this game; they have no cash value. */
   points: bigint;
 }
@@ -383,10 +388,32 @@ function endMoney(
   return { text: `${formatEth(f.payoutWei, 4)} ${symbol} BACK`, wei: f.payoutWei, tone: 'even' };
 }
 
+/**
+ * The line under the money: the bet transaction's fee and what the game came to with it counted,
+ * payout less bet less fee ("fee -0.0177 · net -0.0016 MON"). A win smaller than the fee is a
+ * loss for the wallet. `null` without the fee or the bet.
+ */
+export function endFee(
+  f: EndFigures,
+  symbol: string,
+): { feeWei: bigint; netWei: bigint; fee: string; net: string; tone: string } | null {
+  if (f.feeWei === null || f.betWei === null) return null;
+  const netWei = f.payoutWei - f.betWei - f.feeWei;
+  const net = netWei >= 0n ? `+${formatEth(netWei, 4)}` : `-${formatEth(-netWei, 4)}`;
+  return {
+    feeWei: f.feeWei,
+    netWei,
+    fee: `fee -${formatEth(f.feeWei, 4)}`,
+    net: `net ${net} ${symbol}`,
+    tone: netWei > 0n ? 'win' : netWei < 0n ? 'loss' : 'even',
+  };
+}
+
 function EndEffect({ outcome, figures }: { outcome: ResultOutcome; figures: EndFigures | null }) {
   const { symbol } = useNetwork();
   const banner = END_BANNER[outcome];
   const money = figures === null ? null : endMoney(outcome, figures, symbol);
+  const fee = figures === null ? null : endFee(figures, symbol);
   return (
     <>
       {outcome === 'loss' && <div className="flash" />}
@@ -417,6 +444,17 @@ function EndEffect({ outcome, figures }: { outcome: ResultOutcome; figures: EndF
               style={{ animationDelay: '1.4s' }}
             >
               {money.text}
+            </span>
+          )}
+          {fee !== null && (
+            <span className="end-net pop" style={{ animationDelay: '1.5s' }}>
+              <span data-testid="end-fee" data-wei={fee.feeWei.toString()}>
+                {fee.fee}
+              </span>
+              {' · '}
+              <span className={fee.tone} data-testid="end-net" data-wei={fee.netWei.toString()}>
+                {fee.net}
+              </span>
             </span>
           )}
           {figures !== null && figures.points > 0n && (

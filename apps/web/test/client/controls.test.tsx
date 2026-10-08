@@ -26,7 +26,8 @@ import { CLIENT_SEED, FakeWorld, SERVER_SEED, TABLE, firstGameId, planExit } fro
 
 configure({ asyncUtilTimeout: 3000 });
 
-const BET = 10n ** 16n;
+/** The amount the dock starts with, which these games bet: 0.05. */
+const BET = 5n * 10n ** 16n;
 const N = TABLE.tiers[0].n;
 const ARROW = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'] as const;
 const WORD = ['north', 'east', 'south', 'west'] as const;
@@ -346,7 +347,7 @@ describe('lobby keys', () => {
     fireEvent.keyDown(input, { code: 'Enter' });
     await settle();
     expect(tier()).toBe(0);
-    expect(input.value).toBe('0.01');
+    expect(input.value).toBe('0.05');
     expect(screen.queryByTestId('sign-sheet')).toBeNull();
 
     press('ArrowDown');
@@ -363,21 +364,23 @@ describe('lobby keys', () => {
     press('ArrowUp');
     await waitFor(() => expect(tier()).toBe(0));
 
-    // The chips are 0.001, 0.005 and 0.01: right from the largest stays there.
+    // The chips are 0.01, 0.05 and 0.1, and the field starts on 0.05: right from the largest stays there.
     press('ArrowRight');
+    await waitFor(() => expect(input.value).toBe('0.1'));
+    press('ArrowRight');
+    await settle();
+    expect(input.value).toBe('0.1');
+    press('ArrowLeft');
+    await waitFor(() => expect(input.value).toBe('0.05'));
+    press('KeyA');
+    await waitFor(() => expect(input.value).toBe('0.01'));
+    press('ArrowLeft');
     await settle();
     expect(input.value).toBe('0.01');
-    press('ArrowLeft');
-    await waitFor(() => expect(input.value).toBe('0.005'));
-    press('KeyA');
-    await waitFor(() => expect(input.value).toBe('0.001'));
-    press('ArrowLeft');
-    await settle();
-    expect(input.value).toBe('0.001');
     press('KeyD');
-    await waitFor(() => expect(input.value).toBe('0.005'));
+    await waitFor(() => expect(input.value).toBe('0.05'));
     press('ArrowRight');
-    await waitFor(() => expect(input.value).toBe('0.01'));
+    await waitFor(() => expect(input.value).toBe('0.1'));
     expect(world.requests).toEqual(['GET /api/config']);
   });
 
@@ -399,7 +402,7 @@ describe('lobby keys', () => {
     press('Enter');
     await settle();
     expect(attr('tier-0', 'data-selected')).toBe('true');
-    expect((screen.getByTestId('bet-amount') as HTMLInputElement).value).toBe('0.01');
+    expect((screen.getByTestId('bet-amount') as HTMLInputElement).value).toBe('0.05');
     expect(screen.getByTestId('sign-sheet')).toBeTruthy();
     // Escape closes the sheet from anywhere in it, a focused control of it included.
     fireEvent.keyDown(screen.getByRole('button', { name: 'Cancel' }), { key: 'Escape', code: 'Escape' });

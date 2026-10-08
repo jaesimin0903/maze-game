@@ -13,6 +13,16 @@ export function formatEth(wei: bigint, decimals = 6): string {
   return kept === '' ? whole : `${whole}.${kept}`;
 }
 
+/**
+ * Wei with two significant digits, for a figure the page marks as approximate (~):
+ * 17_850_000_000_000_000n -> "0.018", 175_000_000_000_000n -> "0.00018".
+ */
+export function formatApprox(wei: bigint): string {
+  return new Intl.NumberFormat('en-US', { maximumSignificantDigits: 2, useGrouping: false }).format(
+    Number(formatEther(wei)),
+  );
+}
+
 /** An ETH amount typed by the player, or `null` when it is not a plain decimal number. */
 export function parseEthInput(text: string): bigint | null {
   const trimmed = text.trim();

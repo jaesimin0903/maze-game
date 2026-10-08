@@ -1458,6 +1458,29 @@ textarea {
   color: var(--danger);
 }
 
+/* The bet transaction's fee and the game's result with it counted, under the money. */
+.end-net {
+  max-width: 92%;
+  padding: 0.4cqw 2.4cqw;
+  background: rgba(10, 8, 20, 0.8);
+  color: var(--text);
+  font-family: var(--vt);
+  font-size: 6.6cqw;
+  line-height: 1;
+}
+
+.end-net .win {
+  color: var(--brand);
+}
+
+.end-net .loss {
+  color: var(--danger);
+}
+
+.end-net .even {
+  color: var(--text);
+}
+
 .end-pts {
   display: inline-flex;
   align-items: center;
@@ -1810,6 +1833,13 @@ textarea {
 
 .dunit {
   color: var(--muted);
+}
+
+/* The bet transaction's typical fee, after the amount: small print, not a figure to act on. */
+.dfee {
+  color: var(--muted);
+  font-weight: 400;
+  white-space: nowrap;
 }
 
 .dnarrow {

@@ -1,9 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ONCHAIN_STATUS, exitPayoutWei, markStartSide, refundWei, type ConfigResponse, type Dir } from '@maze/shared';
+import {
+  ONCHAIN_STATUS,
+  exitPayoutWei,
+  markStartSide,
+  refundWei,
+  type ConfigResponse,
+  type Dir,
+  type Hex,
+} from '@maze/shared';
 import { ApiError, ServerUnreachableError, apiMessage } from './api';
 import {
+  TYPICAL_BET_GAS,
   betBlocked,
   betPresets,
   betShortfall,
@@ -174,6 +183,42 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       if (timer !== null) clearInterval(timer);
     };
   }, [chain, balanceOf, phase, balanceTick]);
+
+  // The gas price for the fee guide in the dock, read in the lobby every 15 seconds, wallet or not.
+  const [gasPriceWei, setGasPriceWei] = useState<bigint | null>(null);
+  useEffect(() => {
+    if (phase !== 'lobby') return;
+    let live = true;
+    const read = (): void => {
+      chain
+        .gasPrice()
+        .then((wei) => live && setGasPriceWei(wei))
+        .catch(() => undefined);
+    };
+    read();
+    const timer = setInterval(read, 15_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [chain, phase]);
+
+  // What the bet transaction cost in fees, from its receipt, for the end screen. A game restored
+  // without its transaction, or a receipt that cannot be read, shows no fee rather than a guess.
+  const createTx: Hex | null = phase === 'ended' ? (record?.createTxHash ?? null) : null;
+  const [betFee, setBetFee] = useState<{ hash: Hex; wei: bigint } | null>(null);
+  useEffect(() => {
+    if (createTx === null) return;
+    let live = true;
+    chain
+      .txFee(createTx)
+      .then((wei) => live && wei !== null && setBetFee({ hash: createTx, wei }))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [chain, createTx]);
+  const betFeeWei = betFee !== null && betFee.hash === createTx ? betFee.wei : null;
 
   // ----- the bet being set up
   const minWei = BigInt(config.minBetWei);
@@ -527,6 +572,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
             balanceWei,
             shortWei,
             faucetUrl: config.network?.faucetUrl ?? null,
+            feeWei: gasPriceWei === null ? null : TYPICAL_BET_GAS * gasPriceWei,
             seedText,
             startSide: dungeon?.side ?? null,
             onTier: setTier,
@@ -686,6 +732,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
                 ? {
                     payoutWei: result.payoutWei,
                     betWei,
+                    feeWei: betFeeWei,
                     points: (result.chests ?? []).reduce((sum, c) => sum + BigInt(c.points), 0n),
                   }
                 : null

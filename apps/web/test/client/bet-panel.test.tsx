@@ -16,6 +16,8 @@ beforeEach(() => window.localStorage.clear());
 afterEach(() => cleanup());
 
 const BET = 10n ** 16n;
+/** The amount the dock starts with: 0.05. */
+const START_BET = 5n * 10n ** 16n;
 
 const attr = (testId: string, name: string): string | null =>
   screen.getByTestId(testId).getAttribute(name);
@@ -25,17 +27,17 @@ const amount = (value: string): void => {
 };
 
 describe('bet panel: the dock', () => {
-  it('AC-W6 AC-R1: starts at 0.01 ETH on the smallest maze, and the chosen size and amount drive the escape payout', async () => {
+  it('AC-W6 AC-R1: starts at 0.05 ETH on the smallest maze, and the chosen size and amount drive the escape payout', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('bet-start');
 
     expect(attr('dock', 'data-mode')).toBe('ready');
-    expect((screen.getByTestId('bet-amount') as HTMLInputElement).value).toBe('0.01');
+    expect((screen.getByTestId('bet-amount') as HTMLInputElement).value).toBe('0.05');
     expect(attr('tier-0', 'data-selected')).toBe('true');
     expect(attr('tier-0', 'aria-pressed')).toBe('true');
-    expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, 0).toString());
-    expect(text('escape-payout')).toBe(`${formatEth(exitPayoutWei(TABLE, BET, 0), 4)} ETH`);
+    expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, START_BET, 0).toString());
+    expect(text('escape-payout')).toBe(`${formatEth(exitPayoutWei(TABLE, START_BET, 0), 4)} ETH`);
     expect(screen.queryByTestId('bet-invalid')).toBeNull();
     // Before a game the board is the empty grid of the chosen size.
     expect(attr('board', 'data-game-id')).toBe('');
@@ -55,23 +57,27 @@ describe('bet panel: the dock', () => {
           expect(attr(`tier-${other}`, 'aria-pressed')).toBe('false');
         }
       }
-      expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, index).toString());
+      expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, START_BET, index).toString());
       expect(attr('board', 'data-n')).toBe(String(TABLE.tiers[index].n));
     }
 
-    // The chips are 0.001, 0.005 and 0.01 ETH; any other amount is typed. Both set the bet.
+    // The chips are 0.01, 0.05 and 0.1 ETH; any other amount is typed. Both set the bet.
     const chips = [...document.querySelectorAll('[data-testid^="bet-preset-"]')].map((el) => el.getAttribute('data-testid'));
-    expect(chips).toEqual(['bet-preset-.001', 'bet-preset-.005', 'bet-preset-.01']);
-    expect(attr('bet-preset-.01', 'aria-pressed')).toBe('true');
-    const larger = 5n * 10n ** 16n;
-    amount('0.05');
-    await waitFor(() => expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, larger, 2).toString()));
+    expect(chips).toEqual(['bet-preset-.01', 'bet-preset-.05', 'bet-preset-.1']);
+    expect(attr('bet-preset-.05', 'aria-pressed')).toBe('true');
+    const typed = 2n * 10n ** 16n;
+    amount('0.02');
+    await waitFor(() => expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, typed, 2).toString()));
     for (const chip of chips) expect(attr(chip as string, 'aria-pressed')).toBe('false');
-    fireEvent.click(screen.getByTestId('bet-preset-.005'));
-    await waitFor(() => expect((screen.getByTestId('bet-amount') as HTMLInputElement).value).toBe('0.005'));
-    expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET / 2n, 2).toString());
-    expect(attr('bet-preset-.005', 'aria-pressed')).toBe('true');
-    expect(attr('bet-preset-.01', 'aria-pressed')).toBe('false');
+    fireEvent.click(screen.getByTestId('bet-preset-.1'));
+    await waitFor(() => expect((screen.getByTestId('bet-amount') as HTMLInputElement).value).toBe('0.1'));
+    expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, 10n ** 17n, 2).toString());
+    expect(attr('bet-preset-.1', 'aria-pressed')).toBe('true');
+    expect(attr('bet-preset-.05', 'aria-pressed')).toBe('false');
+    // A typed amount below the smallest chip is still a bet: the table goes down to 0.001.
+    amount('0.001');
+    await waitFor(() => expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, 10n ** 15n, 2).toString()));
+    expect(screen.queryByTestId('bet-invalid')).toBeNull();
 
     // Nothing has been requested from the server beyond the config.
     expect(world.requests).toEqual(['GET /api/config']);
@@ -90,7 +96,7 @@ describe('bet panel: the dock', () => {
       await waitFor(() => expect(attr(`tier-${index}`, 'data-selected')).toBe('true'));
       expect(cycle.textContent).toBe(`${n}×${n}`);
       expect(attr('board', 'data-n')).toBe(String(n));
-      expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, index).toString());
+      expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, START_BET, index).toString());
     }
     expect(world.requests).toEqual(['GET /api/config']);
   });
@@ -150,8 +156,8 @@ describe('bet panel: the sheet', () => {
     expect(attr('sheet-start-side', 'data-side')).toBe(startSideOf(seed));
     expect(within(sheet).queryByTestId('client-seed-input')).toBeNull();
     expect(within(sheet).queryByRole('button', { name: /seed/i })).toBeNull();
-    expect(sheet.textContent).toContain(`${formatEth(exitPayoutWei(TABLE, BET, 0), 4)} ETH`);
-    expect(text('bet-submit')).toBe('Sign and bet 0.01 ETH');
+    expect(sheet.textContent).toContain(`${formatEth(exitPayoutWei(TABLE, START_BET, 0), 4)} ETH`);
+    expect(text('bet-submit')).toBe('Sign and bet 0.05 ETH');
     expect(text('bet-rules')).toContain(`If you do not move for ${TABLE.timing.idleTimeoutSec}s`);
     expect(text('bet-rules')).toContain(`${TABLE.timing.maxGameSec}s after the start`);
     // AC-W6: the drop at bet time and after the first move, in words, for the chosen size.

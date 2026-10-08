@@ -26,6 +26,8 @@ const MONAD = {
   faucetUrl: 'https://faucet.monad.xyz',
 };
 const BET = 10n ** 16n;
+/** The amount the dock starts with: 0.05. */
+const START_BET = 5n * 10n ** 16n;
 
 const text = (testId: string): string => screen.getByTestId(testId).textContent ?? '';
 
@@ -59,8 +61,7 @@ describe('on Monad', () => {
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('bet-start');
 
-    const exitWei = exitPayoutWei(TABLE, BET, 0);
-    expect(text('escape-payout')).toBe(`${formatEth(exitWei, 4)} MON`);
+    expect(text('escape-payout')).toBe(`${formatEth(exitPayoutWei(TABLE, START_BET, 0), 4)} MON`);
     expect(screen.getByLabelText('Custom bet in MON')).toBe(screen.getByTestId('bet-amount'));
     expect(screen.getByRole('group', { name: 'Bet presets in MON' })).toBeTruthy();
     await waitFor(() => expect(text('bankroll')).toContain('MON'));
@@ -83,7 +84,7 @@ describe('on Monad', () => {
 
     fireEvent.click(screen.getByTestId('bet-start'));
     expect((await screen.findByTestId('bet-submit')).textContent).toBe('Sign and bet 0.01 MON');
-    expect(text('schedule-exit-payout')).toBe(`Reaching the exit pays ${formatEth(exitWei)} MON.`);
+    expect(text('schedule-exit-payout')).toBe(`Reaching the exit pays ${formatEth(exitPayoutWei(TABLE, BET, 0))} MON.`);
     expect(screen.getByTestId('sign-sheet').textContent).not.toContain('ETH');
   });
 
@@ -118,9 +119,9 @@ describe('on Monad', () => {
   });
 
   it('stops a bet the balance cannot pay with its fee, and points to the faucet', async () => {
-    // 0.01 MON, the bet itself: the fee of the bet transaction does not fit.
+    // 0.05 MON, the bet the dock starts with: the fee of the bet transaction does not fit.
     const world = new FakeWorld({ network: MONAD, chainId: 10143 });
-    world.balance = BET;
+    world.balance = START_BET;
     render(<GameApp deps={world.deps()} />);
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     const short = await screen.findByTestId('bet-short');

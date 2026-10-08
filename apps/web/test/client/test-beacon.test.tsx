@@ -5,7 +5,8 @@ import { GameApp } from '../../src/client/GameApp';
 import { collectSnapshot } from '../../src/client/components/TestBeacon';
 import { FakeWorld, TABLE } from './helpers';
 
-const BET = 10n ** 16n;
+/** The amount the dock starts with: 0.05. */
+const BET = 5n * 10n ** 16n;
 
 beforeEach(() => window.localStorage.clear());
 afterEach(() => cleanup());
@@ -30,7 +31,7 @@ describe('TestBeacon', () => {
     const first = world.snapshots[world.snapshots.length - 1];
     expect(first.url).toBe(window.location.href);
     expect(first.chainNowSec).toBe(world.chainNow);
-    expect(first.items['bet-amount'].text).toBe('0.01');
+    expect(first.items['bet-amount'].text).toBe('0.05');
     expect(first.items['tier-0'].attrs['data-selected']).toBe('true');
     expect(first.items['escape-payout'].attrs['data-wei']).toBe(exitPayoutWei(TABLE, BET, 0).toString());
     expect(first.items['escape-payout'].text).toBe(

@@ -97,28 +97,28 @@ const isInt = (value: unknown, min: number, max: number): value is number =>
  */
 export function parseRecord(raw: unknown): PlayRecord {
   const fail = (message: string): never => {
-    throw new Error(`플레이 기록을 읽을 수 없습니다: ${message}`);
+    throw new Error(`Cannot read the play record: ${message}`);
   };
-  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail('JSON 객체가 아닙니다');
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail('not a JSON object');
   const r = raw as Record<string, unknown>;
 
-  if (!isHex32(r.gameId)) fail('gameId가 32바이트 hex가 아닙니다');
-  if (!isHex32(r.commitment)) fail('commitment가 32바이트 hex가 아닙니다');
-  if (!isHex32(r.clientSeed)) fail('clientSeed가 32바이트 hex가 아닙니다');
-  if (!isInt(r.tier, 0, 255)) fail('tier가 정수가 아닙니다');
-  if (!isInt(r.n, 2, 255)) fail('n이 정수가 아닙니다');
-  if (!Array.isArray(r.observations)) fail('observations가 배열이 아닙니다');
-  if (!Array.isArray(r.moves)) fail('moves가 배열이 아닙니다');
+  if (!isHex32(r.gameId)) fail('gameId is not a 32-byte hex');
+  if (!isHex32(r.commitment)) fail('commitment is not a 32-byte hex');
+  if (!isHex32(r.clientSeed)) fail('clientSeed is not a 32-byte hex');
+  if (!isInt(r.tier, 0, 255)) fail('tier is not an integer');
+  if (!isInt(r.n, 2, 255)) fail('n is not an integer');
+  if (!Array.isArray(r.observations)) fail('observations is not an array');
+  if (!Array.isArray(r.moves)) fail('moves is not an array');
 
   const observations = (r.observations as unknown[]).map((entry, index) => {
     const o = entry as Partial<Observation> | null;
     if (!o || !isInt(o.step, 0, 65535) || !isInt(o.cell, 0, 65535) || !isInt(o.open, 0, 15)) {
-      fail(`observations[${index}]의 step, cell, open이 올바르지 않습니다`);
+      fail(`observations[${index}] has an invalid step, cell or open`);
     }
     return { step: o!.step!, cell: o!.cell!, open: o!.open! };
   });
   const moves = (r.moves as unknown[]).map((entry, index) => {
-    if (!isInt(entry, 0, 3)) fail(`moves[${index}]가 0~3이 아닙니다`);
+    if (!isInt(entry, 0, 3)) fail(`moves[${index}] is not 0 to 3`);
     return entry as Dir;
   });
 
@@ -145,7 +145,7 @@ export function parseRecord(raw: unknown): PlayRecord {
       !/^\d+$/.test(t.payoutWei) ||
       typeof t.signature !== 'string'
     ) {
-      fail('terminal의 형식이 올바르지 않습니다');
+      fail('terminal is malformed');
     }
     record.terminal = {
       serverSeed: t!.serverSeed!,
@@ -160,7 +160,7 @@ export function parseRecord(raw: unknown): PlayRecord {
     // so a malformed one is refused rather than dropped. Under rule 2 every ending names the
     // rule, and only an ending in a dead end names that dead end's chest.
     if (t!.chestRule !== undefined) {
-      if (!isInt(t!.chestRule, 1, 65535)) fail('terminal.chestRule이 올바르지 않습니다');
+      if (!isInt(t!.chestRule, 1, 65535)) fail('terminal.chestRule is invalid');
       const chest = t!.chest as Partial<ChestFound> | null | undefined;
       if (chest === undefined && t!.chestRule >= 2) {
         record.terminal.chestRule = t!.chestRule;
@@ -183,7 +183,7 @@ export function parseRecord(raw: unknown): PlayRecord {
           points: chest.points,
         };
       } else {
-        fail('terminal.chest의 형식이 올바르지 않습니다');
+        fail('terminal.chest is malformed');
       }
     }
   }
@@ -195,11 +195,11 @@ export function parseRecord(raw: unknown): PlayRecord {
   if (typeof r.auto === 'boolean') record.auto = r.auto;
   if (isHex32(r.createTxHash)) record.createTxHash = r.createTxHash;
   if (r.chestRule !== undefined) {
-    if (!isInt(r.chestRule, 1, 65535)) fail('chestRule이 올바르지 않습니다');
+    if (!isInt(r.chestRule, 1, 65535)) fail('chestRule is invalid');
     record.chestRule = r.chestRule as number;
   }
   if (r.chests !== undefined) {
-    if (!Array.isArray(r.chests)) fail('chests가 배열이 아닙니다');
+    if (!Array.isArray(r.chests)) fail('chests is not an array');
     record.chests = (r.chests as unknown[]).map((entry, index) => {
       const c = entry as Partial<FoundChest> | null;
       if (
@@ -213,7 +213,7 @@ export function parseRecord(raw: unknown): PlayRecord {
         !/^\d+$/.test(c.points) ||
         !isInt(c.step, 1, 65535)
       ) {
-        fail(`chests[${index}]의 형식이 올바르지 않습니다`);
+        fail(`chests[${index}] is malformed`);
       }
       return { cell: { x: c!.cell!.x, y: c!.cell!.y }, kind: c!.kind!, rewardBps: c!.rewardBps!, points: c!.points!, step: c!.step! };
     });

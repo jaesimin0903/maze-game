@@ -2,15 +2,19 @@
 # 01 exit win (plan §9.1; AC-W1, AC-W2, AC-W3, AC-W4, AC-W5, AC-W6, AC-R1, AC-R2, AC-E1, AC-M4,
 # AC-T8, and the positive half of AC-A4).
 #
-# Connects the dev wallet, reads the refund schedule and the exit payout BEFORE betting (for
-# every size of the table, with two different amounts), bets on the smallest size, walks the
-# solution to the exit, and opens the verify page.
+# Connects the dev wallet, reads the escape payout and the refund schedule BEFORE betting (for
+# every size of the table, with two different amounts), bets on the smallest size from the bet
+# sheet START opens, walks the solution to the exit, and opens the verify dialog.
 #
-#   DOM    the dev wallet option is offered and connects Anvil #2; before any bet every
-#          schedule row and the exit payout equal the table for the chosen size and amount, and
-#          follow a change of size and amount; the board appears with the start and the exit
-#          marked and no wall data on unvisited cells; result-outcome = exit with bet x
-#          multiplier; the settlement transaction is named; the verify page shows the hash
+#   DOM    the dev wallet option is offered and connects Anvil #2; before any bet the dock's
+#          size chips carry the table's sizes and multipliers and escape-payout equals bet x
+#          multiplier for the chosen size and amount, following a change of size and amount; in
+#          the bet sheet every schedule row and the exit payout equal the table for that size and
+#          amount (the other sizes' sheets are closed with Escape, so they need the pressKey
+#          capability); the sheet's rules state the refund right after the bet and after the
+#          first step, and the idle and maximum-time rules; the board appears with the start and
+#          the exit marked and no wall data on unvisited cells; result-outcome = exit with bet x
+#          multiplier; the settlement transaction is named; the verify dialog shows the hash
 #          match, every observed cell matching, and the solution
 #   chain  nothing is on chain before the bet; the contract quotes the same exit payout and
 #          holds the same sizes and multipliers; getGame Active then Settled; GameSettled
@@ -26,7 +30,7 @@ set -u
 # shellcheck source=e2e/aside/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-scenario_begin 01 exit "schedule and exit payout before the bet, then the solution to the exit, the payout on chain and the verify page"
+scenario_begin 01 exit "escape payout and refund schedule before the bet, then the solution to the exit, the payout on chain and the verify dialog"
 require_input_path
 stack_up
 aside_start || blocked_scenario "the aside repl session did not start (see $ASIDE_LOG)"
@@ -55,20 +59,47 @@ expect_attr "the connected wallet is the dev wallet" A wallet-address data-kind 
 
 LOGS_BEFORE="$(cast logs --from-block 0 --to-block latest --address "$CONTRACT" --rpc-url "$RPC" --json \
   'GameCreated(bytes32 indexed,address indexed,uint8,uint256,uint256,bytes32,bytes32,uint64)' 2>/dev/null | jq 'length')"
-check chain "no game exists on chain while the schedule is read" 0 "$LOGS_BEFORE"
+check chain "no game exists on chain while the payouts are read" 0 "$LOGS_BEFORE"
 
-# Every other size of the table and another amount first, to see that the schedule follows the
-# form for each size the table offers.
+# Every other size of the table and another amount first, to see that the escape payout and the
+# schedule follow the dock for each size the table offers. The open sheet covers the dock, so it
+# is closed again (Escape) before the next size is chosen.
 OTHER=$(($(tier_count) - 1))
 while [ "$OTHER" -ge 1 ]; do
-  fill_bet A "$OTHER" 0.02 "$(client_seed 1)"
-  expect_schedule A "$OTHER" "$BET_WEI"
+  choose_bet A "$OTHER" 0.02
+  expect_escape_payout A "$OTHER" "$BET_WEI"
+  if cap pressKey; then
+    ui_click A bet-start 10 || fail_scenario "bet-start is not clickable"
+    expect_schedule A "$OTHER" "$BET_WEI"
+    close_sheet A || fail_scenario "the bet sheet did not close on Escape"
+  else
+    dom_blocked "size $OTHER: the refund schedule in the bet sheet" "closing the bet sheet again needs a key press (capability pressKey not verified)"
+  fi
   OTHER=$((OTHER - 1))
 done
+choose_bet A 0 "$BET_ETH"
+expect_escape_payout A 0 "$BET_WEI"
+
+# START opens the bet sheet: the schedule of the size and amount the bet is placed with, and the
+# rules naming the refund right after the bet and after the first step, and the idle and
+# maximum-time rules, as the table and /api/config give them.
 fill_bet A 0 "$BET_ETH" "$(client_seed 1)"
 expect_schedule A 0 "$BET_WEI"
 expect_attr "schedule-row-0 is the refund right after the bet" A schedule-row-0 data-wei "$(refund_wei "$BET_WEI" 0 0)" 5
 expect_attr "schedule-row-1 is the refund after the first move" A schedule-row-1 data-wei "$(refund_wei "$BET_WEI" 0 1)" 5
+# percent <bps>: as the page prints it, 9500 -> 95.00%
+percent() { printf '%d.%02d%%' $(($1 / 100)) $(($1 % 100)); }
+RULES_WANT="$(percent "$(tier_refund_bps 0 0)") $(percent "$(tier_refund_bps 0 1)") $(printf '%s' "$CONFIG_JSON" | jq -r '.idleTimeoutSec')s $(printf '%s' "$CONFIG_JSON" | jq -r '.maxGameSec')s"
+expect_present "START opens the bet sheet with its rules (bet-rules)" A bet-rules 5
+if RULES_TEXT="$(dom_text A bet-rules)"; then
+  RULES_SEEN=""
+  for RULE in $RULES_WANT; do
+    case "$RULES_TEXT" in *"$RULE"*) RULES_SEEN="${RULES_SEEN:+$RULES_SEEN }$RULE" ;; esac
+  done
+  check dom "bet-rules names refundBps[0], refundBps[1], the idle timeout and the maximum game time" "$RULES_WANT" "$RULES_SEEN"
+else
+  dom_blocked "bet-rules names the refunds and the time rules" "the DOM could not be read over path $READ_PATH"
+fi
 
 # ----- the game -----
 
@@ -81,7 +112,7 @@ PAYOUT="$(exit_wei "$BET_WEI" "$TIER")"
 expect_fog A 0
 expect_refundable A 0
 expect_attr "exit-payout shows bet x multiplier" A exit-payout data-wei "$PAYOUT" 5
-expect_present "the cash-out button is on screen" A cashout-button 5
+expect_present "the cash-out button (CASH OUT) is on screen" A cashout-open 5
 
 FIRST=1
 # shellcheck disable=SC2086
@@ -112,7 +143,7 @@ SEQ_AFTER="$(http_field .seq)"
 check_ok http "the snapshot's seq keeps rising (heartbeat)" "above $SEQ_BEFORE" "$SEQ_AFTER" \
   "$([ "${SEQ_AFTER:-0}" -gt "${SEQ_BEFORE:-0}" ] 2>/dev/null; echo $?)"
 
-# ----- the verify page -----
+# ----- the verify dialog -----
 
 open_verify A V
 expect_verify_ok V $((STEPS + 1))

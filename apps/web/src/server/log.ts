@@ -51,10 +51,30 @@ export function createLogger(sink: LogSink = stdoutSink): Logger {
   };
 }
 
-/** A short description of an unknown thrown value, for `detail.error`. */
+/**
+ * A short description of an unknown thrown value, for `detail.error`. URLs in it are cut to their
+ * origin (`redactUrls`): an RPC error names the RPC URL, which may carry an API key.
+ */
 export function describeError(error: unknown): string {
+  return redactUrls(describe(error));
+}
+
+function describe(error: unknown): string {
   if (!(error instanceof Error)) return String(error);
   const short = (error as { shortMessage?: unknown }).shortMessage;
   const message = typeof short === 'string' ? short : error.message;
-  return error.cause === undefined ? message : `${message} (${describeError(error.cause)})`;
+  return error.cause === undefined ? message : `${message} (${describe(error.cause)})`;
+}
+
+/** Every http(s) or ws(s) URL in `text` without its user info, path, query and fragment. */
+export function redactUrls(text: string): string {
+  return text.replace(/\b(?:https?|wss?):\/\/[^\s"'<>()]+/g, (match) => {
+    try {
+      const url = new URL(match);
+      const bare = url.username === '' && url.password === '' && url.search === '' && url.hash === '';
+      return bare && (url.pathname === '/' || url.pathname === '') ? match : `${url.protocol}//${url.host}/[redacted]`;
+    } catch {
+      return '[redacted url]';
+    }
+  });
 }

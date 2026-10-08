@@ -1,10 +1,6 @@
-import { VerifyView } from '../../src/client/components/VerifyView';
+import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: '공정성 검증 | 미로 베팅',
-};
-
-/** `/verify`: verify a pasted play record. */
+/** `/verify`: the fairness check now opens as a dialog over the game, ready for a pasted record. */
 export default function VerifyImportPage() {
-  return <VerifyView gameId={null} />;
+  redirect('/?verify=import');
 }

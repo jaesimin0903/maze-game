@@ -1,7 +1,9 @@
-// Wallet abstraction over viem (plan §1.3 (f), §7.6). Two paths produce the same `WalletApi`:
-// a browser wallet (EIP-1193) and the dev wallet, an Anvil account signing locally. The dev
-// wallet exists only when the server's config says so. Both sign messages as well as
-// transactions: a ticket request carries the player's signature (`ticketRequestMessage`).
+// Wallet abstraction over viem (plan §1.3 (f), §7.6). Three paths produce the same `WalletApi`:
+// a browser wallet (EIP-1193), the Privy embedded wallet of a player who logged in with email,
+// Google or a passkey (also EIP-1193, but it signs without asking), and the dev wallet, an Anvil
+// account signing locally. The dev wallet exists only when the server's config says so. All sign
+// messages as well as transactions: a ticket request carries the player's signature
+// (`ticketRequestMessage`).
 
 import {
   BaseError,
@@ -23,15 +25,16 @@ import {
 } from '@maze/shared';
 import { chainOf, type ChainConfig } from './chain';
 
-export type WalletKind = 'injected' | 'dev';
+/** `privy` is the embedded wallet of a Privy login; it signs without a prompt of its own. */
+export type WalletKind = 'injected' | 'dev' | 'privy';
 
 /** The contract calls a player makes directly. Each resolves to the transaction hash. */
 export interface WalletApi {
   kind: WalletKind;
   address: Hex;
   /**
-   * EIP-191 `personal_sign` of the UTF-8 bytes of `message` by `address`. The dev wallet signs
-   * locally; a browser wallet asks the player.
+   * EIP-191 `personal_sign` of the UTF-8 bytes of `message` by `address`. The dev and Privy
+   * wallets sign without asking; a browser wallet asks the player.
    */
   signMessage(message: string): Promise<Hex>;
   createGame(p: { ticket: TicketResponse; clientSeed: Hex; betWei: bigint }): Promise<Hex>;
@@ -39,6 +42,11 @@ export interface WalletApi {
   settle(p: { gameId: Hex; terminal: GameTerminal }): Promise<Hex>;
   reclaim(gameId: Hex): Promise<Hex>;
   withdrawPending(): Promise<Hex>;
+  /**
+   * Sends `valueWei` of the chain's native coin from the wallet to `to`, with the gas limit `gas`
+   * when given (Monad charges the whole limit, so the page sets it from an estimate).
+   */
+  transfer(p: { to: Hex; valueWei: bigint; gas?: bigint }): Promise<Hex>;
 }
 
 /** Anvil accounts reserved for players (plan §7.9: #0 house, #1 server, #2..#9 players). */
@@ -106,6 +114,8 @@ function walletFrom(
       }),
     reclaim: (gameId) => client.writeContract({ ...base, functionName: 'reclaim', args: [gameId] }),
     withdrawPending: () => client.writeContract({ ...base, functionName: 'withdrawPending' }),
+    transfer: ({ to, valueWei, gas }) =>
+      client.sendTransaction({ account, chain: base.chain, to, value: valueWei, ...(gas === undefined ? {} : { gas }) }),
   };
 }
 
@@ -115,10 +125,10 @@ export async function connectDevWallet(
   index: number,
 ): Promise<WalletApi> {
   if (!walletOptions(config, false).dev) {
-    throw new Error('개발용 지갑은 이 서버에서 사용할 수 없습니다');
+    throw new Error('The dev wallet is not available on this server');
   }
   if (!(DEV_ACCOUNT_INDEXES as readonly number[]).includes(index)) {
-    throw new Error(`개발용 계정 번호는 ${DEV_ACCOUNT_INDEXES[0]}~${DEV_ACCOUNT_INDEXES.at(-1)}입니다`);
+    throw new Error(`Dev account index must be ${DEV_ACCOUNT_INDEXES[0]} to ${DEV_ACCOUNT_INDEXES.at(-1)}`);
   }
   const { mnemonicToAccount } = await import('viem/accounts');
   const account = mnemonicToAccount(ANVIL_MNEMONIC, { addressIndex: index });
@@ -138,7 +148,7 @@ export async function connectInjectedWallet(
   const chain = chainOf(config);
   const client = createWalletClient({ chain, transport: custom(provider) });
   const [address] = await client.requestAddresses();
-  if (!address) throw new Error('지갑이 계정을 내주지 않았습니다');
+  if (!address) throw new Error('The wallet did not provide an account');
 
   if ((await client.getChainId()) !== config.chainId) {
     try {
@@ -147,10 +157,29 @@ export async function connectInjectedWallet(
       await client.addChain({ chain });
     }
     if ((await client.getChainId()) !== config.chainId) {
-      throw new Error(`지갑의 네트워크를 체인 ${config.chainId}(${config.rpcUrl})로 바꿔 주세요`);
+      throw new Error(`Switch your wallet network to chain ${config.chainId} (${config.rpcUrl})`);
     }
   }
   return walletFrom('injected', client, address, config);
+}
+
+/**
+ * Wraps the EIP-1193 provider of a Privy embedded wallet and moves it to the configured chain.
+ * The wallet signs without a prompt (Privy's own confirmation screens are turned off), so the
+ * page's Start button is the player's consent to both signatures of a bet.
+ */
+export async function connectPrivyWallet(config: ChainConfig, provider: EIP1193Provider): Promise<WalletApi> {
+  const client = createWalletClient({ chain: chainOf(config), transport: custom(provider) });
+  const [address] = await client.requestAddresses();
+  if (!address) throw new Error('The account wallet did not provide an address');
+  if ((await client.getChainId()) !== config.chainId) {
+    // The chain is Privy's only supported chain, so the embedded wallet can always switch to it.
+    await client.switchChain({ id: config.chainId });
+    if ((await client.getChainId()) !== config.chainId) {
+      throw new Error(`The account wallet could not switch to chain ${config.chainId}`);
+    }
+  }
+  return walletFrom('privy', client, address, config);
 }
 
 /** Name of the contract's custom error behind a failed call, when there is one. */
@@ -162,16 +191,16 @@ export function revertName(error: unknown): string | null {
 }
 
 const REVERT_MESSAGES: Record<string, string> = {
-  InvalidSignature: '서버 서명이 컨트랙트에서 확인되지 않았습니다',
-  TicketExpired: '티켓 유효 시간이 지났습니다. 다시 베팅해 주세요',
-  GameExists: '이미 만들어진 게임입니다',
-  BetOutOfRange: '베팅 금액이 허용 범위를 벗어났습니다',
-  InvalidTier: '없는 크기입니다',
-  InsufficientLiquidity: '하우스 잔액이 이 베팅의 최대 배당을 감당하지 못합니다',
-  GameNotActive: '이 게임은 이미 정산되었거나 회수되었습니다',
-  DeadlinePassed: '정산 기한이 지났습니다. 베팅액을 회수할 수 있습니다',
-  DeadlineNotReached: '아직 정산 기한이 지나지 않아 회수할 수 없습니다',
-  NothingToWithdraw: '인출할 보류 금액이 없습니다',
+  InvalidSignature: 'The contract could not verify the server signature',
+  TicketExpired: 'The ticket has expired. Place your bet again',
+  GameExists: 'This game already exists',
+  BetOutOfRange: 'The bet amount is out of range',
+  InvalidTier: 'That maze size does not exist',
+  InsufficientLiquidity: 'The house balance cannot cover the maximum payout of this bet',
+  GameNotActive: 'This game has already been settled or reclaimed',
+  DeadlinePassed: 'The settlement deadline has passed. You can reclaim your bet',
+  DeadlineNotReached: 'The settlement deadline has not passed yet, so you cannot reclaim',
+  NothingToWithdraw: 'There is no pending balance to withdraw',
 };
 
 /** The player dismissed the wallet's prompt (EIP-1193 error 4001) instead of approving it. */
@@ -184,8 +213,8 @@ export function isUserRejection(error: unknown): boolean {
 /** A sentence for the player about a failed transaction. */
 export function describeTxError(error: unknown): string {
   const name = revertName(error);
-  if (name !== null) return REVERT_MESSAGES[name] ?? `컨트랙트가 거부했습니다 (${name})`;
-  if (isUserRejection(error)) return '지갑에서 요청을 거절했습니다';
+  if (name !== null) return REVERT_MESSAGES[name] ?? `The contract rejected the request (${name})`;
+  if (isUserRejection(error)) return 'The request was rejected in the wallet';
   if (error instanceof BaseError) return error.shortMessage;
   return error instanceof Error ? error.message : String(error);
 }

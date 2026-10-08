@@ -9,7 +9,7 @@ export const GET = route(async ({ container }) => {
   return json(
     toConfigResponse({
       chainId: config.chainId,
-      rpcUrl: config.rpcUrl,
+      rpcUrl: config.publicRpcUrl,
       contract: config.contract,
       table,
       tableHash,
@@ -18,6 +18,8 @@ export const GET = route(async ({ container }) => {
       idleTimeoutSec,
       maxGameSec,
       nowSec: await clock.chainNow(),
+      network: config.network,
+      privyAppId: config.privyAppId,
     }),
   );
 });

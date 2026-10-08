@@ -28,7 +28,7 @@ import {
   type Maze,
 } from '@maze/shared';
 import { GameApp } from '../../src/client/GameApp';
-import { VerifyView } from '../../src/client/components/VerifyView';
+import { VerifyPanel } from '../../src/client/components/VerifyView';
 import { DIR_NAMES } from '../../src/client/board-view';
 import { formatPoints } from '../../src/client/format';
 import { loadRecord, parseRecord, saveRecord, withView, type PlayRecord } from '../../src/client/record';
@@ -112,7 +112,8 @@ async function openAndBet(world: FakeWorld, clientSeed: Hex): Promise<Hex> {
   fireEvent.click(screen.getByTestId('tier-0'));
   fireEvent.change(screen.getByTestId('bet-amount'), { target: { value: '0.01' } });
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: clientSeed } });
-  fireEvent.click(screen.getByTestId('bet-submit'));
+  fireEvent.click(screen.getByTestId('bet-start'));
+  fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   return attr('board', 'data-game-id') as Hex;
 }
@@ -121,7 +122,7 @@ async function walk(dirs: Dir[]): Promise<void> {
   for (const dir of dirs) {
     const before = step();
     const id = `move-${DIR_NAMES[dir]}`;
-    await waitFor(() => expect((screen.getByTestId(id) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect(attr(id, 'data-legal')).toBe('true'));
     fireEvent.click(screen.getByTestId(id));
     await waitFor(() => expect(step()).toBe(before + 1));
   }
@@ -132,7 +133,7 @@ function expectNoChestShown(): void {
   expect(screen.queryByTestId('chest-found')).toBeNull();
   expect(screen.queryByTestId('chest-reveal')).toBeNull();
   expect(document.querySelector('[data-chest]')).toBeNull();
-  expect(document.body.textContent).not.toContain('보물상자');
+  expect(document.body.textContent?.toLowerCase()).not.toContain('chest');
 }
 
 describe('AC-P6: chests on the page', () => {
@@ -145,7 +146,7 @@ describe('AC-P6: chests on the page', () => {
     const gameId = await openAndBet(world, planned.clientSeed);
     expect(gameId).toBe(firstGameId);
     await waitFor(() => expect(attr('points-balance', 'data-points')).toBe('0'));
-    expect(screen.getByTestId('points-balance').textContent).toContain('현금 가치 없음');
+    expect(screen.getByTestId('points-balance').textContent).toContain('no cash value');
 
     await walk(planned.moves.slice(0, -1));
     expectNoChestShown();
@@ -156,8 +157,8 @@ describe('AC-P6: chests on the page', () => {
     const found = await screen.findByTestId('chest-found');
     expect(found.getAttribute('data-points')).toBe(points);
     expect(found.getAttribute('data-reward-bps')).toBe(String(chest.rewardBps));
-    expect(found.textContent).toContain(`보물상자 발견: +${formatPoints(points)} 포인트`);
-    expect(found.textContent).toContain('현금 가치 없음');
+    expect(found.textContent).toContain(`Chest found: +${formatPoints(points)} points`);
+    expect(found.textContent).toContain('No cash value');
     expect(attr('chest-points', 'data-points')).toBe(points);
 
     const x = planned.end % N;
@@ -179,6 +180,7 @@ describe('AC-P6: chests on the page', () => {
     await walk(planned.moves);
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('loss');
     expect(await screen.findByTestId('chest-none')).not.toBeNull();
+    expect(screen.getByTestId('chest-none').textContent).toContain('This dead end held no chest.');
     expect(screen.queryByTestId('chest-found')).toBeNull();
     expect(screen.queryByTestId('chest-reveal')).toBeNull();
     await waitFor(() => expect(attr('points-balance', 'data-points')).toBe('0'));
@@ -200,6 +202,7 @@ describe('AC-P6: chests on the page', () => {
     const cashWorld = new FakeWorld({ chest: CHEST_CONFIG });
     await openAndBet(cashWorld, planned.clientSeed);
     await walk(planned.moves.slice(0, 1));
+    fireEvent.click(screen.getByTestId('cashout-open'));
     fireEvent.click(screen.getByTestId('cashout-button'));
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('cashout');
     expectNoChestShown();
@@ -228,10 +231,12 @@ describe('AC-P11: path chests on the page', () => {
         expect(just.getAttribute('data-points')).toBe(fresh.points);
         expect(just.getAttribute('data-reward-bps')).toBe(String(fresh.rewardBps));
         expect([just.getAttribute('data-x'), just.getAttribute('data-y')]).toEqual([String(x), String(y)]);
-        expect(just.textContent).toContain(`보물상자 발견! +${formatPoints(fresh.points)} 포인트`);
+        expect(just.textContent).toContain(`Treasure chest! +${formatPoints(fresh.points)} PT`);
+        expect(just.textContent).toContain('no cash value');
         // On the board: the points over the cell, and the chest mark that stays.
         expect([attr('chest-pop', 'data-x'), attr('chest-pop', 'data-y')]).toEqual([String(x), String(y)]);
-        expect(screen.getByTestId('chest-pop').textContent).toBe(`+${formatPoints(fresh.points)}`);
+        expect(attr('chest-pop', 'data-points')).toBe(fresh.points);
+        expect(screen.getByTestId('chest-pop').textContent).toBe(`+${formatPoints(fresh.points)} PT`);
         expect(attr(`chest-cell-${x}-${y}`, 'data-points')).toBe(fresh.points);
         expect(attr(`cell-${x}-${y}`, 'data-chest-kind')).toBe('path');
       } else {
@@ -272,10 +277,14 @@ describe('AC-P11: path chests on the page', () => {
       expect([item.getAttribute('data-x'), item.getAttribute('data-y')]).toEqual([String(chest.cell.x), String(chest.cell.y)]);
       expect(item.getAttribute('data-step')).toBe(String(chest.step));
       expect(item.getAttribute('data-points')).toBe(chest.points);
-      expect(item.textContent).toContain(chest.kind === 'path' ? '길 상자' : '막다른 칸 상자');
+      expect(item.textContent).toContain(chest.kind === 'path' ? 'path chest' : 'dead-end chest');
     });
     expect(attr('game-points-total', 'data-points')).toBe(sumOf(expected));
-    expect(screen.getByTestId('game-points-total').textContent).toContain('현금 가치 없음');
+    expect(screen.getByTestId('game-points-total').textContent).toContain(`Treasure +${formatPoints(sumOf(expected))} PT`);
+    // The console screen shows the points under the end banner too.
+    expect(attr('end-points', 'data-points')).toBe(sumOf(expected));
+    expect(screen.getByTestId('end-points').textContent).toBe(`+${formatPoints(sumOf(expected))} PT`);
+    expect(screen.getByTestId('game-points-total').textContent).toContain('no cash value');
     await waitFor(() => expect(attr('points-balance', 'data-points')).toBe(sumOf(expected)));
     // The board keeps every chest: the path chests and the dead end's.
     expect(attr('chest-reveal', 'data-x')).toBe(String(dead.cell.x));
@@ -291,6 +300,7 @@ describe('AC-P11: path chests on the page', () => {
     await openAndBet(world, planned.clientSeed);
     await walk(planned.moves.slice(0, first.step));
     expect(attr('chest-just-found', 'data-points')).toBe(first.points);
+    fireEvent.click(screen.getByTestId('cashout-open'));
     fireEvent.click(screen.getByTestId('cashout-button'));
 
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('cashout');
@@ -360,7 +370,7 @@ describe('AC-P6: chests on the verify screen', () => {
       points: chestPoints(BET, chest.rewardBps).toString(),
     });
     saveRecord(record);
-    render(<VerifyView gameId={GAME} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={GAME} deps={worldWith(record).deps()} />);
 
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('true'));
     // A rule 1 record is checked under rule 1: chests in dead ends only.
@@ -380,9 +390,9 @@ describe('AC-P6: chests on the verify screen', () => {
     const planned = plan(true, GAME);
     const hidden = lossRecord(planned, GAME, null);
     saveRecord(hidden);
-    const { unmount } = render(<VerifyView gameId={GAME} deps={worldWith(hidden).deps()} />);
+    const { unmount } = render(<VerifyPanel gameId={GAME} deps={worldWith(hidden).deps()} />);
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('false'));
-    expect(screen.getByTestId('verify-chest-match').textContent).toContain('없다고 했습니다');
+    expect(screen.getByTestId('verify-chest-match').textContent).toContain('said this dead end has no treasure chest');
     unmount();
 
     const chest = chestAt(planned.finalSeed, planned.maze, planned.end)!;
@@ -392,7 +402,7 @@ describe('AC-P6: chests on the verify screen', () => {
       points: '1',
     });
     saveRecord(cheap);
-    render(<VerifyView gameId={GAME} deps={worldWith(cheap).deps()} />);
+    render(<VerifyPanel gameId={GAME} deps={worldWith(cheap).deps()} />);
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('false'));
   });
 
@@ -428,7 +438,7 @@ describe('AC-P11: path chests on the verify screen and in the play record', () =
     const planned = plan(true, GAME, true);
     const record = ruleTwoRecord(planned, GAME, routeChests(planned));
     saveRecord(record);
-    render(<VerifyView gameId={GAME} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={GAME} deps={worldWith(record).deps()} />);
 
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('true'));
     const all = chestsOf(planned.finalSeed, planned.maze, 2);
@@ -440,7 +450,7 @@ describe('AC-P11: path chests on the verify screen and in the play record', () =
     );
     const marked = [...document.querySelectorAll('[data-testid="verify-maze"] [data-chest="true"]')];
     expect(marked.map((cell) => cell.getAttribute('data-chest-kind'))).toEqual(all.map((entry) => entry.kind));
-    expect(screen.getByTestId('verify-chest-match').textContent).toContain('길 상자');
+    expect(screen.getByTestId('verify-chest-match').textContent).toContain('path chest');
     expect(attr('verify-cells-match', 'data-match')).toBe('true');
   });
 
@@ -453,7 +463,7 @@ describe('AC-P11: path chests on the verify screen and in the play record', () =
       chests.filter((chest) => chest !== chests.find((entry) => entry.kind === 'path')),
     );
     saveRecord(withheld);
-    const { unmount } = render(<VerifyView gameId={GAME} deps={worldWith(withheld).deps()} />);
+    const { unmount } = render(<VerifyPanel gameId={GAME} deps={worldWith(withheld).deps()} />);
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('false'));
     unmount();
 
@@ -466,7 +476,7 @@ describe('AC-P11: path chests on the verify screen and in the play record', () =
       { cell: { x: empty! % N, y: Math.floor(empty! / N) }, kind: 'path', rewardBps: 300, points: '300', step: 1 },
     ]);
     saveRecord(invented);
-    render(<VerifyView gameId={GAME} deps={worldWith(invented).deps()} />);
+    render(<VerifyPanel gameId={GAME} deps={worldWith(invented).deps()} />);
     await waitFor(() => expect(attr('verify-chest-match', 'data-match')).toBe('false'));
   });
 

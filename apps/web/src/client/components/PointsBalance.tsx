@@ -40,13 +40,17 @@ export function PointsBalance({ api, address, refreshKey }: Props) {
   const total = points !== null && points.address === address ? points.total : null;
   return (
     <span
-      className="points-balance"
+      className="stat-chip points-balance"
       data-testid="points-balance"
       data-points={total ?? ''}
-      title="보물상자에서 얻은 포인트입니다. 현금 가치가 없고 돈으로 바꿀 수 없습니다."
+      title="Points from treasure chests. They have no cash value and cannot be exchanged for money."
     >
-      포인트 {total === null ? '확인 중' : formatPoints(total)}{' '}
-      <small className="points-note">현금 가치 없음</small>
+      <svg viewBox="0 0 7 7" width="14" height="14" shapeRendering="crispEdges" aria-hidden="true" style={{ fill: 'var(--brand)' }}>
+        <path d="M3 0h1v1H3zM2 1h3v1H2zM0 2h7v1H0zM1 3h5v1H1zM2 4h3v1H2zM1 5h2v1H1zM4 5h2v1H4zM0 6h2v1H0zM5 6h2v1H5z" />
+      </svg>
+      <span className="stat-value">{total === null ? '...' : formatPoints(total)}</span>
+      <span className="stat-label">PT</span>
+      <span className="sr-only"> points, no cash value</span>
     </span>
   );
 }

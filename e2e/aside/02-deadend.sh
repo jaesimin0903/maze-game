@@ -5,7 +5,7 @@
 # shortest route into a dead end.
 #
 #   DOM    result-outcome = loss with a payout of 0 and a net of minus the bet; the settlement
-#          transaction is named; the verify page passes for the lost game too
+#          transaction is named; the verify dialog passes for the lost game too
 #   chain  GameSettled(outcome 2, payout 0) from the relayer; the player's balance does not
 #          change after the bet; totalReserved returns to 0
 #   HTTP   the server reports status lost, payout 0, the settlement hash; the reveal route

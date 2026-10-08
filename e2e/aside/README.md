@@ -116,20 +116,48 @@ game and waits for the supervisor to bring it back.
 
 | # | Script | Proves | Chain | HTTP | DOM |
 |---|---|---|---|---|---|
-| 01 | `01-exit.sh` | exit win on the smallest size; schedule and exit payout **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; every schedule row and exit payout for every size, with two amounts; fog board; result, settlement tx; verify page (hash, cells, solution) |
-| 02 | `02-deadend.sh` | dead-end loss on the middle size, moves by arrow keys | outcome 2, payout 0, balance unchanged | status lost, reveal | result loss, payout 0; verify page |
-| 03 | `03-cashout.sh` | cash-out after 3 moves on the largest size | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount at every step, exit payout, cash-out button, result; verify page |
+| 01 | `01-exit.sh` | exit win on the smallest size; escape payout and refund schedule **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; size chips (size, multiplier) and `escape-payout` for every size, with two amounts; in the bet sheet every `schedule-row-<k>` and `schedule-exit-payout` for every size (the other sizes' sheets are closed with Escape, so they need `pressKey`) and the rules (refund after the bet and after one step, idle and maximum time); fog board; result, settlement tx; verify dialog (hash, cells, solution) |
+| 02 | `02-deadend.sh` | dead-end loss on the middle size, moves by arrow keys | outcome 2, payout 0, balance unchanged | status lost, reveal | result loss, payout 0; verify dialog |
+| 03 | `03-cashout.sh` | cash-out after 3 moves on the largest size | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount at every step, exit payout, CASH OUT (`cashout-open`) then "Take it" (`cashout-button`), result; verify dialog |
 | 04 | `04-idle-auto-cashout.sh` | idle auto cash-out (`MAZE_IDLE_TIMEOUT_SEC=6`) learnt by polling | outcome 1, steps 2, mined at or after the idle deadline, relayer sent it | idleTimeoutSec 6; cashed_out, auto true | idle deadline on screen; `auto-cashout` shown without input within 5 (+3) chain seconds |
 | 05 | `05-server-down-reclaim.sh` | server killed: the open page reclaims after the settle deadline | `DeadlineNotReached` before; Reclaimed, amount = bet, sent by the player's wallet, balance + bet - fee, never settled | active before the stop, unreachable after | `server-unreachable`, countdown on block time, button disabled then enabled, result `reclaimed` |
-| 06 | `06-verify-mismatch.sh` | verify screen flags a tampered record | still Settled, once | game read and reveal unchanged by imports | one flipped wall bit marks exactly that cell and row; a changed seed fails the hash check; the untouched record passes |
-| 07 | `07-invalid-move.sh` | wall, off-grid, visited, stale, malformed, unauthenticated moves are refused | still Active, nothing settled; later cash-out settles | error codes; refusals carry only `{ error }`; seed not revealed mid-game; game read unchanged | board, current cell and refundable amount unchanged; wall move not offered |
+| 06 | `06-verify-mismatch.sh` | the verify dialog flags a tampered record, imported through `/?verify=import` | still Settled, once | game read and reveal unchanged by imports | one flipped wall bit marks exactly that cell and row; a changed seed fails the hash check; the untouched record passes |
+| 07 | `07-invalid-move.sh` | wall, off-grid, visited, stale, malformed, unauthenticated moves are refused | still Active, nothing settled; later cash-out settles | error codes; refusals carry only `{ error }`; seed not revealed mid-game; game read unchanged | board, current cell and refundable amount unchanged; wall move not offered (`data-legal="false"`) |
 | 08 | `08-multi-tab.sh` | second tab resumes; two different moves for one step | settled exactly once | one 200 and one `409 STALE_STEP` without game state (recorded in the pages); one more step, not two | tab B resumes; both tabs converge on the server's cell; the refused tab says so; tab B learns the cash-out |
 | 09 | `09-exploratory-agent.sh` | advisory, only with `--with-exec`: invariants after a model-driven agent tried to cheat | accounting, owner, signer, table hash | games unreadable without token, no early reveal | none (the plan defines none) |
-| 10 | `10-cli-reclaim.sh` | server killed: a third party reclaims with `scripts/reclaim.sh` | exit 1 `DeadlineNotReached` before, exit 0 after; Reclaimed, sent by #9, player + bet exactly; second reclaim refused; restarted server does not settle | unreachable; after restart reveal reason `reclaimed`, move refused | open page learns `reclaimed` from the chain; verify page after restart |
-| 11 | `11-dev-wallet-gating.sh` | dev wallet offered only when `/api/config` says so, same build | chain 31337, no game created | devWallet false, then true after a restart | option absent and bet disabled; after restart and reload present and connects #2 |
-| 12 | `12-chest.sh` | a planned route past at least one path chest into a dead end that holds a treasure chest, middle size, chest rule 2: points only, no cash value (`docs/treasure-chest.md`) | outcome 2, payout 0, balance unchanged, reserve back to 0, accounting | config chest rule 2 with both kinds and `cashValue: false`; every in-game answer lists exactly the chests of the cells entered so far; each path chest in the ledger from the move that found it; no dead-end chest before the end; terminal chest; `GET /api/points/<player>` awards (game, kind, cell, bet, reward, points, rule, step) and total | on each path chest `chest-just-found`, `chest-pop` and `chest-cell-<x>-<y>` with its points, `game-points` and `points-balance` with the running total; nothing about the dead end before the last move; `chest-found` with the planned points and "현금 가치 없음", `chest-reveal` on the dead end, `game-chests` and `game-points-total` for the whole game, `points-balance` updated; verify page: `verify-chest-match` true, `verify-chests` lists the planned chests (rule 2, path count) |
+| 10 | `10-cli-reclaim.sh` | server killed: a third party reclaims with `scripts/reclaim.sh` | exit 1 `DeadlineNotReached` before, exit 0 after; Reclaimed, sent by #9, player + bet exactly; second reclaim refused; restarted server does not settle | unreachable; after restart reveal reason `reclaimed`, move refused | open page learns `reclaimed` from the chain; verify dialog after restart |
+| 11 | `11-dev-wallet-gating.sh` | dev wallet offered only when `/api/config` says so, same build | chain 31337, no game created | devWallet false, then true after a restart | option absent and `bet-submit` disabled in the bet sheet; after restart and reload present and connects #2 |
+| 12 | `12-chest.sh` | a planned route past at least one path chest into a dead end that holds a treasure chest, middle size, chest rule 2: points only, no cash value (`docs/treasure-chest.md`) | outcome 2, payout 0, balance unchanged, reserve back to 0, accounting | config chest rule 2 with both kinds and `cashValue: false`; every in-game answer lists exactly the chests of the cells entered so far; each path chest in the ledger from the move that found it; no dead-end chest before the end; terminal chest; `GET /api/points/<player>` awards (game, kind, cell, bet, reward, points, rule, step) and total | on each path chest `chest-just-found`, `chest-pop` and `chest-cell-<x>-<y>` with its points, `game-points` and `points-balance` with the running total; nothing about the dead end before the last move; `chest-found` with the planned points and "No cash value", `chest-reveal` on the dead end, `game-chests` and `game-points-total` for the whole game, `points-balance` updated; verify dialog: `verify-chest-match` true, `verify-chests` lists the planned chests (rule 2, path count) |
 
 Order: 01 02 03 04 06 07 08 09 11 12, then the two that move the chain clock, 10 and 05 (05 last).
+
+How the scenarios drive the page (`lib.sh`):
+
+- **Bet.** The size (`tier-<i>`; on a phone-wide window, where those chips are hidden, the one
+  `tier-cycle` chip is pressed until the size is selected) and the amount (`bet-amount`) are
+  chosen in the lobby dock (`choose_bet`). The client seed is `client-seed-input`, a hidden field
+  of the dock: Playwright's fill refuses hidden inputs, so `fill_bet` sets it by script
+  (`M.setValue`: `page.evaluate`, then an `input` event), presses START (`bet-start`), which opens
+  the bet sheet, and checks that the sheet shows that seed (`sheet-full-seed`). `submit_bet`
+  clicks "Sign and bet" (`bet-submit`). The open sheet covers the dock (which is `inert`
+  meanwhile), so everything in the dock is set first; `close_sheet` closes the sheet with Escape.
+  The sheet holds the refund schedule (`refund-schedule`, `schedule-row-<k>`,
+  `schedule-exit-payout`, in a collapsed block that is read from the DOM). It closes by itself
+  once the first cell is shown; a refused bet leaves it open. The scenarios' client seeds carry
+  no start-side mark ("MZ>E" / "MZ>S"), so their mazes come from the plain seed formula; the
+  planner uses the shared `deriveFinalSeed` either way.
+- **Moves.** The D-pad buttons `move-N/E/S/W` are never disabled: `data-legal` says whether the
+  move is open, and a press that is not is refused on the page (it sends nothing). `move` waits
+  for `data-legal="true"` before it clicks or presses the arrow key.
+- **Cash-out.** CASH OUT (`cashout-open`) asks the question, "Take it" (`cashout-button`) cashes
+  out (`cash_out`); "Keep going" is `cashout-cancel`.
+- **Verify.** The fairness check is a dialog over the game (`verify-modal`, closed with
+  `verify-close`). `open_verify` clicks the result's `verify-link` (`/?verify=<gameId>`), sees the
+  dialog open for the game in place and closes it, then closes the game tab and opens a new tab on
+  `/?verify=<gameId>`, where the page opens the dialog on load; the old `/verify/<gameId>` and
+  `/verify` redirect to `/?verify=<gameId>` and `/?verify=import`. A finished game stays the
+  page's game until New game, so that tab shows it behind the dialog. Scenario 06 imports
+  records through `/?verify=import`.
 
 Sizes, multipliers and refund tables are read from `/api/config`, so the scenarios follow the
 table that is deployed: 01, 02 and 03 play its smallest, middle and largest size (5×5, 7×7 and

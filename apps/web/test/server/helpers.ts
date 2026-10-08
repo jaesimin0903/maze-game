@@ -35,6 +35,7 @@ import type {
   ChainHead,
   ChainPort,
   OnchainGame,
+  ScanTag,
   SettleArgs,
 } from '../../src/server/chain';
 import type { Clock } from '../../src/server/clock';
@@ -104,6 +105,12 @@ export class FakeChain implements ChainPort {
   readonly games = new Map<Hex, OnchainGame>();
   /** Every `settle` the relayer has broadcast, in order. */
   readonly sent: { hash: Hex; nonce: number; args: SettleArgs }[] = [];
+  /** Every block range the server read the contract's events for, in order. */
+  readonly eventReads: [from: bigint, to: bigint][] = [];
+  /** How many blocks `safe` and `finalized` trail `latest`. */
+  readonly tagLag: Record<Exclude<ScanTag, 'latest'>, number> = { safe: 0, finalized: 0 };
+  /** How many times the head was read, per tag. */
+  readonly headReads: Record<ScanTag, number> = { latest: 0, safe: 0, finalized: 0 };
 
   private pool: { hash: Hex; nonce: number; args: SettleArgs }[] = [];
   private nextNonce = 0;
@@ -223,6 +230,11 @@ export class FakeChain implements ChainPort {
     return this.pool.length;
   }
 
+  /** Replaces every block from `blockNumber` on with one of the same number and another hash. */
+  replaceBlocksFrom(blockNumber: number): void {
+    for (let i = blockNumber; i < this.blocks.length; i++) this.blocks[i] = { ...this.blocks[i], hash: hex32() };
+  }
+
   // ----- ChainPort -----
 
   async chainId(): Promise<number> {
@@ -230,19 +242,22 @@ export class FakeChain implements ChainPort {
     return this.chainIdValue;
   }
 
-  async head(): Promise<ChainHead> {
+  async head(tag: ScanTag = 'latest'): Promise<ChainHead> {
     this.guard();
-    return this.blocks[this.blocks.length - 1];
+    this.headReads[tag] += 1;
+    const lag = tag === 'latest' ? 0 : this.tagLag[tag];
+    return this.blocks[Math.max(0, this.blocks.length - 1 - lag)];
   }
 
-  async blockHash(blockNumber: bigint): Promise<Hex | null> {
+  async block(blockNumber: bigint): Promise<ChainHead | null> {
     this.guard();
-    return this.blocks[Number(blockNumber)]?.hash ?? null;
+    return this.blocks[Number(blockNumber)] ?? null;
   }
 
   async events(fromBlock: bigint, toBlock: bigint): Promise<ChainEvent[]> {
     this.guard();
     if (this.failEvents) throw new ApiError('CHAIN_UNAVAILABLE');
+    this.eventReads.push([fromBlock, toBlock]);
     const events: ChainEvent[] = [];
     for (let number = fromBlock; number <= toBlock; number++) {
       events.push(...(this.eventsByBlock.get(number) ?? []));
@@ -309,6 +324,9 @@ export class FakeChain implements ChainPort {
 export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
   return {
     rpcUrl: 'http://127.0.0.1:8546',
+    publicRpcUrl: 'http://127.0.0.1:8546',
+    network: { name: 'Anvil', symbol: 'ETH', explorerUrl: null, faucetUrl: null },
+    privyAppId: null,
     chainId: 31337,
     contract: CONTRACT,
     signerKey: SIGNER_KEY,
@@ -316,6 +334,9 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
     dataDir: '/nonexistent/maze-data-test',
     idleTimeoutSec: null,
     maxGameSec: null,
+    scanTag: 'latest',
+    startBlock: null,
+    logChunkBlocks: 2000,
     testHooks: true,
     testSeedSecret: null,
     fixturePath: null,
@@ -355,6 +376,8 @@ export interface EnvOptions {
   watcher?: boolean;
   /** False: the container is not made the process-wide instance. Default true. */
   install?: boolean;
+  /** Waits between attempts of the boot catch-up. Default none: the first failure refuses the boot. */
+  catchUpRetryMs?: readonly number[];
   /**
    * True: a failed append ends the process, as it does in a real server. By default the test
    * process records the failure in `storeFailures` instead.
@@ -409,6 +432,7 @@ export async function makeEnv(options: EnvOptions = {}): Promise<TestEnv> {
     mazePadMs: 0,
     watcher: options.watcher,
     background: false,
+    catchUpRetryMs: options.catchUpRetryMs ?? [],
     // A server process ends itself here; a test process records the call instead.
     onStoreFailure:
       options.exitOnStoreFailure === true ? undefined : (error) => storeFailures.push(error),

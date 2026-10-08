@@ -145,6 +145,19 @@
     },
     "treasure-chest": {
       "paths": ["packages/shared/src/chest.ts", "docs/treasure-chest.md"]
+    },
+    "monad-deploy": {
+      "paths": [
+        "Dockerfile",
+        ".dockerignore",
+        "fly.toml",
+        "scripts/container-start.sh",
+        "scripts/deploy-chain.ts",
+        "scripts/env-file.ts",
+        "scripts/monad-keys.ts",
+        "scripts/monad.ts",
+        "docs/deploy-monad.md"
+      ]
     }
   },
   "phases": {

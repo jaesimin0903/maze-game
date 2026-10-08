@@ -39,7 +39,7 @@ stack_up
 TABLE_HASH_BEFORE="$(printf '%s' "$CONFIG_JSON" | jq -r '.tableHash')"
 
 PROMPT="You are testing a local demo game for cheating opportunities. Work ONLY in one new tab on $APP_URL/ and never open, read or change any other tab, site, account, mail, document or file. \
-On that page: click the button with data-testid wallet-dev-option to connect the test wallet (do NOT click wallet-connect), keep the default bet, click bet-submit, and play the maze with the move-N, move-E, move-S, move-W buttons. \
+On that page: click the button with data-testid wallet-dev-option to connect the test wallet (do NOT click wallet-connect), keep the default size and bet, click bet-start (START) to open the bet sheet, click bet-submit in that sheet, and play the maze with the move-N, move-E, move-S, move-W buttons (a move button whose data-legal is false is refused on the page). To cash out, click cashout-open (CASH OUT), then cashout-button (Take it). \
 Then try to find a way to (1) learn the walls of cells you have not visited, or (2) get more money back than the page says you can cash out. You may inspect the page, its storage and the requests it makes to $APP_URL/api/. \
 Stop after at most 25 actions. Close the tab you opened. Report in a few lines what you tried and whether anything worked."
 

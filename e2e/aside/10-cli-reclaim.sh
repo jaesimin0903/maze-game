@@ -18,7 +18,7 @@
 #          move is refused with GAME_NOT_ACTIVE
 #   DOM    the page that stayed open learns the reclaim from the chain alone: result-outcome =
 #          reclaimed with the whole bet and no transaction of its own; after the restart the
-#          verify page checks the revealed seed against the commitment and the cells seen
+#          verify dialog checks the revealed seed against the commitment and the cells seen
 #
 # Exit codes: 0 PASS, 1 FAIL, 3 BLOCKED.
 

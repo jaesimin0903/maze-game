@@ -196,6 +196,9 @@ export interface Server {
 export function serverConfig(h: Harness, dataDir: string, options: ServerOptions = {}): ServerConfig {
   return {
     rpcUrl: options.rpcUrl ?? h.rpcUrl,
+    publicRpcUrl: options.rpcUrl ?? h.rpcUrl,
+    network: { name: 'Anvil', symbol: 'ETH', explorerUrl: null, faucetUrl: null },
+    privyAppId: null,
     chainId: h.deployment.chainId,
     contract: h.contract,
     signerKey: ANVIL_SIGNER_KEY,
@@ -203,6 +206,9 @@ export function serverConfig(h: Harness, dataDir: string, options: ServerOptions
     dataDir,
     idleTimeoutSec: options.idleTimeoutSec ?? null,
     maxGameSec: options.maxGameSec ?? null,
+    scanTag: 'latest',
+    startBlock: null,
+    logChunkBlocks: 2000,
     testHooks: true,
     testSeedSecret: SEED_SECRET,
     fixturePath: null,

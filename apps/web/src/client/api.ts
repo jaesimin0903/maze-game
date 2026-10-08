@@ -7,8 +7,11 @@ import {
   type ConfigResponse,
   type CreateGameRequest,
   type ErrorCode,
+  type FeedResponse,
   type GameView,
   type Hex,
+  type LeaderboardBoard,
+  type LeaderboardResponse,
   type MoveRequest,
   type PointsResponse,
   type RevealResponse,
@@ -38,24 +41,24 @@ export class ServerUnreachableError extends Error {
 }
 
 const API_MESSAGES: Record<ErrorCode, string> = {
-  BAD_REQUEST: '요청이 올바르지 않습니다',
-  UNAUTHORIZED: '이 게임을 시작한 브라우저가 아닙니다',
-  NOT_FOUND: '서버가 이 게임을 알지 못합니다',
-  TICKET_EXPIRED: '티켓 유효 시간이 지났습니다. 다시 베팅해 주세요',
-  NOT_ON_CHAIN: '서버가 베팅 트랜잭션을 아직 체인에서 확인하지 못했습니다',
-  ALREADY_ACTIVE: '이 지갑으로 진행 중인 게임이 이미 있습니다. 그 게임이 끝난 뒤에 베팅하세요',
-  GAME_NOT_ACTIVE: '게임이 이미 끝났습니다',
-  STALE_STEP: '다른 곳에서 먼저 진행된 게임입니다. 최신 상태로 맞췄습니다',
-  INVALID_MOVE_WALL: '벽으로는 갈 수 없습니다',
-  INVALID_MOVE_VISITED: '지나온 칸으로는 돌아갈 수 없습니다',
-  INVALID_MOVE_BOUNDS: '보드 밖으로는 갈 수 없습니다',
-  DEADLINE_PASSED: '제한 시간이 지나 서버가 게임을 정산하고 있습니다',
-  NOT_REVEALABLE: '이 게임의 서버 시드는 아직 공개할 수 없습니다',
-  RATE_LIMITED: '요청이 너무 잦습니다. 잠시 뒤에 다시 시도하세요',
-  INTERNAL: '게임 서버 안에서 오류가 났습니다. 서버는 응답하고 있으니 잠시 뒤에 다시 시도하세요',
-  NOT_CALIBRATED: '배당 표가 아직 인증되지 않아 게임을 열 수 없습니다',
-  TABLE_MISMATCH: '서버와 컨트랙트의 배당 표가 달라 게임을 열 수 없습니다',
-  CHAIN_UNAVAILABLE: '서버가 체인에 연결하지 못했습니다',
+  BAD_REQUEST: 'The request was not valid',
+  UNAUTHORIZED: 'This browser did not start this game',
+  NOT_FOUND: 'The server does not know this game',
+  TICKET_EXPIRED: 'The ticket has expired. Place your bet again',
+  NOT_ON_CHAIN: 'The server has not seen the bet transaction on chain yet',
+  ALREADY_ACTIVE: 'This wallet already has a game in progress. Bet again once that game is over',
+  GAME_NOT_ACTIVE: 'The game is already over',
+  STALE_STEP: 'This game moved on elsewhere. The page is up to date now',
+  INVALID_MOVE_WALL: 'You cannot walk through a wall',
+  INVALID_MOVE_VISITED: 'You cannot go back to a cell you already visited',
+  INVALID_MOVE_BOUNDS: 'You cannot leave the board',
+  DEADLINE_PASSED: 'Time is up. The server is settling the game',
+  NOT_REVEALABLE: 'The server seed for this game cannot be revealed yet',
+  RATE_LIMITED: 'Too many requests. Try again in a moment',
+  INTERNAL: 'The game server hit an internal error. It is still up; try again shortly',
+  NOT_CALIBRATED: 'The payout table is not certified yet, so games cannot open',
+  TABLE_MISMATCH: 'The server and the contract have different payout tables, so games cannot open',
+  CHAIN_UNAVAILABLE: 'The server cannot reach the chain',
 };
 
 /** A sentence for the player about a server error. */
@@ -74,6 +77,10 @@ export interface ApiClient {
   reveal(gameId: Hex): Promise<RevealResponse>;
   /** The points balance and recent chest awards of a wallet address. Points have no cash value. */
   points(address: Hex): Promise<PointsResponse>;
+  /** The most recent ended games of every player, newest first. */
+  feed(): Promise<FeedResponse>;
+  /** One leaderboard; with `address`, that wallet's own row as well. */
+  leaderboard(board: LeaderboardBoard, address: Hex | null): Promise<LeaderboardResponse>;
   postSnapshot(body: UiSnapshotInput): Promise<void>;
 }
 
@@ -138,6 +145,12 @@ export function createApi(
     game: (gameId, token) => call('GET', gamePath(gameId), { token }),
     reveal: (gameId) => call('GET', gamePath(gameId, '/reveal')),
     points: (address) => call('GET', `/api/points/${address}`),
+    feed: () => call('GET', '/api/feed'),
+    leaderboard: (board, address) => {
+      const query = new URLSearchParams({ board });
+      if (address !== null) query.set('address', address);
+      return call('GET', `/api/leaderboard?${query.toString()}`);
+    },
     postSnapshot: (body) => call('POST', '/api/test/ui-snapshot', { body, empty: true }),
   };
 }

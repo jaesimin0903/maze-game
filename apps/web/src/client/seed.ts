@@ -3,7 +3,7 @@
 
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
-import type { Hex } from '@maze/shared';
+import { markStartSide, type Hex, type StartSide } from '@maze/shared';
 
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
 
@@ -16,6 +16,16 @@ export function randomHex32(): Hex {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return `0x${bytesToHex(bytes)}`;
+}
+
+/**
+ * A fresh client seed for the dock's reroll: 28 random bytes, then the mark that picks a start
+ * side (`side`, or a random one), so the player sees which way the maze opens before betting.
+ */
+export function randomStartSeed(side?: StartSide): Hex {
+  const seed = randomHex32();
+  const pick = side ?? ((parseInt(seed.slice(2, 4), 16) & 1) === 0 ? 'E' : 'S');
+  return markStartSide(seed, pick);
 }
 
 /** The exact string later sent as `Authorization: Bearer <token>`. */

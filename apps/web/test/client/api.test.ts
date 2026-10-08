@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Hex } from '@maze/shared';
+import { ERROR_STATUS, type ErrorCode, type Hex } from '@maze/shared';
 import { ApiError, ServerUnreachableError, apiMessage, createApi } from '../../src/client/api';
+import { FakeWorld, PLAYER } from './helpers';
 
 const GAME_ID: Hex = `0x${'a1'.repeat(32)}`;
 
@@ -54,7 +55,7 @@ describe('createApi', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).code).toBe('STALE_STEP');
     expect((error as ApiError).status).toBe(409);
-    expect(apiMessage(error as ApiError)).toContain('최신 상태');
+    expect(apiMessage(error as ApiError)).toBe('This game moved on elsewhere. The page is up to date now');
   });
 
   it('reports a network failure and a non-JSON answer as an unreachable server', async () => {
@@ -90,11 +91,65 @@ describe('createApi', () => {
     expect(error).not.toBeInstanceOf(ServerUnreachableError);
     expect((error as ApiError).code).toBe('INTERNAL');
     expect((error as ApiError).status).toBe(500);
-    expect(apiMessage(error as ApiError)).toContain('서버 안에서 오류');
+    expect(apiMessage(error as ApiError)).toContain('internal error');
 
     // A 500 whose body names no known code is still "no usable answer".
     const unknown = recording(() => json(500, { error: { code: 'EXPLODED', message: 'boom' } }));
     await expect(unknown.api.config()).rejects.toBeInstanceOf(ServerUnreachableError);
+  });
+
+  it('reads the feed and the leaderboards without a credential, the address in the query only when given', async () => {
+    const { api, seen } = recording(() => json(200, {}));
+    const address = PLAYER;
+    await api.feed();
+    await api.leaderboard('today', null);
+    await api.leaderboard('all', address);
+    await api.leaderboard('points', address);
+    expect(seen.map((s) => `${s.init?.method} ${s.url}`)).toEqual([
+      'GET /api/feed',
+      'GET /api/leaderboard?board=today',
+      `GET /api/leaderboard?board=all&address=${address}`,
+      `GET /api/leaderboard?board=points&address=${address}`,
+    ]);
+    for (const request of seen) {
+      expect((request.init?.headers as Record<string, string>).authorization).toBeUndefined();
+      expect(request.init?.body).toBeUndefined();
+    }
+  });
+
+  it('hands back the feed and leaderboard bodies as the server sent them', async () => {
+    const body = { board: 'all', rows: [{ rank: 1, address: '0xab', value: '-5' }], me: null, chainNowSec: 7 };
+    const { api } = recording(() => json(200, body));
+    await expect(api.leaderboard('all', null)).resolves.toEqual(body);
+    const bad = recording(() => json(400, { error: { code: 'BAD_REQUEST', message: 'bad' } }));
+    const error = await bad.api.feed().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('BAD_REQUEST');
+  });
+
+  it('the fake server of the client tests answers both panels with empty results, outside the request log', async () => {
+    const world = new FakeWorld();
+    const api = createApi(world.fetch);
+    await expect(api.feed()).resolves.toEqual({ games: [], chainNowSec: world.chainNow });
+    await expect(api.leaderboard('points', PLAYER)).resolves.toEqual({
+      board: 'points',
+      rows: [],
+      me: null,
+      chainNowSec: world.chainNow,
+    });
+    const today = await api.leaderboard('today', null);
+    expect(today.resetsAtSec! > world.chainNow && today.resetsAtSec! % 86_400 === 0).toBe(true);
+    expect(world.requests).toEqual([]);
+  });
+
+  it('every server error has a short English sentence', () => {
+    for (const code of Object.keys(ERROR_STATUS) as ErrorCode[]) {
+      const message = apiMessage(new ApiError(code, ERROR_STATUS[code], code));
+      expect(message, code).toMatch(/^[\x20-\x7e]+$/);
+      expect(message.length, code).toBeLessThanOrEqual(90);
+    }
+    expect(apiMessage(new ApiError('NOT_REVEALABLE', 409, 'x'))).toBe('The server seed for this game cannot be revealed yet');
+    expect(apiMessage(new ApiError('UNAUTHORIZED', 401, 'x'))).toBe('This browser did not start this game');
   });
 
   it('accepts the empty 204 of the snapshot route', async () => {

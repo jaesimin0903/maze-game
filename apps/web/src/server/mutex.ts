@@ -31,3 +31,31 @@ export class KeyedMutex {
     }
   }
 }
+
+/**
+ * `run` made single-flight. A call while no run is going starts one. A call during a run does not
+ * queue a run of its own: it shares the next run, which starts when the current one has finished
+ * and serves every caller that arrived meanwhile. Each caller thus waits for a run that started
+ * after its call, and a burst of callers costs two runs, not one each.
+ */
+export function singleFlight(run: () => Promise<void>): () => Promise<void> {
+  let running: Promise<void> | null = null;
+  let next: Promise<void> | null = null;
+  const start = (): Promise<void> => {
+    const current: Promise<void> = run().finally(() => {
+      if (running === current) running = null;
+    });
+    running = current;
+    return current;
+  };
+  return () => {
+    if (running === null) return start();
+    next ??= running
+      .catch(() => undefined)
+      .then(() => {
+        next = null;
+        return start();
+      });
+    return next;
+  };
+}

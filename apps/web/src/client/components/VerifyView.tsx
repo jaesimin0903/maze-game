@@ -7,6 +7,7 @@ import {
   Outcome,
   commitmentOf,
   replayMoves,
+  startSideOf,
   verifyGame,
   type ConfigResponse,
   type Hex,
@@ -22,7 +23,6 @@ import { defaultDeps, type ClientDeps } from '../deps';
 import { formatEth, formatPercent, formatPoints, shortHex } from '../format';
 import { loadRecord, parseRecord, type PlayRecord } from '../record';
 import { isHex32 } from '../seed';
-import { TestBeacon } from './TestBeacon';
 
 interface Props {
   /** Game to load from this browser's records, or `null` to start from an imported record. */
@@ -30,19 +30,69 @@ interface Props {
   deps?: ClientDeps;
 }
 
+/**
+ * The fairness check as a dialog over the game: Escape, the close button or a click outside
+ * closes it, and focus goes back where it was.
+ */
+export function VerifyModal({ gameId, deps, onClose }: Props & { onClose(): void }) {
+  const dialog = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const before = document.activeElement;
+    dialog.current?.querySelector<HTMLElement>('[data-testid="verify-close"]')?.focus();
+    return () => {
+      if (before instanceof HTMLElement && before.isConnected) before.focus();
+    };
+  }, []);
+  return (
+    <div
+      className="sheet-backdrop"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={dialog}
+        className="sheet verify-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="verify-title"
+        data-testid="verify-modal"
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' && event.code !== 'Escape') return;
+          // A record being pasted is not thrown away by Escape; the close button still works.
+          const target = event.target as HTMLElement;
+          if (target.tagName === 'TEXTAREA' && (target as HTMLTextAreaElement).value !== '') return;
+          event.preventDefault();
+          onClose();
+        }}
+      >
+        <div className="sheet-head">
+          <h2 id="verify-title" className="sheet-title">
+            VERIFY
+          </h2>
+          <button type="button" className="quiet" data-testid="verify-close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
+        <VerifyPanel gameId={gameId} deps={deps} />
+      </div>
+    </div>
+  );
+}
+
 const WALL_CLASS = ['wall-n', 'wall-e', 'wall-s', 'wall-w'] as const;
-const SIDE = ['북', '동', '남', '서'] as const;
+const SIDE = ['N', 'E', 'S', 'W'] as const;
 const REVEAL_REASON: Record<RevealReason, string> = {
-  settled: '정산된 게임',
-  reclaimed: '회수된 게임',
-  'ticket-expired': '체인에 만들어지지 않고 만료된 티켓',
+  settled: 'a settled game',
+  reclaimed: 'a reclaimed game',
+  'ticket-expired': 'a ticket that expired without a game being created on chain',
 };
 
 /** Open sides of a wall mask in words, for the comparison table. */
 function openText(mask: number): string {
-  if (mask < 0) return '없는 칸';
+  if (mask < 0) return 'no such cell';
   const sides = DIRS.filter((dir) => (mask & DIR_BIT[dir]) !== 0).map((dir) => SIDE[dir]);
-  return sides.length === 0 ? '모두 막힘' : `${sides.join('·')} 열림`;
+  return sides.length === 0 ? 'all closed' : `open: ${sides.join('·')}`;
 }
 
 /** Everything recomputed for one record. */
@@ -71,7 +121,7 @@ function Check({
 }) {
   return (
     <div className="check" data-testid={testId} data-match={ok === null ? 'unknown' : String(ok)}>
-      <span className="check-mark">{ok === null ? '확인 불가' : ok ? '일치' : '불일치'}</span>
+      <span className="check-mark">{ok === null ? 'Cannot check' : ok ? 'Match' : 'Mismatch'}</span>
       <span className="check-label">{label}</span>
       {children !== undefined && <span className="check-detail">{children}</span>}
     </div>
@@ -83,9 +133,11 @@ function Check({
  * revealed server seed, the client seed and the game id: the commitment, the whole maze, the
  * walked path, the solution, and whether each wall the server showed was really there.
  */
-export function VerifyView({ gameId, deps = defaultDeps }: Props) {
+/** The checks themselves: the record, the revealed seed, the rebuilt maze and each comparison. */
+export function VerifyPanel({ gameId, deps = defaultDeps }: Props) {
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+  const symbol = config?.network?.symbol ?? 'ETH';
   const [record, setRecord] = useState<PlayRecord | null>(null);
   const [imported, setImported] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -109,7 +161,7 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
         setConfigError(
           error instanceof ApiError
             ? apiMessage(error)
-            : '게임 서버에 연결할 수 없어 배당 표를 불러오지 못했습니다',
+            : 'Cannot reach the game server, so the payout table could not be loaded',
         );
       });
     return () => {
@@ -142,7 +194,7 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
           setRevealError(
             error instanceof ApiError
               ? apiMessage(error)
-              : '게임 서버에 연결할 수 없어 서버 시드를 받지 못했습니다',
+              : 'Cannot reach the game server, so the server seed could not be fetched',
           );
         });
     }
@@ -163,7 +215,7 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
       try {
         json = JSON.parse(text);
       } catch {
-        throw new Error('붙여 넣은 내용이 JSON이 아닙니다');
+        throw new Error('The pasted text is not JSON');
       }
       parsed = parseRecord(json);
     } catch (error) {
@@ -200,9 +252,9 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
     if (!config || !record || serverSeed === null) return null;
     const table = tableFromConfig(config);
     const tier = table.tiers[record.tier];
-    if (!tier) return { error: '기록의 미로 크기(tier)가 현재 배당 표에 없습니다' };
+    if (!tier) return { error: 'The maze size (tier) in the record is not in the current payout table' };
     if (tier.n !== record.n) {
-      return { error: `기록의 미로 크기(${record.n})가 배당 표의 크기(${tier.n})와 다릅니다` };
+      return { error: `The maze size in the record (${record.n}) differs from the payout table size (${tier.n})` };
     }
     const terminal = record.terminal;
     const betWei = chainGame?.bet ?? (record.betWei !== undefined ? BigInt(record.betWei) : null);
@@ -265,339 +317,347 @@ export function VerifyView({ gameId, deps = defaultDeps }: Props) {
       const expected = commitmentOf({ mazeVersion: table.mazeVersion, n: tier.n, serverSeed });
       return { report, walk, betWei, expected, n: tier.n };
     } catch (error) {
-      return { error: `검증할 수 없는 기록입니다: ${(error as Error).message}` };
+      return { error: `This record cannot be verified: ${(error as Error).message}` };
     }
   }, [config, record, serverSeed, chainGame]);
 
   const verdict = analysis !== null && !('error' in analysis) ? analysis : null;
+  // A seed may pick the side the start opens to (see `deriveFinalSeed`); the rebuilt maze must agree.
+  const picked = record !== null ? startSideOf(record.clientSeed) : null;
+  const opens = verdict !== null && (verdict.report.maze.open[0] & DIR_BIT[1]) !== 0 ? 'E' : 'S';
+  // What the server showed of the start cell during the game, against the seed's pick.
+  const startShown = record?.observations[0]?.cell === 0 ? record.observations[0].open : null;
+  const shownSide =
+    startShown === null ? null : (startShown & DIR_BIT[1]) !== 0 ? 'E' : (startShown & DIR_BIT[2]) !== 0 ? 'S' : null;
 
   return (
-    <div className="app verify">
-      <header className="masthead">
-        <a className="brand" href="/">
-          미로 베팅
-        </a>
-        <span className="chain-info">공정성 검증</span>
-      </header>
+    <div className="verify-main">
+      <h3 className="verify-title">Was this round fair?</h3>
+      <p className="verify-lede">
+        The server committed to a hash of its seed before you bet. This check rebuilds the maze in
+        your browser from the revealed seed and compares it with the walls the server showed you
+        during the game, one by one.
+      </p>
 
-      <main className="verify-main">
-        <h1 className="verify-title">이 판은 공정했는가</h1>
-        <p className="verify-lede">
-          서버는 베팅 전에 시드의 해시를 확정했습니다. 공개된 시드로 미로를 이 브라우저에서 다시
-          만들어, 게임 중에 서버가 보여 준 벽과 하나씩 대조합니다.
+      {configError !== null && (
+        <p className="banner banner-down" role="alert" data-testid="server-unreachable">
+          {configError}
         </p>
+      )}
 
-        {configError !== null && (
-          <p className="banner banner-down" role="alert" data-testid="server-unreachable">
-            {configError}
-          </p>
-        )}
+      {record === null && (
+        <p className="verify-empty" data-testid="verify-empty">
+          {isHex32(gameId)
+            ? 'This browser has no saved play record for this game. Paste a record below to verify it.'
+            : 'Paste a play record below to verify it.'}
+        </p>
+      )}
 
-        {record === null && (
-          <p className="verify-empty" data-testid="verify-empty">
-            {isHex32(gameId)
-              ? '이 브라우저에 저장된 이 게임의 플레이 기록이 없습니다. 아래에 기록을 붙여 넣으면 검증할 수 있습니다.'
-              : '아래에 플레이 기록을 붙여 넣으면 검증할 수 있습니다.'}
-          </p>
-        )}
+      {record !== null && (
+        <p className="verify-game" data-testid="verify-game" data-game-id={record.gameId}>
+          Game <code className="mono">{record.gameId}</code>
+          {imported ? ' (pasted record)' : ' (record saved in this browser)'}
+        </p>
+      )}
 
-        {record !== null && (
-          <p className="verify-game" data-testid="verify-game" data-game-id={record.gameId}>
-            게임 <code className="mono">{record.gameId}</code>
-            {imported ? ' (붙여 넣은 기록)' : ' (이 브라우저에 저장된 기록)'}
-          </p>
-        )}
+      {record !== null && serverSeed === null && (
+        <p className="banner banner-fixture" data-testid="verify-unrevealed">
+          {revealError ?? 'Loading the server seed…'}
+        </p>
+      )}
 
-        {record !== null && serverSeed === null && (
-          <p className="banner banner-fixture" data-testid="verify-unrevealed">
-            {revealError ?? '서버 시드를 불러오는 중입니다'}
-          </p>
-        )}
+      {analysis !== null && 'error' in analysis && (
+        <p className="banner banner-error" role="alert" data-testid="verify-error">
+          {analysis.error}
+        </p>
+      )}
 
-        {analysis !== null && 'error' in analysis && (
-          <p className="banner banner-error" role="alert" data-testid="verify-error">
-            {analysis.error}
-          </p>
-        )}
-
-        {record !== null && verdict !== null && (
-          <>
-            <section className="checks" aria-label="검증 결과">
+      {record !== null && verdict !== null && (
+        <>
+          <section className="checks" aria-label="Verification results">
+            <Check
+              testId="verify-hash-match"
+              ok={verdict.report.commitmentOk}
+              label="Does the hash of the revealed server seed equal the commit made before the bet?"
+            >
+              Commit <code className="mono">{record.commitment}</code>
+              <br />
+              Recomputed <code className="mono">{verdict.expected}</code>
+            </Check>
+            <Check
+              testId="verify-onchain-match"
+              ok={
+                chainGame === null
+                  ? null
+                  : chainGame.commitment.toLowerCase() === record.commitment.toLowerCase() &&
+                    chainGame.clientSeed.toLowerCase() === record.clientSeed.toLowerCase()
+              }
+              label="Do the commit and client seed in the record equal the values stored in the contract?"
+            >
+              {chainGame !== null
+                ? `Bet in the contract: ${formatEth(chainGame.bet)} ${symbol}`
+                : chainDown
+                  ? 'Cannot read the chain, so nothing was compared'
+                  : onchain === null
+                    ? 'Reading from the chain…'
+                    : 'The contract on this chain has no such game'}
+            </Check>
+            {picked !== null && (
               <Check
-                testId="verify-hash-match"
-                ok={verdict.report.commitmentOk}
-                label="공개된 서버 시드의 해시가 베팅 전 커밋과 같은가"
+                testId="verify-start-side"
+                ok={shownSide === null ? null : shownSide === picked && opens === picked}
+                label="Did the start the server showed open to the side your seed picked?"
               >
-                커밋 <code className="mono">{record.commitment}</code>
-                <br />
-                다시 계산한 값 <code className="mono">{verdict.expected}</code>
+                Your seed picked {SIDE_WORD[picked]}; the server showed the start opening{' '}
+                {shownSide === null ? '(not shown)' : SIDE_WORD[shownSide]}; the rebuilt maze opens {SIDE_WORD[opens]}
               </Check>
-              <Check
-                testId="verify-onchain-match"
-                ok={
-                  chainGame === null
-                    ? null
-                    : chainGame.commitment.toLowerCase() === record.commitment.toLowerCase() &&
-                      chainGame.clientSeed.toLowerCase() === record.clientSeed.toLowerCase()
-                }
-                label="기록의 커밋과 클라이언트 시드가 컨트랙트에 남은 값과 같은가"
-              >
-                {chainGame !== null
-                  ? `컨트랙트의 베팅액 ${formatEth(chainGame.bet)} ETH`
-                  : chainDown
-                    ? '체인을 읽을 수 없어 대조하지 못했습니다'
-                    : onchain === null
-                      ? '체인에서 읽는 중입니다'
-                      : '이 체인의 컨트랙트에는 이 게임이 없습니다'}
-              </Check>
-              <Check
-                testId="verify-cells-match"
-                ok={verdict.report.cellsOk}
-                label="서버가 보여 준 벽이 실제 미로와 같은가"
-              >
-                {verdict.report.cellsOk === null
-                  ? '이 기록에는 서버가 보여 준 칸이 하나도 없어 아무것도 비교하지 않았습니다'
-                  : `${verdict.report.cells.filter((cell) => cell.match).length} / ${verdict.report.cells.length}칸 일치`}
-              </Check>
-              <Check
-                testId="verify-outcome-ok"
-                ok={record.terminal ? verdict.report.outcomeOk : null}
-                label="기록된 이동을 실제 미로에서 다시 걸으면 정산된 결말이 나오는가"
-              >
-                {record.terminal
-                  ? verdict.walk.invalidAt !== null
-                    ? `${verdict.walk.invalidAt + 1}번째 이동은 실제 미로에서 할 수 없는 이동입니다`
-                    : `${record.terminal.steps}걸음`
-                  : `정산 없이 끝난 게임입니다${
-                      revealed ? ` (${REVEAL_REASON[revealed.reason]})` : ''
-                    }`}
-              </Check>
-              <Check
-                testId="verify-payout-ok"
-                ok={record.terminal && verdict.betWei !== null ? verdict.report.payoutOk : null}
-                label="정산 금액이 배당 표가 정한 금액과 같은가"
-              >
-                {record.terminal
-                  ? verdict.betWei === null
-                    ? '베팅액을 알 수 없어 확인하지 못했습니다'
-                    : `베팅 ${formatEth(verdict.betWei)} ETH, 지급 ${formatEth(BigInt(record.terminal.payoutWei))} ETH`
-                  : '정산 없이 끝난 게임입니다'}
-              </Check>
-              <Check
-                testId="verify-chest-match"
-                ok={record.terminal ? verdict.report.chestOk : null}
-                label="보물상자 판정이 시드와 같은가 (들어간 칸의 상자를 숨기거나 지어내지 않았는가)"
-              >
-                {chestDetail(record, verdict)}
-              </Check>
-            </section>
+            )}
+            <Check
+              testId="verify-cells-match"
+              ok={verdict.report.cellsOk}
+              label="Do the walls the server showed equal the real maze?"
+            >
+              {verdict.report.cellsOk === null
+                ? 'This record has no cells the server showed, so nothing was compared'
+                : `${verdict.report.cells.filter((cell) => cell.match).length} / ${verdict.report.cells.length} cells match`}
+            </Check>
+            <Check
+              testId="verify-outcome-ok"
+              ok={record.terminal ? verdict.report.outcomeOk : null}
+              label="Does replaying the recorded moves in the real maze give the settled outcome?"
+            >
+              {record.terminal
+                ? verdict.walk.invalidAt !== null
+                  ? `Move ${verdict.walk.invalidAt + 1} is not possible in the real maze`
+                  : `${record.terminal.steps} steps`
+                : `The game ended without a settlement${
+                    revealed ? ` (${REVEAL_REASON[revealed.reason]})` : ''
+                  }`}
+            </Check>
+            <Check
+              testId="verify-payout-ok"
+              ok={record.terminal && verdict.betWei !== null ? verdict.report.payoutOk : null}
+              label="Does the settled amount equal the amount set by the payout table?"
+            >
+              {record.terminal
+                ? verdict.betWei === null
+                  ? 'The bet amount is unknown, so this could not be checked'
+                  : `Bet ${formatEth(verdict.betWei)} ${symbol}, paid ${formatEth(BigInt(record.terminal.payoutWei))} ${symbol}`
+                : 'The game ended without a settlement'}
+            </Check>
+            <Check
+              testId="verify-chest-match"
+              ok={record.terminal ? verdict.report.chestOk : null}
+              label="Does the chest result match the seed? (No chest hidden or invented in the cells you entered)"
+            >
+              {chestDetail(record, verdict)}
+            </Check>
+          </section>
 
-            <section className="verify-chests" aria-label="보물상자 위치">
-              <h2>보물상자 위치</h2>
-              <p
-                className="verify-chest-list"
-                data-testid="verify-chests"
-                data-rule={verdict.report.chestRule}
-                data-count={verdict.report.chests?.length ?? ''}
-                data-cells={verdict.report.chests?.map((chest) => chest.cell).join(',') ?? ''}
-                data-path-count={verdict.report.chests?.filter((chest) => chest.kind === 'path').length ?? ''}
-                data-dead-end-count={verdict.report.chests?.filter((chest) => chest.kind === 'dead-end').length ?? ''}
-              >
-                {verdict.report.chests === null
-                  ? `이 검증기가 모르는 보물상자 규칙(v${verdict.report.chestRule})이라 위치를 계산하지 못했습니다.`
-                  : verdict.report.chests.length === 0
-                    ? `공개된 시드로 계산하면 이 미로에는 보물상자가 없습니다 (규칙 v${verdict.report.chestRule}).`
-                    : `공개된 시드로 계산한 보물상자 ${verdict.report.chests.length}개 (규칙 v${verdict.report.chestRule}${
-                        verdict.report.chestRule < 2 ? ', 막다른 칸에만 있음' : ''
-                      }): ${verdict.report.chests
-                        .map(
-                          (chest) =>
-                            `(${chest.cell % verdict.n},${Math.floor(chest.cell / verdict.n)}) ${KIND_TEXT[chest.kind]} 베팅액의 ${formatPercent(chest.rewardBps)}`,
-                        )
-                        .join(', ')}`}
-              </p>
-              <p className="verify-chest-note">
-                {verdict.report.chestRule < 2
-                  ? '보물상자는 막다른 칸에 들어서 판이 끝날 때만 열리고, 보상은 포인트입니다.'
-                  : '길 칸의 상자는 그 칸에 들어서는 순간 열리고, 막다른 칸의 상자는 그 칸에 들어서 판이 끝날 때 열립니다. 어느 칸에 상자가 있는지는 그 칸의 시드 해시와 그 칸 자신의 벽으로만 정해지므로, 상자를 찾았는지로 가 보지 않은 칸을 알 수 없습니다.'}{' '}
-                보상은 포인트이고, 포인트는 현금 가치가 없습니다.
-              </p>
-            </section>
-
-            <section className="verify-maze" aria-label="전체 미로">
-              <h2>전체 미로와 걸은 길</h2>
-              <VerifyMaze record={record} verdict={verdict} />
-              <ul className="legend">
-                <li>
-                  <i className="legend-walk" /> 걸은 칸 (숫자는 걸음 순서)
-                </li>
-                <li>
-                  <i className="legend-solution" /> 정답 경로
-                </li>
-                <li>
-                  <i className="legend-mismatch" /> 서버가 다르게 보여 준 칸
-                </li>
-              </ul>
-              <p
-                className="verify-solution"
-                data-testid="verify-solution"
-                data-length={Math.max(0, verdict.report.solution.length - 1)}
-                data-cells={verdict.report.solution.join(',')}
-              >
-                정답 경로 {Math.max(0, verdict.report.solution.length - 1)}걸음:{' '}
-                {verdict.report.solution
-                  .map((cell) => `(${cell % verdict.n},${Math.floor(cell / verdict.n)})`)
-                  .join(' → ')}
-              </p>
-            </section>
-
-            <section className="verify-table" aria-label="칸별 대조">
-              <h2>칸별 대조</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">걸음</th>
-                    <th scope="col">칸</th>
-                    <th scope="col">서버가 보여 준 벽</th>
-                    <th scope="col">실제 미로</th>
-                    <th scope="col">결과</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {record.observations.map((o, index) => {
-                    const cell = verdict.report.cells[index];
-                    return (
-                      <tr
-                        key={index}
-                        data-testid={`verify-row-${index}`}
-                        data-match={cell.match}
-                        data-cell={o.cell}
-                      >
-                        <td>{o.step}</td>
-                        <td>
-                          ({o.cell % verdict.n},{Math.floor(o.cell / verdict.n)})
-                        </td>
-                        <td>{openText(cell.observed)}</td>
-                        <td>{openText(cell.actual)}</td>
-                        <td>{cell.match ? '일치' : '불일치'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </section>
-
-            <section className="verify-seeds" aria-label="시드">
-              <h2>시드</h2>
-              <dl>
-                <dt>서버 시드 (게임이 끝난 뒤 공개)</dt>
-                <dd className="mono" data-testid="verify-server-seed">
-                  {serverSeed}
-                </dd>
-                <dt>클라이언트 시드 (베팅 트랜잭션에 기록)</dt>
-                <dd className="mono">{record.clientSeed}</dd>
-                <dt>미로를 만든 최종 시드</dt>
-                <dd className="mono" data-testid="verify-final-seed">
-                  {verdict.report.finalSeed}
-                </dd>
-              </dl>
-            </section>
-          </>
-        )}
-
-        <section className="verify-import" aria-label="기록 가져오기">
-          <h2>다른 기록 검증하기</h2>
-          <p>
-            플레이 기록(JSON)을 붙여 넣으세요. 기록을 한 글자라도 고치면 그 칸이 불일치로
-            표시됩니다.
-          </p>
-          <textarea
-            ref={importBox}
-            className="mono"
-            data-testid="verify-import"
-            aria-label="플레이 기록 JSON"
-            spellCheck={false}
-            rows={6}
-          />
-          <button
-            type="button"
-            data-testid="verify-import-submit"
-            onClick={() => importRecord(importBox.current?.value ?? '', false)}
-          >
-            이 기록 검증하기
-          </button>
-          {importError !== null && (
-            <p className="banner banner-error" role="alert" data-testid="verify-import-error">
-              {importError}
+          <section className="verify-chests" aria-label="Treasure chest locations">
+            <h2>Treasure chest locations</h2>
+            <p
+              className="verify-chest-list"
+              data-testid="verify-chests"
+              data-rule={verdict.report.chestRule}
+              data-count={verdict.report.chests?.length ?? ''}
+              data-cells={verdict.report.chests?.map((chest) => chest.cell).join(',') ?? ''}
+              data-path-count={verdict.report.chests?.filter((chest) => chest.kind === 'path').length ?? ''}
+              data-dead-end-count={verdict.report.chests?.filter((chest) => chest.kind === 'dead-end').length ?? ''}
+            >
+              {verdict.report.chests === null
+                ? `This verifier does not know chest rule v${verdict.report.chestRule}, so it could not compute the locations.`
+                : verdict.report.chests.length === 0
+                  ? `Computed from the revealed seed, this maze has no treasure chests (rule v${verdict.report.chestRule}).`
+                  : `Treasure chests computed from the revealed seed: ${verdict.report.chests.length} (rule v${verdict.report.chestRule}${
+                      verdict.report.chestRule < 2 ? ', dead ends only' : ''
+                    }): ${verdict.report.chests
+                      .map(
+                        (chest) =>
+                          `(${chest.cell % verdict.n},${Math.floor(chest.cell / verdict.n)}) ${KIND_TEXT[chest.kind]} ${formatPercent(chest.rewardBps)} of the bet`,
+                      )
+                      .join(', ')}`}
             </p>
-          )}
-          {record !== null && (
-            <details className="verify-export">
-              <summary>지금 보고 있는 기록 (복사용)</summary>
-              <textarea
-                className="mono"
-                data-testid="verify-record"
-                aria-label="현재 기록 JSON"
-                readOnly
-                rows={6}
-                value={JSON.stringify(record)}
-              />
-            </details>
-          )}
-        </section>
+            <p className="verify-chest-note">
+              {verdict.report.chestRule < 2
+                ? 'A treasure chest opens only when you enter a dead end and the round ends.'
+                : 'A path chest opens the moment you enter its cell. A dead-end chest opens when you enter its dead end and the round ends. Whether a cell has a chest depends only on that cell\'s seed hash and its own walls, so finding a chest tells you nothing about cells you have not visited.'}{' '}
+              The reward is points, and points have no cash value.
+            </p>
+          </section>
 
-        <p className="verify-foot">
-          게임 {record ? shortHex(record.gameId) : ''}
-          {config ? `, 체인 ${config.chainId}, 미로 버전 ${config.mazeVersion}` : ''}
+          <section className="verify-maze" aria-label="Full maze">
+            <h2>Full maze and your path</h2>
+            <VerifyMaze record={record} verdict={verdict} />
+            <ul className="legend">
+              <li>
+                <i className="legend-walk" /> Cells you walked (numbers show step order)
+              </li>
+              <li>
+                <i className="legend-solution" /> Solution path
+              </li>
+              <li>
+                <i className="legend-mismatch" /> Cells the server showed differently
+              </li>
+            </ul>
+            <p
+              className="verify-solution"
+              data-testid="verify-solution"
+              data-length={Math.max(0, verdict.report.solution.length - 1)}
+              data-cells={verdict.report.solution.join(',')}
+            >
+              Solution path, {Math.max(0, verdict.report.solution.length - 1)} steps:{' '}
+              {verdict.report.solution
+                .map((cell) => `(${cell % verdict.n},${Math.floor(cell / verdict.n)})`)
+                .join(' → ')}
+            </p>
+          </section>
+
+          <section className="verify-table" aria-label="Cell-by-cell comparison">
+            <h2>Cell-by-cell comparison</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Step</th>
+                  <th scope="col">Cell</th>
+                  <th scope="col">Walls the server showed</th>
+                  <th scope="col">Real maze</th>
+                  <th scope="col">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {record.observations.map((o, index) => {
+                  const cell = verdict.report.cells[index];
+                  return (
+                    <tr
+                      key={index}
+                      data-testid={`verify-row-${index}`}
+                      data-match={cell.match}
+                      data-cell={o.cell}
+                    >
+                      <td>{o.step}</td>
+                      <td>
+                        ({o.cell % verdict.n},{Math.floor(o.cell / verdict.n)})
+                      </td>
+                      <td>{openText(cell.observed)}</td>
+                      <td>{openText(cell.actual)}</td>
+                      <td>{cell.match ? 'Match' : 'Mismatch'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="verify-seeds" aria-label="Seeds">
+            <h2>Seeds</h2>
+            <dl>
+              <dt>Server seed (revealed after the game ends)</dt>
+              <dd className="mono" data-testid="verify-server-seed">
+                {serverSeed}
+              </dd>
+              <dt>Client seed (recorded in the bet transaction)</dt>
+              <dd className="mono">{record.clientSeed}</dd>
+              <dt>Final seed that built the maze</dt>
+              <dd className="mono" data-testid="verify-final-seed">
+                {verdict.report.finalSeed}
+              </dd>
+            </dl>
+          </section>
+        </>
+      )}
+
+      <section className="verify-import" aria-label="Import a record">
+        <h2>Verify another record</h2>
+        <p>
+          Paste a play record (JSON). If you change even one character, that cell shows as a
+          mismatch.
         </p>
-      </main>
+        <textarea
+          ref={importBox}
+          className="mono"
+          data-testid="verify-import"
+          aria-label="Play record JSON"
+          spellCheck={false}
+          rows={6}
+        />
+        <button
+          type="button"
+          data-testid="verify-import-submit"
+          onClick={() => importRecord(importBox.current?.value ?? '', false)}
+        >
+          Verify this record
+        </button>
+        {importError !== null && (
+          <p className="banner banner-error" role="alert" data-testid="verify-import-error">
+            {importError}
+          </p>
+        )}
+        {record !== null && (
+          <details className="verify-export">
+            <summary>Record you are viewing (to copy)</summary>
+            <textarea
+              className="mono"
+              data-testid="verify-record"
+              aria-label="Current record JSON"
+              readOnly
+              rows={6}
+              value={JSON.stringify(record)}
+            />
+          </details>
+        )}
+      </section>
 
-      {config?.testHooks === true && <TestBeacon api={deps.api} chainNowSec={config.chainNowSec} />}
+      <p className="verify-foot">
+        Game {record ? shortHex(record.gameId) : ''}
+        {config ? `, chain ${config.chainId}, maze version ${config.mazeVersion}` : ''}
+      </p>
     </div>
   );
 }
 
 
-const KIND_TEXT = { path: '길 상자', 'dead-end': '막다른 칸 상자' } as const;
+const KIND_TEXT = { path: 'path chest', 'dead-end': 'dead-end chest' } as const;
+const SIDE_WORD = { E: 'east', S: 'south' } as const;
 
 /** The chest check in words: what the server said and what the seed says. */
 function chestDetail(record: PlayRecord, verdict: Verdict): string {
   const { report, n } = verdict;
   const at = (cell: number): string => `(${cell % n},${Math.floor(cell / n)})`;
   const terminal = record.terminal;
-  if (!terminal) return '정산 없이 끝난 게임이라 보물상자를 판정하지 않았습니다';
-  if (report.chests === null) return `이 검증기가 모르는 보물상자 규칙(v${report.chestRule})입니다`;
+  if (!terminal) return 'The game ended without a settlement, so the chests were not checked';
+  if (report.chests === null) return `This verifier does not know chest rule v${report.chestRule}`;
   const expected = report.expectedChests;
   const seedSays =
     expected.length === 0
-      ? '시드로 계산하면 이 판에서 들어간 칸에는 보물상자가 없습니다'
-      : `시드로 계산하면 들어간 칸의 보물상자는 ${expected.length}개입니다: ${expected
+      ? 'Computed from the seed, the cells you entered have no treasure chests'
+      : `Computed from the seed, the cells you entered have ${expected.length} treasure chest(s): ${expected
           .map(
             (chest) =>
-              `${at(chest.cell)} ${KIND_TEXT[chest.kind]} 베팅액의 ${formatPercent(chest.rewardBps)}${
-                verdict.betWei !== null ? ` (+${formatPoints(chest.points)} 포인트)` : ''
+              `${at(chest.cell)} ${KIND_TEXT[chest.kind]} ${formatPercent(chest.rewardBps)} of the bet${
+                verdict.betWei !== null ? ` (+${formatPoints(chest.points)} points, no cash value)` : ''
               }`,
           )
           .join(', ')}`;
   if (terminal.chestRule === undefined) {
     return expected.length > 0
-      ? `이 기록에는 서버의 보물상자 판정이 없어 비교하지 못했습니다. ${seedSays}`
-      : '들어간 칸에 보물상자가 없는 판입니다';
+      ? `This record has no chest result from the server, so nothing was compared. ${seedSays}`
+      : 'The cells you entered have no treasure chests';
   }
   const claimed =
     record.chests ??
     (terminal.chest == null ? [] : [{ ...terminal.chest, kind: 'dead-end' as const, step: terminal.steps }]);
   const serverSays =
     claimed.length > 0
-      ? `서버가 준 보물상자 ${claimed.length}개: ${claimed
+      ? `Treasure chests the server awarded: ${claimed.length}: ${claimed
           .map(
             (chest) =>
-              `(${chest.cell.x},${chest.cell.y}) ${KIND_TEXT[chest.kind]} 베팅액의 ${formatPercent(chest.rewardBps)}, +${formatPoints(chest.points)} 포인트`,
+              `(${chest.cell.x},${chest.cell.y}) ${KIND_TEXT[chest.kind]} ${formatPercent(chest.rewardBps)} of the bet, +${formatPoints(chest.points)} points (no cash value)`,
           )
           .join(', ')}`
       : terminal.chest === null
-        ? '서버는 이 막다른 칸에 보물상자가 없다고 했습니다'
-        : '서버는 이 판에서 보물상자를 주지 않았습니다';
+        ? 'The server said this dead end has no treasure chest'
+        : 'The server awarded no treasure chest in this round';
   return `${serverSays}. ${seedSays}`;
 }
 
@@ -626,7 +686,7 @@ function VerifyMaze({ record, verdict }: { record: PlayRecord; verdict: Verdict 
     <div
       className="board vmaze"
       role="img"
-      aria-label={`${n}×${n} 전체 미로. 칸별 내용은 아래 표에 있습니다`}
+      aria-label={`${n}×${n} full maze. Cell details are in the table below`}
       data-testid="verify-maze"
       data-n={n}
       style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}
@@ -654,9 +714,9 @@ function VerifyMaze({ record, verdict }: { record: PlayRecord; verdict: Verdict 
             data-chest-bps={chests.get(cell)?.rewardBps}
           >
             {step !== undefined && <span className="vstep">{step}</span>}
-            {cell === 0 && <span className="mark mark-start">출발</span>}
-            {cell === n * n - 1 && <span className="mark mark-exit">출구</span>}
-            {chests.has(cell) && <span className="mark mark-chest">상자</span>}
+            {cell === 0 && <span className="mark mark-start">Start</span>}
+            {cell === n * n - 1 && <span className="mark mark-exit">Exit</span>}
+            {chests.has(cell) && <span className="mark mark-chest">Chest</span>}
           </div>
         );
       })}

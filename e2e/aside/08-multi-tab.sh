@@ -59,7 +59,7 @@ REFUND_K="$(refund_wei "$BET_WEI" "$TIER" "$K")"
 # ----- resume in a second tab -----
 
 ui_open B "$APP_URL/"
-wait_tab B "{ id: \"move-$DIR_B\", enabled: true }" 30 || fail_scenario "tab B did not resume the game (move-$DIR_B never became legal)"
+wait_tab B "{ id: \"move-$DIR_B\", attr: \"data-legal\", equals: \"true\" }" 30 || fail_scenario "tab B did not resume the game (move-$DIR_B never became legal)"
 if [ "$TABS_READABLE" -eq 1 ]; then
   expect_attr "tab B resumes the same game from localStorage" B board data-game-id "$GAME_ID" 5
   expect_attr "tab B resumes at step $K" B board data-step "$K" 5
@@ -69,6 +69,9 @@ fi
 
 # ----- two different moves for the same step, at once -----
 
+# The move buttons are never disabled, so a click alone does not wait for the move to be open:
+# both tabs must show their direction as legal first (tab B's was waited for above).
+wait_tab A "{ id: \"move-$DIR_A\", attr: \"data-legal\", equals: \"true\" }" 10 || fail_scenario "move-$DIR_A is not legal in tab A at step $K"
 ui 20 'M.hookFetch("A")' || fail_scenario "tab A's fetch could not be wrapped: $ASIDE_ERROR"
 ui 20 'M.hookFetch("B")' || fail_scenario "tab B's fetch could not be wrapped: $ASIDE_ERROR"
 ui 40 "M.race(\"A\", \"move-$DIR_A\", \"B\", \"move-$DIR_B\")" || fail_scenario "the two clicks could not be delivered: $ASIDE_ERROR"
@@ -113,7 +116,7 @@ fi
 # ----- one settlement -----
 
 PAYOUT="$(refund_wei "$BET_WEI" "$TIER" $((K + 1)))"
-ui_click A cashout-button 10 || fail_scenario "cashout-button is not clickable in tab A"
+cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable in tab A"
 wait_tab A '{ id: "result-outcome" }' 20 || fail_scenario "tab A did not show a result after the cash-out"
 if [ "$TABS_READABLE" -eq 1 ]; then
   expect_result A cashout "$PAYOUT"

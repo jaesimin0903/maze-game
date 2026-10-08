@@ -2,18 +2,28 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata = {
-  title: '미로 베팅',
-  description: '안개 속 미로에서 출구를 찾는 온체인 베팅 게임. 모든 판은 직접 검증할 수 있습니다.',
+  title: 'Maze Bet',
+  description: 'An on-chain betting game: find the exit of a maze in the fog. Every game can be verified.',
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#14111f',
 };
+
+/** Pixel display face, terminal digits and the body face. The page stays usable without them. */
+const FONTS =
+  'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=Press+Start+2P&family=Space+Mono:wght@400;700&family=VT323&display=swap';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href={FONTS} />
+      </head>
       <body>{children}</body>
     </html>
   );

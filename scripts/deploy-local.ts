@@ -64,7 +64,7 @@ function portOf(rpcUrl: string): number {
   return url.protocol === 'https:' ? 443 : 80;
 }
 
-function readBytecode(): Hex {
+export function readBytecode(): Hex {
   let artifact: { bytecode?: { object?: string } };
   try {
     artifact = JSON.parse(readFileSync(ARTIFACT, 'utf8'));

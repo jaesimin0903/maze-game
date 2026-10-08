@@ -9,7 +9,7 @@
 #          { error: { code, message } }: no cell, no wall mask, no path; the seed of a game in
 #          progress is not revealed (409 NOT_REVEALABLE); the game read is unchanged
 #   DOM    the board, the current cell and refundable-amount do not change; the wall direction
-#          is not offered by the page (its move button is disabled)
+#          is not offered by the page (its move button says data-legal="false")
 #   chain  the game stays Active and unsettled; afterwards a normal cash-out through the page
 #          still settles it with the refund of that step
 #
@@ -85,7 +85,7 @@ fi
 expect_absent "the page shows no error: it sent none of these moves" A error-message 2
 
 # The game is still playable: a normal cash-out settles it.
-ui_click A cashout-button 10 || fail_scenario "cashout-button is not clickable after the refused moves"
+cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable after the refused moves"
 expect_result A cashout "$REFUND"
 expect_settled 1 "$K" "$REFUND" cashed_out false
 

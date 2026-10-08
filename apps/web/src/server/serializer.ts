@@ -12,9 +12,14 @@ import {
   POINTS_RECENT_LIMIT,
   refundWei,
   type ConfigResponse,
+  type FeedResponse,
   type GameStatus,
   type GameView,
   type Hex,
+  type LeaderboardBoard,
+  type LeaderboardResponse,
+  type LeaderboardRow,
+  type NetworkInfo,
   type PointsResponse,
   type RevealReason,
   type RevealResponse,
@@ -23,6 +28,7 @@ import {
 } from '@maze/shared';
 import type { Game } from './game-service';
 import type { LedgerAccount } from './points';
+import type { FeedGame, RankedRow, Standings } from './stats';
 
 const STATUS_OF_OUTCOME: readonly GameStatus[] = ['won', 'cashed_out', 'lost'];
 
@@ -125,6 +131,42 @@ export function toPointsResponse(address: Hex, account: LedgerAccount | null): P
   };
 }
 
+/** `GET /api/feed`. */
+export function toFeedResponse(games: readonly FeedGame[], nowSec: number): FeedResponse {
+  return {
+    games: games.map((game) => ({
+      gameId: game.gameId,
+      player: game.player,
+      n: game.n,
+      betWei: game.betWei.toString(),
+      payoutWei: game.payoutWei.toString(),
+      outcome: game.outcome,
+      endedAtSec: game.endedAtSec,
+    })),
+    chainNowSec: nowSec,
+  };
+}
+
+/** `GET /api/leaderboard`. */
+export function toLeaderboardResponse(
+  board: LeaderboardBoard,
+  standings: Standings,
+  nowSec: number,
+): LeaderboardResponse {
+  const row = (ranked: RankedRow): LeaderboardRow => ({
+    rank: ranked.rank,
+    address: ranked.address,
+    value: ranked.value.toString(),
+  });
+  return {
+    board,
+    rows: standings.rows.map(row),
+    me: standings.me === null ? null : row(standings.me),
+    ...(standings.resetsAtSec === null ? {} : { resetsAtSec: standings.resetsAtSec }),
+    chainNowSec: nowSec,
+  };
+}
+
 export function toTicketResponse(game: Game, signature: Hex): TicketResponse {
   return {
     gameId: game.gameId,
@@ -156,6 +198,8 @@ export function toConfigResponse(p: {
   idleTimeoutSec: number;
   maxGameSec: number;
   nowSec: number;
+  network: NetworkInfo;
+  privyAppId: string | null;
 }): ConfigResponse {
   const { table } = p;
   return {
@@ -183,5 +227,7 @@ export function toConfigResponse(p: {
     chainNowSec: p.nowSec,
     devWallet: p.devWallet,
     chest: chestConfig(),
+    network: { ...p.network },
+    privyAppId: p.privyAppId,
   };
 }

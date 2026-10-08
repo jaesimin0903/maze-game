@@ -8,9 +8,9 @@
 #   HTTP   /api/config reports devWallet false, then true after the restart; chain id 31337 and
 #          the same contract both times
 #   DOM    with devWallet false the lobby renders (wallet-connect is there, the page is fully
-#          up) but wallet-dev-option and wallet-dev-account are not in the DOM and bet-submit
-#          is disabled; after the restart and a reload the option is there and connects
-#          Anvil #2
+#          up) but wallet-dev-option and wallet-dev-account are not in the DOM, and bet-submit,
+#          in the bet sheet that START (bet-start) opens, is disabled; after the restart and a
+#          reload the option is there and connects Anvil #2
 #   chain  the chain is 31337; no game was created while no wallet could be connected
 #
 # The scenario never clicks wallet-connect: that button talks to whatever wallet extension the
@@ -38,6 +38,9 @@ expect_present "the lobby is up: wallet-connect is offered" A wallet-connect 10
 expect_attr "the page knows the chain from /api/config" A chain-info data-chain-id 31337 5
 expect_absent "wallet-dev-option is not in the DOM while devWallet is false" A wallet-dev-option 3
 expect_absent "wallet-dev-account is not in the DOM while devWallet is false" A wallet-dev-account 1
+# START (bet-start) opens the bet sheet; without a wallet its bet-submit stays disabled.
+ui_click A bet-start 10 || fail_scenario "bet-start is not clickable"
+expect_present "START opens the bet sheet" A bet-submit 10
 if SUBMIT="$(dom_item A bet-submit)" && [ "$SUBMIT" != null ]; then
   check dom "bet-submit is disabled without a wallet" true "$(printf '%s' "$SUBMIT" | jq -r '.attrs | has("disabled")')"
 else

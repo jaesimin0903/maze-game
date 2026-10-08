@@ -38,6 +38,9 @@ e2e/aside/out/production/scenarios/
 e2e/aside/out/results.json
 e2e/aside/out/report.md
 
+# layout screenshots taken during manual QA
+qa-*.png
+
 # hook state written when a shell happens to sit in a subdirectory
 **/.omc/
 !/.omc/

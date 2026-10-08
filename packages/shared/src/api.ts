@@ -126,6 +126,22 @@ export interface ConfigResponse {
   devWallet: boolean;
   /** The treasure-chest rule of this server. Absent on a server without chests. */
   chest?: ChestConfig;
+  /** How the browser names the chain and links to it. Absent: a local Anvil, bets in ETH. */
+  network?: NetworkInfo;
+  /** Privy app id for email, social and passkey login. Absent or `null`: no Privy login. */
+  privyAppId?: string | null;
+}
+
+/** `ConfigResponse.network`. */
+export interface NetworkInfo {
+  /** "Monad Testnet". */
+  name: string;
+  /** Symbol of the native currency bets are placed in: "MON". */
+  symbol: string;
+  /** Block explorer base URL without a trailing slash, or `null` when there is none. */
+  explorerUrl: string | null;
+  /** Where players get test currency, or `null` on a chain without a faucet. */
+  faucetUrl: string | null;
 }
 
 /** `POST /api/games` -> 201 */
@@ -296,4 +312,57 @@ export interface PointsResponse {
   awards: PointsAward[];
   /** Points cannot be exchanged for money or for anything else. */
   cashValue: false;
+}
+
+// ---------------------------------------------------------------------------
+// Recent games and leaderboards, derived from the server's event log (stats.ts).
+// ---------------------------------------------------------------------------
+
+/** Most entries `GET /api/feed` returns. */
+export const FEED_LIMIT = 10;
+/** Most rows a leaderboard returns (the requesting address's own row comes on top of these). */
+export const LEADERBOARD_LIMIT = 10;
+
+export type FeedOutcome = 'exit' | 'loss' | 'cashout' | 'auto-cashout' | 'reclaimed';
+
+export interface FeedEntry {
+  gameId: Hex;
+  /** Checksummed. */
+  player: Hex;
+  /** Board size of the game. */
+  n: number;
+  betWei: string;
+  /** What the game paid the player; for a reclaimed game, the amount reclaimed. Decimal. */
+  payoutWei: string;
+  outcome: FeedOutcome;
+  /** Chain second at which the game ended (or was reclaimed). */
+  endedAtSec: number;
+}
+
+/** `GET /api/feed`: the most recent ended games, newest first. */
+export interface FeedResponse {
+  games: FeedEntry[];
+  chainNowSec: number;
+}
+
+export type LeaderboardBoard = 'today' | 'all' | 'points';
+
+export interface LeaderboardRow {
+  /** 1-based. */
+  rank: number;
+  /** Checksummed. */
+  address: Hex;
+  /** Decimal. Net profit in wei for 'today' and 'all' (may be negative); points for 'points'. */
+  value: string;
+}
+
+/** `GET /api/leaderboard?board=today|all|points[&address=0x…]` */
+export interface LeaderboardResponse {
+  board: LeaderboardBoard;
+  rows: LeaderboardRow[];
+  /** The requesting address ranked among everyone, or null when no address was given or it has no entry. */
+  me: LeaderboardRow | null;
+  /** 'today' only: chain second of the next UTC midnight, when the board starts over. */
+  resetsAtSec?: number;
+  chainNowSec: number;
 }

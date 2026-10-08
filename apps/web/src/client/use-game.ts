@@ -129,6 +129,8 @@ const SELF_SETTLE_AFTER_SEC = 10;
 const ABANDON_AFTER_NONE_READS = 5;
 /** Failed reads tolerated at the fast retry period, and NOT_ON_CHAIN answers kept from the player. */
 const QUIET_SYNC_FAILURES = 20;
+/** Polls after the chain shows a game finished, while the page still looks for its settle transaction. */
+const FINAL_POLLS = 10;
 
 /** `start` errors that mean "ask again later" rather than "read the game instead". */
 const START_RETRY_CODES: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
@@ -222,6 +224,7 @@ export function useGame(p: {
   const failedSyncs = useRef(0);
   const noneReads = useRef(0);
   const pollTicks = useRef(0);
+  const [finalPolls, setFinalPolls] = useState<{ gameId: Hex | null; count: number }>({ gameId: null, count: 0 });
   /** The chain second of the latest render, for flows that outlive the render they started in. */
   const chainNow = useRef(now);
   useEffect(() => {
@@ -311,7 +314,7 @@ export function useGame(p: {
           setActiveGameId(null);
           update({
             ...INITIAL,
-            error: '이 게임은 체인에 없습니다. 베팅이 기록되지 않았거나 체인이 초기화되었습니다',
+            error: 'This game is not on the chain. The bet was never recorded, or the chain was reset',
           });
         }
         return;
@@ -322,13 +325,11 @@ export function useGame(p: {
         const reclaimed = { txHash: null, amountWei: onchain.bet.toString() };
         const record: PlayRecord = { ...latest.record, reclaimed };
         saveRecord(record);
-        setActiveGameId(null);
         update({ record, onchain, phase: 'ended' });
         return;
       }
-      if (onchain.status === ONCHAIN_STATUS.Settled && latest.phase === 'ended') {
-        setActiveGameId(null);
-      }
+      // A finished game stays the active one until the player starts a new game, so a reload
+      // (or a wallet reconnect) shows its result again.
       update({ onchain });
     },
     [update],
@@ -362,19 +363,19 @@ export function useGame(p: {
           signature,
         });
         if (ticket.player.toLowerCase() !== wallet.address.toLowerCase()) {
-          throw new Error('서버가 다른 지갑의 티켓을 보냈습니다');
+          throw new Error('The server sent a ticket for another wallet');
         }
         if (ticket.tier !== tier) {
           // The server handed back this wallet's unused ticket, which fixed another size. Its
           // commitment is for that size, so it is not spent on a bet the player did not choose.
           const size = (index: number): string => {
             const n = config.tiers[index]?.n;
-            return n === undefined ? `${index}번 크기` : `${n}×${n}`;
+            return n === undefined ? `size ${index}` : `${n}×${n}`;
           };
           throw new Error(
-            `이 지갑에는 아직 쓰지 않은 ${size(ticket.tier)} 티켓이 남아 있어 ${size(tier)} 티켓을 새로 받을 수 없습니다. ` +
-              `베팅 트랜잭션은 보내지 않았습니다. ${size(ticket.tier)}로 베팅하거나, 그 티켓이 만료된 뒤` +
-              `(약 ${formatClock(ticket.expirySec - chainNow.current)} 뒤)에 ${size(tier)}로 다시 베팅하세요`,
+            `This wallet still holds an unused ${size(ticket.tier)} ticket, so it cannot get a ${size(tier)} ticket yet. ` +
+              `No bet transaction was sent. Bet on ${size(ticket.tier)}, or bet on ${size(tier)} again once that ticket` +
+              ` expires (in about ${formatClock(ticket.expirySec - chainNow.current)})`,
           );
         }
         record = {
@@ -402,13 +403,13 @@ export function useGame(p: {
           update({
             error:
               failedAt === 'sign'
-                ? '지갑에서 티켓 요청 서명을 거절했습니다. 베팅은 시작되지 않았습니다. 다시 베팅을 누르면 처음부터 진행합니다'
-                : '지갑에서 베팅 트랜잭션을 거절했습니다. 베팅액은 빠져나가지 않았습니다. 다시 베팅을 누르면 이어서 진행합니다',
+                ? 'The ticket request signature was rejected in the wallet. No bet was started. Bet again to start over'
+                : 'The bet transaction was rejected in the wallet. No money left the wallet. Bet again to pick up where you left off',
           });
         } else if (error instanceof ApiError && error.code === 'UNAUTHORIZED') {
           update({
             error:
-              '서버가 티켓 요청의 지갑 서명을 확인하지 못했습니다. 지갑의 계정과 네트워크를 확인하고 다시 베팅하세요',
+              'The server could not verify the wallet signature on the ticket request. Check the wallet account and network, then bet again',
           });
         } else fail(error);
         return;
@@ -428,7 +429,7 @@ export function useGame(p: {
       }
       if (mined === 'reverted') {
         setActiveGameId(null);
-        update({ ...INITIAL, error: '베팅 트랜잭션이 되돌려졌습니다. 베팅액은 빠져나가지 않았습니다' });
+        update({ ...INITIAL, error: 'The bet transaction was reverted. No money left the wallet' });
         return;
       }
       failedSyncs.current = 0;
@@ -477,7 +478,7 @@ export function useGame(p: {
     try {
       const hash = await wallet.reclaim(gameId);
       if ((await chain.waitForTx(hash)) !== 'success') {
-        throw new Error('회수 트랜잭션이 되돌려졌습니다');
+        throw new Error('The reclaim transaction was reverted');
       }
       const onchain = await chain.game(gameId);
       const current = store.current.record;
@@ -485,7 +486,6 @@ export function useGame(p: {
       const amountWei = onchain.bet > 0n ? onchain.bet.toString() : (current.betWei ?? '0');
       const record: PlayRecord = { ...current, reclaimed: { txHash: hash, amountWei } };
       saveRecord(record);
-      setActiveGameId(null);
       update({ record, onchain, phase: 'ended' });
     } catch (error) {
       update({ error: describeTxError(error) });
@@ -503,7 +503,7 @@ export function useGame(p: {
     try {
       const hash = await wallet.settle({ gameId, terminal });
       if ((await chain.waitForTx(hash)) !== 'success') {
-        throw new Error('정산 트랜잭션이 되돌려졌습니다');
+        throw new Error('The settlement transaction was reverted');
       }
       update({ selfSettleTx: hash });
       absorbChain(gameId, await chain.game(gameId));
@@ -526,7 +526,16 @@ export function useGame(p: {
   // changes when a transaction it sent is dropped and sent again, so one answer is not enough.
   const { phase, record, view } = state;
   const awaitingStart = phase === 'playing' && view === null;
-  const awaitingSettlement = phase === 'ended' && !record?.reclaimed && state.settledTx === null;
+  // Once the chain shows the game finished, a few more polls may still name the transaction that
+  // settled it; then the page stops asking. (A page reloaded after the player's own settle does
+  // not know that transaction, and the server may never report one.)
+  const finalOnChain = isFinal(state);
+  const finalCount = finalPolls.gameId === record?.gameId ? finalPolls.count : 0;
+  const awaitingSettlement =
+    phase === 'ended' &&
+    !record?.reclaimed &&
+    state.settledTx === null &&
+    !(finalOnChain && finalCount >= FINAL_POLLS);
   const pollMs = awaitingStart
     ? deps.timing.startRetryMs
     : phase === 'playing' || awaitingSettlement
@@ -538,6 +547,10 @@ export function useGame(p: {
     // A server that keeps refusing is asked at the normal period, not the fast one.
     const backedOff = awaitingStart && failedSyncs.current > QUIET_SYNC_FAILURES;
     if (backedOff && pollTicks.current % slowEvery !== 0) return;
+    const gameId = record?.gameId ?? null;
+    if (finalOnChain && gameId !== null) {
+      setFinalPolls((p) => ({ gameId, count: (p.gameId === gameId ? p.count : 0) + 1 }));
+    }
     void sync();
   }, pollMs);
 

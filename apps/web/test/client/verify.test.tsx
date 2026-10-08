@@ -6,12 +6,13 @@ import {
   deriveFinalSeed,
   exitPayoutWei,
   generateMaze,
+  markStartSide,
   refundWei,
   solve,
   type Hex,
   type Maze,
 } from '@maze/shared';
-import { VerifyView } from '../../src/client/components/VerifyView';
+import { VerifyPanel } from '../../src/client/components/VerifyView';
 import { saveRecord, type PlayRecord } from '../../src/client/record';
 import { CLIENT_SEED, FakeWorld, PLAYER, SERVER_SEED, TABLE, movesAlong } from './helpers';
 
@@ -108,11 +109,11 @@ describe('verify screen', () => {
   it('AC-W5 AC-M4: shows the hash match, the whole maze with the walked path, every compared cell and the solution', async () => {
     const record = exitRecord();
     saveRecord(record);
-    render(<VerifyView gameId={GAME_ID} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(record).deps()} />);
 
     await screen.findByTestId('verify-hash-match');
     expect(match('verify-hash-match')).toBe('true');
-    expect(screen.getByTestId('verify-hash-match').textContent).toContain('일치');
+    expect(screen.getByTestId('verify-hash-match').textContent).toContain('Match');
     await waitFor(() => expect(match('verify-onchain-match')).toBe('true'));
     expect(match('verify-cells-match')).toBe('true');
     expect(match('verify-outcome-ok')).toBe('true');
@@ -148,7 +149,7 @@ describe('verify screen', () => {
   it('AC-M5 scenario 06: a record with one wall bit changed flags that cell and no other', async () => {
     const record = exitRecord();
     saveRecord(record);
-    render(<VerifyView gameId={GAME_ID} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(record).deps()} />);
     await screen.findByTestId('verify-hash-match');
 
     const tampered: PlayRecord = JSON.parse(JSON.stringify(record));
@@ -185,10 +186,10 @@ describe('verify screen', () => {
       terminal: { ...record.terminal!, serverSeed: `0x${'0f'.repeat(32)}` },
     };
     saveRecord(forged);
-    render(<VerifyView gameId={GAME_ID} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(record).deps()} />);
     await screen.findByTestId('verify-hash-match');
     expect(match('verify-hash-match')).toBe('false');
-    expect(screen.getByTestId('verify-hash-match').textContent).toContain('불일치');
+    expect(screen.getByTestId('verify-hash-match').textContent).toContain('Mismatch');
   });
 
   it('checks the settled payout against the table', async () => {
@@ -204,7 +205,7 @@ describe('verify screen', () => {
     };
     const honest = recordOf(path, terminal);
     saveRecord(honest);
-    const { unmount } = render(<VerifyView gameId={GAME_ID} deps={worldWith(honest).deps()} />);
+    const { unmount } = render(<VerifyPanel gameId={GAME_ID} deps={worldWith(honest).deps()} />);
     await screen.findByTestId('verify-payout-ok');
     expect(match('verify-outcome-ok')).toBe('true');
     await waitFor(() => expect(match('verify-payout-ok')).toBe('true'));
@@ -215,7 +216,7 @@ describe('verify screen', () => {
       payoutWei: (BigInt(terminal.payoutWei) - 1n).toString(),
     });
     saveRecord(short);
-    render(<VerifyView gameId={GAME_ID} deps={worldWith(short).deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(short).deps()} />);
     await screen.findByTestId('verify-payout-ok');
     expect(match('verify-payout-ok')).toBe('false');
     expect(match('verify-outcome-ok')).toBe('true');
@@ -226,7 +227,7 @@ describe('verify screen', () => {
     const world = worldWith(record, ONCHAIN_STATUS.Reclaimed);
     issueTicket(world, record);
     saveRecord(record);
-    render(<VerifyView gameId={GAME_ID} deps={world.deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={world.deps()} />);
 
     await screen.findByTestId('verify-hash-match');
     expect(world.requests).toContain('GET /api/games/:id/reveal');
@@ -245,14 +246,14 @@ describe('verify screen', () => {
     const world = worldWith(record, ONCHAIN_STATUS.Reclaimed);
     issueTicket(world, record);
     saveRecord(record);
-    render(<VerifyView gameId={GAME_ID} deps={world.deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={world.deps()} />);
 
     await screen.findByTestId('verify-hash-match');
     expect(match('verify-hash-match')).toBe('true');
     expect(match('verify-cells-match')).toBe('unknown');
     const check = screen.getByTestId('verify-cells-match');
-    expect(check.textContent).toContain('확인 불가');
-    expect(check.textContent).toContain('비교하지 않았습니다');
+    expect(check.textContent).toContain('Cannot check');
+    expect(check.textContent).toContain('nothing was compared');
     expect(check.textContent).not.toContain('0 / 0');
     expect(shownCells()).toEqual([]);
 
@@ -268,9 +269,9 @@ describe('verify screen', () => {
     const world = worldWith(record, ONCHAIN_STATUS.Active);
     issueTicket(world, record);
     saveRecord(record);
-    render(<VerifyView gameId={GAME_ID} deps={world.deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={world.deps()} />);
     await waitFor(() =>
-      expect(screen.getByTestId('verify-unrevealed').textContent).toContain('아직 공개할 수 없습니다'),
+      expect(screen.getByTestId('verify-unrevealed').textContent).toContain('cannot be revealed yet'),
     );
     expect(screen.queryByTestId('verify-hash-match')).toBeNull();
     expect(screen.queryByTestId('verify-maze')).toBeNull();
@@ -278,7 +279,7 @@ describe('verify screen', () => {
 
   it('starts empty without a stored record and verifies a pasted one', async () => {
     const record = exitRecord();
-    render(<VerifyView gameId={null} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={null} deps={worldWith(record).deps()} />);
     expect(await screen.findByTestId('verify-empty')).toBeTruthy();
 
     const box = screen.getByTestId('verify-import') as HTMLTextAreaElement;
@@ -304,9 +305,87 @@ describe('verify screen', () => {
     // Turn the second move into the opposite of the first: back onto the start cell.
     bent.moves[1] = ((bent.moves[0] + 2) % 4) as 0 | 1 | 2 | 3;
     saveRecord(bent);
-    render(<VerifyView gameId={GAME_ID} deps={worldWith(record).deps()} />);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(record).deps()} />);
     await screen.findByTestId('verify-outcome-ok');
     expect(match('verify-outcome-ok')).toBe('false');
     expect(match('verify-hash-match')).toBe('true');
+  });
+});
+
+describe('verify screen: the start side a seed picks', () => {
+  /** The exit record of a game whose client seed picks `side`. */
+  function pickedRecord(side: 'E' | 'S'): PlayRecord {
+    const clientSeed = markStartSide(CLIENT_SEED, side);
+    const real = generateMaze(deriveFinalSeed({ serverSeed: SERVER_SEED, clientSeed, gameId: GAME_ID }), N);
+    const path = solve(real);
+    return {
+      ...recordOf(path, {
+        serverSeed: SERVER_SEED,
+        clientSeed,
+        outcome: 0,
+        steps: path.length - 1,
+        payoutWei: exitPayoutWei(TABLE, BET, 0).toString(),
+        signature: '0x00',
+        settleTxHash: `0x${'5e'.repeat(32)}`,
+      }),
+      clientSeed,
+      observations: path.map((cell, step) => ({ step, cell, open: real.open[cell] })),
+    };
+  }
+
+  it('checks that the start the server showed and the rebuilt maze open to the side the seed picked, and the other checks still pass', async () => {
+    for (const side of ['E', 'S'] as const) {
+      const record = pickedRecord(side);
+      saveRecord(record);
+      const { unmount } = render(<VerifyPanel gameId={GAME_ID} deps={worldWith(record).deps()} />);
+      await waitFor(() => expect(match('verify-start-side')).toBe('true'));
+      const word = side === 'E' ? 'east' : 'south';
+      expect(screen.getByTestId('verify-start-side').textContent).toContain(
+        `Your seed picked ${word}; the server showed the start opening ${word}; the rebuilt maze opens ${word}`,
+      );
+      expect(match('verify-hash-match')).toBe('true');
+      await waitFor(() => expect(match('verify-onchain-match')).toBe('true'));
+      expect(match('verify-cells-match')).toBe('true');
+      expect(match('verify-outcome-ok')).toBe('true');
+      // The start cell the player was shown opens to that side only.
+      expect(record.observations[0].open).toBe(side === 'E' ? 2 : 4);
+      unmount();
+      window.localStorage.clear();
+    }
+  });
+
+  it('fails when the server showed the start opening the other way, and cannot check without a shown start', async () => {
+    // The server showed a start cell that opens south, for a seed that picked east.
+    const honest = pickedRecord('E');
+    const tampered: PlayRecord = {
+      ...honest,
+      observations: honest.observations.map((o, k) => (k === 0 ? { ...o, open: 4 } : o)),
+    };
+    saveRecord(tampered);
+    const { unmount } = render(<VerifyPanel gameId={GAME_ID} deps={worldWith(tampered).deps()} />);
+    await waitFor(() => expect(match('verify-start-side')).toBe('false'));
+    expect(screen.getByTestId('verify-start-side').textContent).toContain(
+      'Your seed picked east; the server showed the start opening south; the rebuilt maze opens east',
+    );
+    // The flipped start is also a wall the server showed wrongly.
+    expect(match('verify-cells-match')).toBe('false');
+    expect(match(cellId(0))).toBe('false');
+    expect(match('verify-hash-match')).toBe('true');
+    unmount();
+
+    // A record without the start observation: the side the server showed is unknown.
+    const blind: PlayRecord = { ...honest, observations: [], moves: [] };
+    saveRecord(blind);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(blind).deps()} />);
+    await waitFor(() => expect(match('verify-start-side')).toBe('unknown'));
+    expect(screen.getByTestId('verify-start-side').textContent).toContain('the server showed the start opening (not shown)');
+  });
+
+  it('has no start-side check for a seed that picks no side', async () => {
+    const record = exitRecord();
+    saveRecord(record);
+    render(<VerifyPanel gameId={GAME_ID} deps={worldWith(record).deps()} />);
+    await waitFor(() => expect(match('verify-cells-match')).toBe('true'));
+    expect(screen.queryByTestId('verify-start-side')).toBeNull();
   });
 });

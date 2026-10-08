@@ -155,7 +155,7 @@ describe('parseRecord', () => {
   });
 
   it('rejects malformed records with a message naming the field', () => {
-    expect(() => parseRecord(null)).toThrow(/JSON 객체/);
+    expect(() => parseRecord(null)).toThrow(/not a JSON object/);
     expect(() => parseRecord({ ...fresh(), gameId: '0x12' })).toThrow(/gameId/);
     expect(() => parseRecord({ ...fresh(), observations: [{ step: 0, cell: 0, open: 16 }] })).toThrow(
       /observations\[0\]/,
@@ -200,12 +200,12 @@ describe('format', () => {
 
   it('AC-R1 a multiplier is printed exactly: what the page shows is never more than the game pays', () => {
     // Certified multipliers have four decimals; rounding 2.6088 to "2.61" would promise too much.
-    expect(formatMultiplier(26088)).toBe('2.6088배');
-    expect(formatMultiplier(66112)).toBe('6.6112배');
-    expect(formatMultiplier(184695)).toBe('18.4695배');
-    expect(formatMultiplier(265570)).toBe('26.557배');
+    expect(formatMultiplier(26088)).toBe('×2.6088');
+    expect(formatMultiplier(66112)).toBe('×6.6112');
+    expect(formatMultiplier(184695)).toBe('×18.4695');
+    expect(formatMultiplier(265570)).toBe('×26.557');
     for (const { multiplierBps } of loadTuning().tiers) {
-      expect(Number.parseFloat(formatMultiplier(multiplierBps)) * 10_000).toBeCloseTo(multiplierBps, 6);
+      expect(Number.parseFloat(formatMultiplier(multiplierBps).slice(1)) * 10_000).toBeCloseTo(multiplierBps, 6);
     }
   });
 
@@ -221,8 +221,8 @@ describe('format', () => {
   it('prints basis points, multipliers and chain-second countdowns', () => {
     expect(formatPercent(9500)).toBe('95.00%');
     expect(formatPercent(7300)).toBe('73.00%');
-    expect(formatMultiplier(25500)).toBe('2.55배');
-    expect(formatMultiplier(200000)).toBe('20.00배');
+    expect(formatMultiplier(25500)).toBe('×2.55');
+    expect(formatMultiplier(200000)).toBe('×20.00');
     expect(formatClock(125)).toBe('2:05');
     expect(formatClock(-3)).toBe('0:00');
   });

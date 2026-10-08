@@ -1,0 +1,35 @@
+# The image is built from package manifests, packages/shared and apps/web only (Dockerfile).
+# Never in the build context: settings and keys, local state, build output, dependencies.
+
+.env
+.env.*
+**/.env
+**/.env.*
+.data*
+**/.data*
+deployments
+**/node_modules
+**/.next*
+**/*.tsbuildinfo
+**/*.log
+**/*.pid
+**/coverage
+**/qa-*.png
+**/.DS_Store
+.git
+.omc
+**/.omc
+
+# Not used by the server. The tests also import from scripts/ and e2e/, and `next build` type
+# checks every .ts file under apps/web.
+apps/web/test
+apps/web/vitest.config.ts
+packages/shared/test
+contracts
+docs
+e2e
+cache
+packages/sim
+!packages/sim/package.json
+scripts
+!scripts/container-start.sh

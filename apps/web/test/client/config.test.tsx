@@ -29,12 +29,15 @@ describe('runtime configuration', () => {
       contract: '0x00000000000000000000000000000000000000AA',
     });
     render(<GameApp deps={world.deps()} />);
-    await screen.findByTestId('bet-submit');
+    await screen.findByTestId('bet-start');
     expect(world.requests[0]).toBe('GET /api/config');
     expect(world.chainConfigs).toHaveLength(1);
     expect(world.chainConfigs[0].rpcUrl).toBe('http://127.0.0.1:8557');
     expect(world.chainConfigs[0].contract).toBe('0x00000000000000000000000000000000000000AA');
     expect(screen.getByTestId('chain-info').getAttribute('data-chain-id')).toBe('31337');
+    // The footer names the chain; the contract address is in its title.
+    expect(screen.getByTestId('chain-info').textContent).toBe('Chain 31337');
+    expect(screen.getByTestId('chain-info').getAttribute('title')).toBe('Contract 0x00000000000000000000000000000000000000AA');
 
     const chain = chainOf(world.chainConfigs[0]);
     expect(chain.id).toBe(31337);
@@ -79,7 +82,7 @@ describe('runtime configuration', () => {
 
     const production = new FakeWorld({ fixture: false, calibrated: true });
     render(<GameApp deps={production.deps()} />);
-    await screen.findByTestId('bet-submit');
+    await screen.findByTestId('bet-start');
     expect(screen.queryByTestId('fixture-banner')).toBeNull();
   });
 
@@ -88,8 +91,8 @@ describe('runtime configuration', () => {
     const hooked = new FakeWorld({ testHooks: true, fixture: false, calibrated: true });
     render(<GameApp deps={hooked.deps()} />);
     const banner = await screen.findByTestId('test-hooks-banner');
-    expect(banner.textContent).toContain('테스트 훅');
-    expect(banner.textContent).toContain('미리 알아낼 수 있습니다');
+    expect(banner.textContent).toContain('Test hooks are on.');
+    expect(banner.textContent).toContain('known in advance');
     expect(banner.getAttribute('role')).toBe('alert');
     expect(screen.queryByTestId('fixture-banner')).toBeNull();
     cleanup();
@@ -110,9 +113,11 @@ describe('runtime configuration', () => {
   it('tells the player what the idle and maximum-time rules are, from the config', async () => {
     const world = new FakeWorld({ idleTimeoutSec: 77, maxGameSec: 555 });
     render(<GameApp deps={world.deps()} />);
-    await screen.findByTestId('bet-submit');
-    expect(document.body.textContent).toContain('77초 동안');
-    expect(document.body.textContent).toContain('555초가 지나면');
+    // The rules come with the bet sheet that START opens.
+    fireEvent.click(await screen.findByTestId('bet-start'));
+    const rules = (await screen.findByTestId('bet-rules')).textContent;
+    expect(rules).toContain('If you do not move for 77s');
+    expect(rules).toContain('555s after the start');
   });
 
   it('shows server-unreachable when the config cannot be loaded, and recovers on retry', async () => {
@@ -120,11 +125,12 @@ describe('runtime configuration', () => {
     world.serverUp = false;
     render(<GameApp deps={world.deps()} />);
     const banner = await screen.findByTestId('server-unreachable');
-    expect(screen.queryByTestId('bet-submit')).toBeNull();
+    expect(screen.queryByTestId('bet-start')).toBeNull();
+    expect(screen.queryByTestId('board')).toBeNull();
 
     world.serverUp = true;
     fireEvent.click(banner.querySelector('button') as HTMLButtonElement);
-    await screen.findByTestId('bet-submit');
+    await screen.findByTestId('bet-start');
     await waitFor(() => expect(screen.queryByTestId('server-unreachable')).toBeNull());
   });
 });

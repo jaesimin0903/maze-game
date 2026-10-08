@@ -31,11 +31,14 @@ import {
   type CreateGameRequest,
   type Dir,
   type ErrorCode,
+  type FeedResponse,
   type FoundChest,
   type GameStatus,
   type GameTerminal,
   type GameView,
   type Hex,
+  type LeaderboardBoard,
+  type LeaderboardResponse,
   type Maze,
   type PointsAward,
   type PointsResponse,
@@ -353,6 +356,23 @@ export class FakeWorld {
 
   readonly fetch: FetchLike = async (input, init) => {
     if (!this.serverUp) throw new TypeError('fetch failed');
+    // The side panels' reads: no recent games, empty boards. Answered before the request is
+    // logged, `answerNext` is used or the worker runs, so polling them changes no game flow.
+    const url = new URL(input, 'http://localhost');
+    if (url.pathname === '/api/feed' || url.pathname === '/api/leaderboard') {
+      const board = url.searchParams.get('board') ?? 'today';
+      const answer: FeedResponse | LeaderboardResponse =
+        url.pathname === '/api/feed'
+          ? { games: [], chainNowSec: this.chainNow }
+          : {
+              board: board as LeaderboardBoard,
+              rows: [],
+              me: null,
+              ...(board === 'today' ? { resetsAtSec: (Math.floor(this.chainNow / 86_400) + 1) * 86_400 } : {}),
+              chainNowSec: this.chainNow,
+            };
+      return new Response(JSON.stringify(answer), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
     const method = init?.method ?? 'GET';
     this.requests.push(`${method} ${input.replace(/0x[0-9a-fA-F]{64}/, ':id')}`);
     this.timeline.push(this.requests[this.requests.length - 1]);
@@ -531,6 +551,9 @@ export class FakeWorld {
     },
     pendingOf: async () => this.pending,
     balanceOf: async () => this.balance,
+    gasPrice: async () => 1_000_000_000n,
+    maxFeePerGas: async () => 1_200_000_000n,
+    estimateTransferGas: async () => 21_000n,
     waitForTx: async () => 'success',
     settledBy: async (hash, gameId) => {
       if (!this.rpcUp) throw new Error('rpc down');
@@ -601,6 +624,11 @@ export class FakeWorld {
         this.pending = 0n;
         return this.nextHash('d4a3');
       },
+      transfer: async ({ valueWei }) => {
+        this.txs.push('transfer');
+        this.balance -= valueWei;
+        return this.nextHash('7a5f');
+      },
     };
   }
 
@@ -617,6 +645,7 @@ export class FakeWorld {
         if (!config.devWallet) throw new Error('dev wallet disabled');
         return this.wallet();
       },
+      connectPrivy: async () => ({ ...this.wallet(), kind: 'privy' }),
       timing: { pollMs: 40, clockMs: 15, startRetryMs: 15 },
     };
   }

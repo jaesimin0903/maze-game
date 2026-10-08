@@ -8,6 +8,7 @@ import { createChainApi, type ChainApi } from './chain';
 import {
   connectDevWallet,
   connectInjectedWallet,
+  connectPrivyWallet,
   injectedProvider,
   type WalletApi,
 } from './wallet';
@@ -18,6 +19,8 @@ export interface ClientDeps {
   injected(): EIP1193Provider | null;
   connectInjected(config: ConfigResponse, provider: EIP1193Provider): Promise<WalletApi>;
   connectDev(config: ConfigResponse, index: number): Promise<WalletApi>;
+  /** The embedded wallet of a Privy login, from its EIP-1193 provider. */
+  connectPrivy(config: ConfigResponse, provider: EIP1193Provider): Promise<WalletApi>;
   timing: {
     /** `GET /api/games/:id` period while a game is in progress (plan §7.3: 3 seconds). */
     pollMs: number;
@@ -25,6 +28,11 @@ export interface ClientDeps {
     clockMs: number;
     /** Retry period while the server has not yet seen the bet transaction. */
     startRetryMs: number;
+    /**
+     * How long a Privy login's wallet may take to appear, and then to connect, before the page
+     * says so and offers to try again (default 20 seconds).
+     */
+    walletWaitMs?: number;
   };
 }
 
@@ -34,5 +42,6 @@ export const defaultDeps: ClientDeps = {
   injected: injectedProvider,
   connectInjected: connectInjectedWallet,
   connectDev: connectDevWallet,
+  connectPrivy: connectPrivyWallet,
   timing: { pollMs: 3000, clockMs: 1000, startRetryMs: 500 },
 };

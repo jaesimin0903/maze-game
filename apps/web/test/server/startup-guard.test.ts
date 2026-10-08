@@ -17,6 +17,7 @@ import {
 } from '../../src/server/config';
 import { bootFromEnv, uninstallContainer } from '../../src/server/container';
 import { BootError } from '../../src/server/errors';
+import { describeError, redactUrls } from '../../src/server/log';
 import { createMemoryStore } from '../../src/server/store';
 import {
   api,
@@ -231,6 +232,7 @@ describe('AC-S8: environment', () => {
   it('reads a complete environment', () => {
     expect(loadConfig({ ...ENV, MAZE_IDLE_TIMEOUT_SEC: '6' })).toEqual({
       rpcUrl: 'http://127.0.0.1:8546',
+      publicRpcUrl: 'http://127.0.0.1:8546',
       chainId: 31337,
       contract: CONTRACT,
       signerKey: SIGNER_KEY,
@@ -238,11 +240,103 @@ describe('AC-S8: environment', () => {
       dataDir: '/tmp/x',
       idleTimeoutSec: 6,
       maxGameSec: null,
+      scanTag: 'latest',
+      startBlock: null,
+      logChunkBlocks: 2000,
       testHooks: false,
       testSeedSecret: null,
       fixturePath: null,
       devWallet: false,
+      network: { name: 'Anvil', symbol: 'ETH', explorerUrl: null, faucetUrl: null },
+      privyAppId: null,
     });
+  });
+
+  it('reads the network a public chain is shown as, and the Privy app id', () => {
+    const config = loadConfig({
+      ...ENV,
+      CHAIN_ID: '10143',
+      PUBLIC_RPC_URL: 'https://testnet-rpc.monad.xyz/',
+      CHAIN_NAME: 'Monad Testnet',
+      NATIVE_SYMBOL: 'MON',
+      EXPLORER_URL: 'https://testnet.monadvision.com/',
+      FAUCET_URL: 'https://faucet.monad.xyz',
+      PRIVY_APP_ID: 'cm0abcdefghijklmnopqrstuv',
+    });
+    expect(config.publicRpcUrl).toBe('https://testnet-rpc.monad.xyz');
+    expect(config.network).toEqual({
+      name: 'Monad Testnet',
+      symbol: 'MON',
+      explorerUrl: 'https://testnet.monadvision.com',
+      faucetUrl: 'https://faucet.monad.xyz',
+    });
+    expect(config.privyAppId).toBe('cm0abcdefghijklmnopqrstuv');
+    expect(loadConfig({ ...ENV, CHAIN_ID: '10143' }).network.name).toBe('Chain 10143');
+    expect(() => loadConfig({ ...ENV, NATIVE_SYMBOL: 'mon' })).toThrow(BootError);
+    expect(() => loadConfig({ ...ENV, EXPLORER_URL: 'ftp://x' })).toThrow(BootError);
+    expect(() => loadConfig({ ...ENV, PRIVY_APP_ID: 'bad id!' })).toThrow(BootError);
+  });
+
+  it('the scan settings: Anvil reads latest from block 0 up, a public chain reads finalized', () => {
+    // On Anvil nothing changes unless asked.
+    expect(loadConfig(ENV)).toMatchObject({ scanTag: 'latest', startBlock: null, logChunkBlocks: 2000 });
+    // A public chain reads finalized blocks in ranges its public RPC accepts, from the head when
+    // the log has no marker yet: no start block is needed.
+    const monad = { ...ENV, CHAIN_ID: '10143' };
+    expect(loadConfig(monad)).toMatchObject({ scanTag: 'finalized', startBlock: null, logChunkBlocks: 100 });
+    expect(
+      loadConfig({ ...monad, MAZE_SCAN_TAG: 'safe', MAZE_START_BLOCK: '69190000', MAZE_LOG_CHUNK_BLOCKS: '1000' }),
+    ).toMatchObject({ scanTag: 'safe', startBlock: 69_190_000, logChunkBlocks: 1000 });
+    expect(loadConfig({ ...ENV, MAZE_SCAN_TAG: 'finalized', MAZE_START_BLOCK: '0' })).toMatchObject({
+      scanTag: 'finalized',
+      startBlock: 0,
+    });
+    expect(loadConfig({ ...monad, MAZE_START_BLOCK: '' }).startBlock).toBeNull();
+    for (const bad of ['pending', 'earliest', 'Finalized', '0x10']) {
+      expect(() => loadConfig({ ...monad, MAZE_SCAN_TAG: bad }), bad).toThrow(/MAZE_SCAN_TAG must be/);
+    }
+    for (const bad of ['-1', '1.5', '0x10', '01', 'abc', '1e6']) {
+      expect(() => loadConfig({ ...monad, MAZE_START_BLOCK: bad }), bad).toThrow(
+        /MAZE_START_BLOCK must be a non-negative integer/,
+      );
+    }
+    for (const bad of ['0', '-100', '100.5', 'all']) {
+      expect(() => loadConfig({ ...monad, MAZE_LOG_CHUNK_BLOCKS: bad }), bad).toThrow(
+        /MAZE_LOG_CHUNK_BLOCKS must be a positive integer/,
+      );
+    }
+  });
+
+  it('off chain 31337 an RPC_URL that may hold a key is not handed to the browser', () => {
+    const monad = { ...ENV, CHAIN_ID: '10143' };
+    for (const keyed of [
+      'https://monad-testnet.g.alchemy.com/v2/abc123',
+      'https://rpc.example/?apikey=abc123',
+      'https://user:abc123@rpc.example',
+      'https://rpc.example/#abc123',
+    ]) {
+      expect(() => loadConfig({ ...monad, RPC_URL: keyed }), keyed).toThrow(/Set PUBLIC_RPC_URL/);
+      // With a public RPC for the browser, the server may use the keyed one.
+      const config = loadConfig({ ...monad, RPC_URL: keyed, PUBLIC_RPC_URL: 'https://testnet-rpc.monad.xyz' });
+      expect(config).toMatchObject({ rpcUrl: keyed, publicRpcUrl: 'https://testnet-rpc.monad.xyz' });
+    }
+    for (const plain of ['https://testnet-rpc.monad.xyz', 'https://testnet-rpc.monad.xyz/', 'http://10.0.0.5:8545']) {
+      expect(loadConfig({ ...monad, RPC_URL: plain }).publicRpcUrl, plain).toBe(plain);
+    }
+    // Anvil URLs are local and keyless whatever they look like.
+    expect(loadConfig({ ...ENV, RPC_URL: 'http://127.0.0.1:8546/rpc' }).publicRpcUrl).toBe('http://127.0.0.1:8546/rpc');
+  });
+
+  it('logged errors carry RPC URLs without their user info, path or query', () => {
+    const error = new Error('request to https://user:pw@rpc.example/v2/key-one?apikey=key-two failed', {
+      cause: new Error('fetch wss://rpc.example/ws/key-three (and http://127.0.0.1:8545)'),
+    });
+    const described = describeError(error);
+    for (const secret of ['pw', 'key-one', 'key-two', 'key-three']) expect(described).not.toContain(secret);
+    expect(described).toContain('https://rpc.example/[redacted]');
+    expect(described).toContain('wss://rpc.example/[redacted]');
+    expect(described).toContain('http://127.0.0.1:8545');
+    expect(redactUrls('see https://testnet-rpc.monad.xyz/ now')).toBe('see https://testnet-rpc.monad.xyz/ now');
   });
 
   it('test hooks need MAZE_ALLOW_TEST_HOOKS=1 and chain 31337', () => {
@@ -332,6 +426,13 @@ describe('AC-S8: a refused boot', () => {
 
   it('a start without an absolute data directory is refused as CHAIN_UNAVAILABLE', async () => {
     await refusedBoot({ ...ENV, MAZE_DATA_DIR: '.data' }, 'CHAIN_UNAVAILABLE');
+  });
+
+  it('a start on a public chain whose RPC_URL may hold a key, with no PUBLIC_RPC_URL, is refused as CHAIN_UNAVAILABLE', async () => {
+    await refusedBoot(
+      { ...ENV, CHAIN_ID: '10143', RPC_URL: 'https://monad-testnet.g.alchemy.com/v2/abc123' },
+      'CHAIN_UNAVAILABLE',
+    );
   });
 });
 

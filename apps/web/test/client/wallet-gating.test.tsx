@@ -39,7 +39,7 @@ describe('dev wallet gating', () => {
   });
 
   it('AC-A4: the dev wallet itself refuses to connect without the server flag', async () => {
-    await expect(connectDevWallet(makeConfig({ devWallet: false }), 2)).rejects.toThrow(/개발용 지갑/);
+    await expect(connectDevWallet(makeConfig({ devWallet: false }), 2)).rejects.toThrow(/dev wallet/);
   });
 
   it('derives the Anvil player accounts and refuses the house and server accounts', async () => {
@@ -68,7 +68,7 @@ describe('wallet connection', () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     fireEvent.click(await screen.findByTestId('wallet-connect'));
-    expect((await screen.findByRole('alert')).textContent).toContain('지갑 확장');
+    expect((await screen.findByRole('alert')).textContent).toContain('no wallet extension');
     expect(screen.queryByTestId('wallet-address')).toBeNull();
   });
 
@@ -173,7 +173,7 @@ describe('message signing', () => {
     const wallet = await connectInjectedWallet(makeConfig(), provider);
     const error = await wallet.signMessage(message).catch((e: unknown) => e);
     expect(isUserRejection(error)).toBe(true);
-    expect(describeTxError(error)).toContain('거절');
+    expect(describeTxError(error)).toContain('rejected in the wallet');
     expect(isUserRejection(new Error('rpc down'))).toBe(false);
   });
 });

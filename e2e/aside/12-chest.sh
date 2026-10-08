@@ -12,9 +12,9 @@
 #          on every other move no chest-just-found. Before the last move no chest-found, no
 #          chest-reveal, and only the entered path-chest cells marked. After it result-outcome =
 #          loss with a payout of 0, chest-found with the planned reward and points, saying
-#          "보물상자 발견" and "현금 가치 없음", chest-reveal on the dead end, the dead-end cell
+#          "Chest found: +N points" and "No cash value", chest-reveal on the dead end, the dead-end cell
 #          marked, game-chests listing every chest of the game and game-points-total and
-#          points-balance showing their sum; on the verify page every check passes,
+#          points-balance showing their sum; in the verify dialog every check passes,
 #          verify-chests lists every chest the planner computed (rule 2, path and dead-end
 #          counts) and verify-chest-match is true
 #   chain  the game settles as a loss of 0: GameSettled(outcome 2, payout 0) from the relayer,
@@ -32,7 +32,7 @@ set -u
 # shellcheck source=e2e/aside/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-scenario_begin 12 chest "a route past path chests into a dead end with a treasure chest: each path chest shows and pays its points the moment its cell is entered, the bet is lost on chain as before, every chest and its points (no cash value) show on the page and in the ledger, and the verify page matches the chests to the seed"
+scenario_begin 12 chest "a route past path chests into a dead end with a treasure chest: each path chest shows and pays its points the moment its cell is entered, the bet is lost on chain as before, every chest and its points (no cash value) show on the page and in the ledger, and the verify dialog matches the chests to the seed"
 require_input_path
 stack_up
 aside_start || blocked_scenario "the aside repl session did not start (see $ASIDE_LOG)"
@@ -107,8 +107,8 @@ for DIR in ${BEFORE[@]+"${BEFORE[@]}"}; do
     expect_attr "step $STEP: game-points is the game's running total" A game-points data-points "$TOTAL" 5
     expect_attr "step $STEP: points-balance in the header follows" A points-balance data-points "$TOTAL" 20
     if JUST_TEXT="$(dom_text A chest-just-found)"; then
-      check_ok dom "step $STEP: chest-just-found says 보물상자 발견! +N 포인트" "contains 보물상자 발견! +" "$JUST_TEXT" \
-        "$(printf '%s' "$JUST_TEXT" | grep -q '보물상자 발견! +'; echo $?)"
+      check_ok dom "step $STEP: chest-just-found says Treasure chest! +N PT" "contains Treasure chest! +" "$JUST_TEXT" \
+        "$(printf '%s' "$JUST_TEXT" | grep -q 'Treasure chest! +'; echo $?)"
     else
       dom_blocked "step $STEP: chest-just-found text" "the DOM could not be read over path $READ_PATH"
     fi
@@ -151,10 +151,10 @@ expect_attr "chest-found shows the planned points" A chest-found data-points "$P
 expect_attr "chest-found shows the planned reward" A chest-found data-reward-bps "$CHEST_BPS" 5
 expect_attr "chest-points shows the points" A chest-points data-points "$POINTS" 5
 if FOUND_TEXT="$(dom_text A chest-found)"; then
-  check_ok dom "chest-found says 보물상자 발견: +N 포인트" "contains 보물상자 발견: +" "$FOUND_TEXT" \
-    "$(printf '%s' "$FOUND_TEXT" | grep -q '보물상자 발견: +' && printf '%s' "$FOUND_TEXT" | grep -q '포인트'; echo $?)"
-  check_ok dom "chest-found says the points have no cash value" "contains 현금 가치 없음" "$FOUND_TEXT" \
-    "$(printf '%s' "$FOUND_TEXT" | grep -q '현금 가치 없음'; echo $?)"
+  check_ok dom "chest-found says Chest found: +N points" "contains Chest found: +" "$FOUND_TEXT" \
+    "$(printf '%s' "$FOUND_TEXT" | grep -q 'Chest found: +' && printf '%s' "$FOUND_TEXT" | grep -q 'points'; echo $?)"
+  check_ok dom "chest-found says the points have no cash value" "contains No cash value" "$FOUND_TEXT" \
+    "$(printf '%s' "$FOUND_TEXT" | grep -q 'No cash value'; echo $?)"
 else
   dom_blocked "chest-found text" "the DOM could not be read over path $READ_PATH"
 fi
@@ -194,7 +194,7 @@ check http "the ledger says points have no cash value" false "$(http_field .cash
 check chain "the award's chain time is not after the settlement block" 0 \
   "$([ "$(http_field '.awards[0].atSec')" -le "$S_BLOCK_TIME" ] 2>/dev/null; echo $?)"
 
-# ----- the verify page -----
+# ----- the verify dialog -----
 
 open_verify A V
 expect_verify_ok V $((STEPS + 1))

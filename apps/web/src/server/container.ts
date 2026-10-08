@@ -14,7 +14,7 @@ import {
   type Maze,
   type TuningTable,
 } from '@maze/shared';
-import { createViemChain, Watcher, type ChainPort, type ScanMarker } from './chain';
+import { createViemChain, findResumeMarker, Watcher, type ChainPort, type ScanMarker } from './chain';
 import { createChainClock, type Clock } from './clock';
 import {
   assertTablePolicy,
@@ -28,6 +28,7 @@ import {
 import { ApiError, BootError, type BootFailureCode } from './errors';
 import { GameService, TICKET_RETENTION_SEC } from './game-service';
 import { createLogger, describeError, type LogSink, type Logger } from './log';
+import { singleFlight } from './mutex';
 import { Relayer } from './relayer';
 import { Worker } from './settler';
 import { createSigner, type Signer } from './signer';
@@ -60,6 +61,11 @@ export interface ContainerDeps {
   /** Poll period of the worker in milliseconds. Default 500. */
   pollMs?: number;
   /**
+   * Waits, in milliseconds, before each new attempt of the boot catch-up after a failed one; the
+   * boot is refused once they are used up. Default `CATCH_UP_RETRY_MS`.
+   */
+  catchUpRetryMs?: readonly number[];
+  /**
    * Called once, when an append to the event log fails. The server must stop then: it can no
    * longer record a move or an ending, and one that keeps running in that state signs no
    * automatic cash-out, so every live game would run into its settle deadline and be reclaimed
@@ -74,6 +80,13 @@ export const STORE_FAILURE_EXIT_CODE = 70;
 
 /** The worker counts as stalled when no pass has completed for this long. */
 export const WORKER_STALE_MS = 10_000;
+
+/**
+ * Waits between attempts of the boot catch-up, about a minute in all. Every completed range is
+ * kept, in memory and through the markers of long scans, so an attempt continues where the
+ * failed one stopped.
+ */
+export const CATCH_UP_RETRY_MS: readonly number[] = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
 
 /** Why the server cannot be relied on to settle games right now. */
 export type HealthProblem = 'store-failed' | 'worker-stalled';
@@ -99,14 +112,19 @@ export interface Container {
   close(): Promise<void>;
 }
 
-function lastMarker(events: readonly StoreEvent[]): ScanMarker | null {
-  for (let i = events.length - 1; i >= 0; i--) {
-    const event = events[i];
+/** The scan markers of the log, in log order. */
+function markersOf(events: readonly StoreEvent[]): ScanMarker[] {
+  const markers: ScanMarker[] = [];
+  for (const event of events) {
     if (event.type === 'block-scanned') {
-      return { blockNumber: BigInt(event.blockNumber), blockHash: event.blockHash };
+      markers.push({ blockNumber: BigInt(event.blockNumber), blockHash: event.blockHash });
     }
   }
-  return null;
+  return markers;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -116,8 +134,10 @@ function lastMarker(events: readonly StoreEvent[]): ScanMarker | null {
  * - `NOT_CALIBRATED`: the table is not calibrated (a `fixture: true` table is exempt only
  *   while test hooks are on), or test hooks are on off chain 31337;
  * - `TABLE_MISMATCH`: the contract's `tableHash()` is not the hash of the table;
- * - `CHAIN_UNAVAILABLE`: the chain cannot be read, is not the configured chain, does not trust
- *   this server's signing key, or the event log belongs to another deployment or chain.
+ * - `CHAIN_UNAVAILABLE`: the chain cannot be read (the catch-up is tried again for about a
+ *   minute first), is not the configured chain, does not trust this server's signing key, the
+ *   event log belongs to another deployment or chain (none of its scan markers is a block of this
+ *   chain), or a fresh log's MAZE_START_BLOCK lies beyond the head.
  */
 export async function createContainer(deps: ContainerDeps): Promise<Container> {
   const { config, table, chain } = deps;
@@ -235,6 +255,61 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
     throw new BootError('CHAIN_UNAVAILABLE', describeError(error));
   }
 
+  // Where the scan resumes: the newest marker whose block the chain still has. A marker on a
+  // block that was replaced is passed over; a log none of whose markers is on this chain was
+  // written against another chain instance.
+  const markers = markersOf(events);
+  let marker: ScanMarker | null;
+  let startBlock = config.startBlock === null ? null : BigInt(config.startBlock);
+  try {
+    marker = await findResumeMarker(chain, markers);
+    if (markers.length > 0 && marker === null) {
+      throw new BootError(
+        'CHAIN_UNAVAILABLE',
+        'the chain has the first block the event log marked with another hash: the log was written ' +
+          'against another chain instance; use a fresh data directory',
+      );
+    }
+    if (marker !== null && marker !== markers[markers.length - 1]) {
+      log.event({
+        level: 'alert',
+        event: 'scan-marker-rewound',
+        detail: {
+          warning: 'The newest scan markers name blocks the chain no longer has; the scan resumes from an older one.',
+          newestBlock: markers[markers.length - 1].blockNumber,
+          resumeBlock: marker.blockNumber,
+        },
+      });
+    }
+    if (marker === null && startBlock === null && service.counts().games > 0) {
+      // A log with tickets but no marker was written by an older server, which stored its first
+      // marker late. The games of those tickets may lie anywhere after the deployment.
+      if (config.chainId !== TEST_CHAIN_ID) {
+        throw new BootError(
+          'CHAIN_UNAVAILABLE',
+          'the event log holds tickets but no scan marker; set MAZE_START_BLOCK to the deploy block',
+        );
+      }
+      startBlock = 0n;
+    } else if (marker === null && startBlock !== null) {
+      // A start block beyond the head would leave the blocks up to it unread, and the games
+      // created in them unknown to this server.
+      const head = await chain.head(config.scanTag);
+      if (startBlock > head.number) {
+        throw new BootError(
+          'CHAIN_UNAVAILABLE',
+          `MAZE_START_BLOCK ${startBlock} is beyond the ${config.scanTag} block ${head.number}`,
+        );
+      }
+    }
+  } catch (error) {
+    if (error instanceof BootError) throw error;
+    throw new BootError(
+      'CHAIN_UNAVAILABLE',
+      `cannot read the chain: ${describeError(error)}. The event log is fine; start again later or with another RPC`,
+    );
+  }
+
   const watcher = new Watcher(
     {
       chain,
@@ -242,27 +317,48 @@ export async function createContainer(deps: ContainerDeps): Promise<Container> {
       clock,
       onEvent: (event) => service.onChainEvent(event),
       enabled: deps.watcher ?? true,
+      scanTag: config.scanTag,
+      startBlock,
+      logChunkBlocks: BigInt(config.logChunkBlocks),
     },
-    lastMarker(events),
+    marker,
   );
   const relayer = new Relayer({ chain, service, clock, log });
   const worker = new Worker({ watcher, service, relayer, log, pollMs: deps.pollMs ?? 500 });
-  service.setHooks({
-    onEnded: (gameId) => relayer.kick(gameId),
-    syncChain: () => watcher.sync(),
-  });
+  // Requests that need the chain read now (a ticket request, a game the server has not seen yet)
+  // each sync it on chain 31337. Where the scan trails the clock they may wait and sync again, so
+  // their syncs are shared: one in flight, one queued for everyone who arrives meanwhile.
+  service.setHooks(
+    config.scanTag === 'latest'
+      ? { onEnded: (gameId) => relayer.kick(gameId), syncChain: () => watcher.sync() }
+      : {
+          onEnded: (gameId) => relayer.kick(gameId),
+          syncChain: singleFlight(() => watcher.sync()),
+          scannedTimeSec: () => watcher.scannedTimeSec,
+        },
+  );
 
   let bootedAtSec: number;
   let unknownReservedWei = 0n;
   try {
-    if (!(await watcher.markerMatchesChain())) {
-      throw new BootError(
-        'CHAIN_UNAVAILABLE',
-        'the event log was written against another chain instance; use a fresh data directory',
-      );
+    // Catch up before serving: games created or finished while the server was down. A failed
+    // attempt (a rate-limited RPC, say) is tried again after a wait rather than refusing the boot.
+    const retryMs = deps.catchUpRetryMs ?? CATCH_UP_RETRY_MS;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await worker.tick();
+        break;
+      } catch (error) {
+        // A log that cannot be written stays that way: there is nothing to wait for.
+        if (attempt >= retryMs.length || storeFailure !== null) throw error;
+        log.event({
+          level: 'warn',
+          event: 'catch-up-retry',
+          detail: { attempt: attempt + 1, waitMs: retryMs[attempt], error: describeError(error) },
+        });
+        await sleep(retryMs[attempt]);
+      }
     }
-    // Catch up before serving: games created or finished while the server was down.
-    await worker.tick();
     // After the catch-up the log knows every game its tickets created. Whatever the contract
     // reserves beyond those belongs to games this server cannot settle. A game created in the
     // moment between the scan and the read would look like one, so a difference is checked

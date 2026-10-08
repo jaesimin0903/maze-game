@@ -298,6 +298,8 @@ describe('other responses', () => {
       'chainNowSec',
       'devWallet',
       'chest',
+      'network',
+      'privyAppId',
     ]);
     // AC-P5, AC-P9: the chest rule version, both kinds of chest, and that points have no cash value.
     expect(reply.body.chest).toEqual({

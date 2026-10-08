@@ -32,6 +32,16 @@ export interface ChainApi {
   /** Payouts the contract could not deliver and holds for `address`. */
   pendingOf(address: Hex): Promise<bigint>;
   balanceOf(address: Hex): Promise<bigint>;
+  /** The chain's current gas price in wei, for the fee a transaction needs. */
+  gasPrice(): Promise<bigint>;
+  /**
+   * The most per gas a wallet bids for a transaction now, which the chain wants covered up front:
+   * viem's `maxFeePerGas` (base fee × 1.2 plus the priority fee, the rule Privy's embedded wallet
+   * uses), or the gas price × 6/5 on a chain without EIP-1559 fees.
+   */
+  maxFeePerGas(): Promise<bigint>;
+  /** Gas a transfer of `valueWei` from `from` to `to` uses (`eth_estimateGas`; more for a contract). */
+  estimateTransferGas(p: { from: Hex; to: Hex; valueWei: bigint }): Promise<bigint>;
   /** Resolves once the transaction is mined. */
   waitForTx(hash: Hex): Promise<'success' | 'reverted'>;
   /**
@@ -42,14 +52,19 @@ export interface ChainApi {
   settledBy(hash: Hex, gameId: Hex): Promise<boolean>;
 }
 
-export type ChainConfig = Pick<ConfigResponse, 'chainId' | 'rpcUrl' | 'contract'>;
+export type ChainConfig = Pick<ConfigResponse, 'chainId' | 'rpcUrl' | 'contract' | 'network'>;
 
-export function chainOf(config: Pick<ConfigResponse, 'chainId' | 'rpcUrl'>): Chain {
+export function chainOf(config: Pick<ConfigResponse, 'chainId' | 'rpcUrl' | 'network'>): Chain {
+  const network = config.network;
+  const symbol = network?.symbol ?? 'ETH';
   return defineChain({
     id: config.chainId,
-    name: config.chainId === 31337 ? 'Anvil' : `Chain ${config.chainId}`,
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    name: network?.name ?? (config.chainId === 31337 ? 'Anvil' : `Chain ${config.chainId}`),
+    nativeCurrency: { name: symbol === 'ETH' ? 'Ether' : symbol, symbol, decimals: 18 },
     rpcUrls: { default: { http: [config.rpcUrl] } },
+    ...(network?.explorerUrl
+      ? { blockExplorers: { default: { name: network.name, url: network.explorerUrl } } }
+      : {}),
   });
 }
 
@@ -83,6 +98,15 @@ export function createChainApi(config: ChainConfig): ChainApi {
     pendingOf: (address) =>
       client.readContract({ ...contract, functionName: 'pendingWithdrawals', args: [address] }),
     balanceOf: (address) => client.getBalance({ address }),
+    gasPrice: () => client.getGasPrice(),
+    async maxFeePerGas() {
+      try {
+        return (await client.estimateFeesPerGas()).maxFeePerGas;
+      } catch {
+        return ((await client.getGasPrice()) * 6n) / 5n;
+      }
+    },
+    estimateTransferGas: ({ from, to, valueWei }) => client.estimateGas({ account: from, to, value: valueWei }),
     async waitForTx(hash) {
       const receipt = await client.waitForTransactionReceipt({ hash });
       return receipt.status;

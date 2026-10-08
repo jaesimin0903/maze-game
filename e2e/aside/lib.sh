@@ -874,6 +874,20 @@ ui_fill() {
 
 ui_press() { ui 20 "M.press($(js_str "$1"), $(js_str "$2"))"; }
 
+# ui_set_value <tab> <testid> <value>: sets a field from a script, with an input event (for the
+# hidden client seed, which Playwright's fill refuses).
+ui_set_value() {
+  ui 20 "M.setValue($(js_str "$1"), $(js_str "$2"), $(js_str "$3"))" || return 1
+  [ "$(ui_field '.ok')" = true ]
+}
+
+# ui_attr <tab> <testid> <attribute>: the attribute as the page has it now, read over the REPL
+# (flow control, not an assertion). Empty when the element or the attribute is absent.
+ui_attr() {
+  ui 20 "M.read($(js_str "$1"), [$(js_str "$2")])" || return 1
+  printf '%s' "$ASIDE_RESULT" | jq -r --arg id "$2" --arg a "$3" '.[$id].attrs[$a] // empty'
+}
+
 ui_storage_get() {
   ui 20 "M.storage($(js_str "$1"), \"get\", $(js_str "$2"))" || return 1
   printf '%s' "$ASIDE_RESULT" | jq -r '. // empty'
@@ -1009,7 +1023,8 @@ expect_absent() {
 # ----- the game, through the page -----
 
 # open_lobby <tab>: opens the app in a new tab, removes records an earlier run may have left in
-# this origin's localStorage (the page would resume that game), and waits for the lobby.
+# this origin's localStorage (the page would resume that game), and waits for the lobby (the
+# dock's START button, bet-start).
 open_lobby() {
   local left
   ui_open "$1" "$APP_URL/"
@@ -1019,7 +1034,7 @@ open_lobby() {
     log "removed $left maze:* localStorage key(s) left by an earlier run; reloading"
     ui 30 "M.reload($(js_str "$1"))" || fail_scenario "reload failed: $ASIDE_ERROR"
   fi
-  ui 40 "M.waitFor($(js_str "$1"), { id: \"bet-submit\" }, 30000)" || fail_scenario "the lobby could not be read: $ASIDE_ERROR"
+  ui 40 "M.waitFor($(js_str "$1"), { id: \"bet-start\" }, 30000)" || fail_scenario "the lobby could not be read: $ASIDE_ERROR"
   [ "$(ui_field '.ok')" = true ] || fail_scenario "the lobby did not render within 30 seconds"
 }
 
@@ -1032,23 +1047,50 @@ connect_dev_wallet() {
   WALLET_SHOWN="$(ui_field '.item.text')"
 }
 
-# fill_bet <tab> <tier> <amount in ETH> <client seed>: chooses the size and fills the form.
-fill_bet() {
-  ui_click "$1" "tier-$2" 10 || fail_scenario "tier-$2 is not clickable"
+# choose_bet <tab> <tier> <amount in ETH>: chooses the size and types the amount in the lobby
+# dock, with the bet sheet closed. On a phone-wide window the size chips are hidden and one chip
+# (tier-cycle) steps through the sizes; it is pressed until the size is selected. Sets TIER and
+# BET_WEI.
+choose_bet() {
+  local _
+  ui 20 "M.read($(js_str "$1"), [\"tier-$2\"])" || fail_scenario "the size chips could not be read: $ASIDE_ERROR"
+  if [ "$(ui_field ".[\"tier-$2\"].visible")" = false ]; then
+    for _ in $(seq 1 "$(tier_count)"); do
+      [ "$(ui_attr "$1" "tier-$2" data-selected)" = true ] && break
+      ui_click "$1" tier-cycle 10 || fail_scenario "tier-cycle is not clickable"
+    done
+    [ "$(ui_attr "$1" "tier-$2" data-selected)" = true ] || fail_scenario "tier-cycle never selected size $2"
+  else
+    ui_click "$1" "tier-$2" 10 || fail_scenario "tier-$2 is not clickable"
+  fi
   ui_fill "$1" bet-amount "$3" || fail_scenario "bet-amount could not be filled"
-  ui_fill "$1" client-seed-input "$4" || fail_scenario "client-seed-input could not be filled"
   TIER="$2"
-  CLIENT_SEED="$4"
   BET_WEI="$(cast to-wei "$3" ether)"
 }
 
-# submit_bet <tab>: clicks bet-submit and waits until the server has shown the first cell.
-# Sets GAME_ID, N, TOKEN and BALANCE_AFTER_BET (the player's balance once the bet is mined).
+# fill_bet <tab> <tier> <amount in ETH> <client seed>: chooses the size and the amount in the
+# dock, sets the client seed (client-seed-input, a hidden field of the dock, set by script with
+# an input event) and presses START (bet-start), which opens the bet sheet. The open sheet makes
+# the dock inert and covers it, so everything in the dock is set first. Sets TIER, BET_WEI and
+# CLIENT_SEED.
+fill_bet() {
+  choose_bet "$1" "$2" "$3"
+  ui_set_value "$1" client-seed-input "$4" || fail_scenario "client-seed-input could not be set: $ASIDE_RESULT"
+  ui_click "$1" bet-start 10 || fail_scenario "bet-start is not clickable"
+  ui 20 "M.waitFor($(js_str "$1"), { id: \"sheet-full-seed\", text: $(js_str "$4") }, 10000)" ||
+    fail_scenario "the bet sheet could not be read: $ASIDE_ERROR"
+  [ "$(ui_field '.ok')" = true ] || fail_scenario "the bet sheet does not show the client seed $4 ($(ui_field '.item.text'))"
+  CLIENT_SEED="$4"
+}
+
+# submit_bet <tab>: after fill_bet, clicks bet-submit in the bet sheet and waits until the server
+# has shown the first cell (the sheet closes by itself). Sets GAME_ID, N, TOKEN and
+# BALANCE_AFTER_BET (the player's balance once the bet is mined).
 submit_bet() {
-  ui_click "$1" bet-submit 10 || fail_scenario "bet-submit is not clickable (is the form valid and the wallet connected?)"
+  ui_click "$1" bet-submit 10 || fail_scenario "bet-submit is not clickable (is the bet sheet open, the form valid and the wallet connected?)"
   ui 60 "M.waitFor($(js_str "$1"), { id: \"refundable-amount\" }, 45000)" || fail_scenario "waiting for the board failed: $ASIDE_ERROR"
   if [ "$(ui_field '.ok')" != true ]; then
-    ui 20 "M.read($(js_str "$1"), [\"error-message\", \"bet-status\"])"
+    ui 20 "M.read($(js_str "$1"), [\"error-message\", \"bet-status\", \"sheet-error\"])"
     fail_scenario "the board did not appear within 45 seconds of the bet (page says: $ASIDE_RESULT)"
   fi
   ui 20 "M.read($(js_str "$1"), [\"board\"])" || fail_scenario "the board could not be read: $ASIDE_ERROR"
@@ -1076,13 +1118,20 @@ open_game_for() {
       return 0
     fi
     log "the maze of game $attempt cannot serve \"$goal\"; cashing out at step 0 and betting again"
-    ui_click "$tab" cashout-button 10 || fail_scenario "cashout-button is not clickable while abandoning game $attempt"
+    cash_out "$tab" || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable while abandoning game $attempt"
     wait_status "$GAME_ID" "$STATUS_SETTLED" 40 || fail_scenario "the abandoned game $GAME_ID was not settled"
     ui_click "$tab" new-game 20 || fail_scenario "new-game is not clickable after abandoning game $attempt"
-    ui 40 "M.waitFor($(js_str "$tab"), { id: \"bet-submit\" }, 30000)" || fail_scenario "the lobby could not be read: $ASIDE_ERROR"
+    ui 40 "M.waitFor($(js_str "$tab"), { id: \"bet-start\" }, 30000)" || fail_scenario "the lobby could not be read: $ASIDE_ERROR"
     [ "$(ui_field '.ok')" = true ] || fail_scenario "the lobby did not come back after new-game"
   done
   fail_scenario "none of 4 mazes could serve the goal \"$goal\""
+}
+
+# cash_out <tab>: asks to cash out (cashout-open, the dock's CASH OUT) and takes it
+# (cashout-button, "Take it"). Returns 1 when either button never became clickable.
+cash_out() {
+  ui_click "$1" cashout-open 10 || return 1
+  ui_click "$1" cashout-button 10
 }
 
 dir_num() {
@@ -1119,13 +1168,30 @@ expect_fog() {
   check dom "the exit cell is marked" "cell-$last-$last" "$(printf '%s' "$cells" | jq -r '[.[] | select(.attrs["data-exit"] == "true") | .id] | join(",")')"
 }
 
-# expect_schedule <tab> <tier> <bet wei>: before any bet, the refund schedule and the exit payout
-# of the chosen size and amount are on screen and equal the table's (AC-W6, AC-R1, AC-T8).
+# expect_escape_payout <tab> <tier> <bet wei>: before any bet, the lobby dock shows the chosen
+# size selected, its chip carries the table's size and multiplier, and escape-payout (what an
+# escape would pay) is bet x multiplier for the typed amount (AC-W6, AC-R1, AC-T8).
+expect_escape_payout() {
+  local payout
+  payout="$(exit_wei "$3" "$2")"
+  expect_attr "size $2 is the selected size in the dock" "$1" "tier-$2" data-selected true 5
+  expect_attr "size $2: its chip shows the table's size" "$1" "tier-$2" data-n "$(tier_n "$2")" 5
+  expect_attr "size $2: its chip carries the table's multiplier" "$1" "tier-$2" data-multiplier-bps "$(tier_multiplier_bps "$2")" 5
+  expect_attr "size $2: escape-payout for the typed amount ($3 wei) is bet x multiplier" "$1" escape-payout data-wei "$payout" 5
+  check chain "size $2: the contract quotes the same exit payout" "$payout" "$(chain_call 'quoteExitPayout(uint8,uint256)(uint256)' "$2" "$3")"
+  check chain "size $2: the contract's size and multiplier are the table's" "$(tier_n "$2") $(tier_multiplier_bps "$2")" \
+    "$(chain_call 'tiers(uint8)(uint8,uint32)' "$2" | paste -sd ' ' -)"
+}
+
+# expect_schedule <tab> <tier> <bet wei>: with the bet sheet open, its refund schedule (a
+# collapsed details block, read from the DOM) is drawn for the chosen size and amount: one row
+# per step with refundBps and bet x refundBps, and the exit payout with the multiplier (AC-W6,
+# AC-R1, AC-T8).
 expect_schedule() {
   local rows expected="" actual k bps payout
   payout="$(exit_wei "$3" "$2")"
-  expect_attr "refund-schedule is drawn for size $2" "$1" refund-schedule data-tier "$2" 5
-  expect_attr "refund-schedule is drawn for the typed amount ($3 wei)" "$1" refund-schedule data-bet-wei "$3" 5
+  expect_attr "the bet sheet's refund-schedule is drawn for size $2" "$1" refund-schedule data-tier "$2" 5
+  expect_attr "the bet sheet's refund-schedule is drawn for the typed amount ($3 wei)" "$1" refund-schedule data-bet-wei "$3" 5
   if rows="$(dom_list "$1" schedule-row-)"; then
     while read -r k bps; do
       expected="$expected$k:$bps:$(mul_bps "$3" "$bps") "
@@ -1136,10 +1202,16 @@ expect_schedule() {
     dom_blocked "size $2: the schedule rows" "the DOM could not be read over path $READ_PATH"
   fi
   expect_attr "size $2: schedule-exit-payout is bet x multiplier" "$1" schedule-exit-payout data-wei "$payout" 5
-  expect_attr "size $2: tier-payout-$2 is bet x multiplier" "$1" "tier-payout-$2" data-wei "$payout" 5
-  check chain "size $2: the contract quotes the same exit payout" "$payout" "$(chain_call 'quoteExitPayout(uint8,uint256)(uint256)' "$2" "$3")"
-  check chain "size $2: the contract's size and multiplier are the table's" "$(tier_n "$2") $(tier_multiplier_bps "$2")" \
-    "$(chain_call 'tiers(uint8)(uint8,uint32)' "$2" | paste -sd ' ' -)"
+  expect_attr "size $2: schedule-exit-payout names the table's multiplier" "$1" schedule-exit-payout data-multiplier-bps "$(tier_multiplier_bps "$2")" 5
+}
+
+# close_sheet <tab>: closes the bet sheet with Escape (its close buttons carry no test id).
+# Returns 1 when key presses were not verified by the probe or the sheet stays open.
+close_sheet() {
+  cap pressKey || return 1
+  ui_press "$1" Escape || return 1
+  ui 25 "M.waitFor($(js_str "$1"), { id: \"sign-sheet\", present: false }, 10000)" || return 1
+  [ "$(ui_field '.ok')" = true ]
 }
 
 # plan <goal>: plans a route offline from the game id (plan-moves.ts). Sets PLAN_JSON and
@@ -1167,12 +1239,14 @@ key_of() {
 }
 
 # move <tab> <direction letter> [click|key]: makes one move and waits until the board shows the
-# next step. STEP counts the moves made so far.
+# next step. STEP counts the moves made so far. The D-pad buttons are never disabled; their
+# data-legal says whether the move is open now (a press that is not is refused on the page), so
+# the move waits for data-legal="true" first.
 move() {
   local next=$((STEP + 1))
+  ui 20 "M.waitFor($(js_str "$1"), { id: \"move-$2\", attr: \"data-legal\", equals: \"true\" }, 10000)" || fail_scenario "move-$2 could not be read: $ASIDE_ERROR"
+  [ "$(ui_field '.ok')" = true ] || fail_scenario "move-$2 is not a legal move at step $STEP (data-legal is not true)"
   if [ "${3:-click}" = key ]; then
-    ui 20 "M.waitFor($(js_str "$1"), { id: \"move-$2\", enabled: true }, 10000)" || fail_scenario "move-$2 could not be read: $ASIDE_ERROR"
-    [ "$(ui_field '.ok')" = true ] || fail_scenario "move-$2 is not a legal move at step $STEP"
     ui_press "$1" "$(key_of "$2")" || fail_scenario "pressing $(key_of "$2") failed: $ASIDE_ERROR"
   else
     ui_click "$1" "move-$2" 10 || fail_scenario "move-$2 is not clickable at step $STEP ($ASIDE_RESULT)"
@@ -1267,21 +1341,29 @@ expect_result_tx() {
   expect_attr "settle-tx names the settlement transaction" "$1" settle-tx data-tx "$(lower "$S_TX")" 30
 }
 
-# open_verify <game tab> <new tab>: checks that the result panel links to this game's verify
-# page, closes the game tab and opens the page in a new tab. A tab is never navigated: a tab
-# with history could not be closed if its session died (see aside_stop).
+# open_verify <game tab> <new tab>: the fairness check is a dialog over the game. Clicks the
+# result panel's verify-link (href /?verify=<gameId>), which opens the dialog for this game in
+# place, closes it again (verify-close), then closes the game tab and opens a new tab on
+# /?verify=<gameId>, where the page opens the dialog on load (the old /verify/<gameId> redirects
+# there). A tab is never navigated: a tab with history could not be closed if its session died
+# (see aside_stop).
 open_verify() {
   local href
   if href="$(dom_attr "$1" verify-link href)"; then
-    check dom "verify-link points at /verify/<gameId>" "/verify/$GAME_ID" "$href"
+    check dom "verify-link points at /?verify=<gameId>" "/?verify=$GAME_ID" "$href"
   else
-    dom_blocked "verify-link points at /verify/<gameId>" "the DOM could not be read over path $READ_PATH"
+    dom_blocked "verify-link points at /?verify=<gameId>" "the DOM could not be read over path $READ_PATH"
   fi
+  ui_click "$1" verify-link 10 || fail_scenario "verify-link is not clickable"
+  expect_attr "verify-link opens the verify dialog for this game" "$1" verify-game data-game-id "$GAME_ID" 20
+  ui_click "$1" verify-close 10 || fail_scenario "verify-close is not clickable"
+  expect_absent "verify-close closes the dialog" "$1" verify-modal 10
   ui 30 "M.close($(js_str "$1"))" || fail_scenario "closing tab $1 failed: $ASIDE_ERROR"
-  ui_open "$2" "$APP_URL/verify/$GAME_ID"
+  ui_open "$2" "$APP_URL/?verify=$GAME_ID"
+  expect_present "/?verify=<gameId> opens the verify dialog on load" "$2" verify-modal 30
 }
 
-# expect_verify_ok <tab> <observations>: on /verify/<gameId>, the verdicts a fair game must get.
+# expect_verify_ok <tab> <observations>: in the verify dialog, the verdicts a fair game must get.
 expect_verify_ok() {
   local cells bad
   expect_attr "verify: the revealed seed hashes to the commitment" "$1" verify-hash-match data-match true 30

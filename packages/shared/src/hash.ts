@@ -4,6 +4,7 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { seedRng } from './rng';
 import type { Hex, Maze } from './types';
 
 function toHex(bytes: Uint8Array): Hex {
@@ -51,21 +52,78 @@ export function commitmentOf(p: { mazeVersion: number; n: number; serverSeed: He
   );
 }
 
+/** The side the start cell opens to. Every maze has exactly one (the "start corridor"). */
+export type StartSide = 'E' | 'S';
+
+const START_TAG_BYTES = keccak_256(utf8ToBytes('MazeBet.start.v1'));
+/** `keccak256("MazeBet.start.v1")` */
+export const START_TAG: Hex = toHex(START_TAG_BYTES);
+
+/** ASCII "MZ>": the first three of the four closing bytes of a client seed that picks a start side. */
+const START_MARK = [0x4d, 0x5a, 0x3e] as const;
+/** The fourth closing byte: ASCII "E" or "S". */
+const START_SIDE_BYTE: Record<StartSide, number> = { E: 0x45, S: 0x53 };
+/** A redraw happens with probability 1/2 each time, so 2^-256 is the chance of ever reaching this. */
+const MAX_START_DRAWS = 256;
+
 /**
- * `sha256( SEED_TAG(32) ‖ serverSeed(32) ‖ clientSeed(32) ‖ gameId(32) )`, 128 bytes hashed.
- * The result seeds the maze stream (`seedRng`).
+ * The start side a client seed asks for: a seed whose last four bytes are ASCII "MZ>E" or "MZ>S"
+ * picks east or south; any other seed picks nothing (and the start side falls out of the mixed
+ * seed, as it always did). A random seed carries the mark by chance with probability 2^-31.
+ */
+export function startSideOf(clientSeed: Hex): StartSide | null {
+  const bytes = bytes32(clientSeed, 'clientSeed');
+  if (bytes[28] !== START_MARK[0] || bytes[29] !== START_MARK[1] || bytes[30] !== START_MARK[2]) return null;
+  if (bytes[31] === START_SIDE_BYTE.E) return 'E';
+  if (bytes[31] === START_SIDE_BYTE.S) return 'S';
+  return null;
+}
+
+/** `seed` with its last four bytes replaced by the mark that picks `side`. */
+export function markStartSide(seed: Hex, side: StartSide): Hex {
+  const bytes = bytes32(seed, 'seed');
+  bytes.set([...START_MARK, START_SIDE_BYTE[side]], 28);
+  return toHex(bytes);
+}
+
+/**
+ * The side the start cell of `generateMaze(finalSeed, n)` opens to, for every `n`: the generator's
+ * first draw, `nextBelow(2)`, closes the east edge on 0 (the start opens south) and the south
+ * edge on 1 (it opens east).
+ */
+export function startSideOfFinalSeed(finalSeed: Hex): StartSide {
+  return seedRng(finalSeed).nextBelow(2) === 0 ? 'S' : 'E';
+}
+
+/**
+ * The seed of the maze stream (`seedRng`). First
+ * `mixed = sha256( SEED_TAG(32) ‖ serverSeed(32) ‖ clientSeed(32) ‖ gameId(32) )`, 128 bytes hashed.
+ *
+ * When the client seed picks a start side (`startSideOf`), the result is the first of `mixed`,
+ * `sha256( START_TAG(32) ‖ mixed(32) ‖ uint32be(k) )` for `k = 1, 2, ...` whose maze opens to that
+ * side; otherwise it is `mixed`. The player may so see the start side before betting. That does
+ * not move the odds: the maze is still uniform among the mazes that open to that side, and on a
+ * square grid the mirror image across the diagonal pairs every east-opening maze with a
+ * south-opening one of equal value. The server committed to its seed before seeing the client's,
+ * so it has no say in which maze of that side comes out.
  */
 export function deriveFinalSeed(p: { serverSeed: Hex; clientSeed: Hex; gameId: Hex }): Hex {
-  return toHex(
-    sha256(
-      concatBytes(
-        SEED_TAG_BYTES,
-        bytes32(p.serverSeed, 'serverSeed'),
-        bytes32(p.clientSeed, 'clientSeed'),
-        bytes32(p.gameId, 'gameId'),
-      ),
+  const mixed = sha256(
+    concatBytes(
+      SEED_TAG_BYTES,
+      bytes32(p.serverSeed, 'serverSeed'),
+      bytes32(p.clientSeed, 'clientSeed'),
+      bytes32(p.gameId, 'gameId'),
     ),
   );
+  const side = startSideOf(p.clientSeed);
+  let seed = toHex(mixed);
+  if (side === null) return seed;
+  for (let k = 1; startSideOfFinalSeed(seed) !== side; k++) {
+    if (k > MAX_START_DRAWS) throw new Error('deriveFinalSeed: no seed opened to the picked start side');
+    seed = toHex(sha256(concatBytes(START_TAG_BYTES, mixed, uintBE(k, 4, 'k'))));
+  }
+  return seed;
 }
 
 /** `sha256( uint16be(w) ‖ uint16be(h) ‖ open[0 .. w*h-1] )`: a compact fingerprint of a whole maze. */

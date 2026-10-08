@@ -46,6 +46,7 @@ import {
   type Dir,
   type GameView,
   type Hex,
+  type LeaderboardBoard,
   type Maze,
   type TicketResponse,
   type TuningTable,
@@ -59,6 +60,7 @@ import { KeyedMutex } from './mutex';
 import { PointsLedger, type AwardEvent, type LedgerAccount } from './points';
 import { toPublicView, toTicketResponse } from './serializer';
 import type { Signer } from './signer';
+import { GameStats, type FeedGame, type Standings, type StatsGame } from './stats';
 import type { EndCause, EventStore, StoreEvent } from './store';
 import { testServerSeed } from './test-hooks';
 
@@ -93,6 +95,15 @@ export const TICKET_GLOBAL_WINDOW_SEC = 60;
  * at most 60 x (120 + 3600) / 60 = 3,720 such tickets exist at any time.
  */
 export const TICKET_RETENTION_SEC = 3600;
+
+/**
+ * How long a ticket request waits for a scan that trails the clock to show what it is about to
+ * show: the settlement of a game the server has ended, or a game a just-expired ticket may have
+ * created. Scans are repeated every `SCAN_RETRY_MS` meanwhile; they are shared with every other
+ * request that asks for one at the same time (`singleFlight`).
+ */
+export const SCAN_WAIT_MS = 2_000;
+const SCAN_RETRY_MS = 250;
 
 const START_CELL = 0;
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
@@ -201,6 +212,16 @@ export interface GameServiceHooks {
   onEnded?: (gameId: Hex) => void;
   /** Brings the chain watcher up to the latest block. */
   syncChain?: () => Promise<void>;
+  /**
+   * Set only when the chain scan trails the clock (it reads `safe` or `finalized` blocks): the
+   * timestamp of the block up to which it has delivered every event, `null` before its first scan.
+   * Events of the blocks after it are not known yet.
+   */
+  scannedTimeSec?: () => number | null;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function maskOf(dirs: readonly Dir[]): number {
@@ -249,6 +270,8 @@ export class GameService {
   private readonly missedWindow = new Set<Hex>();
   /** Chest awards by address, rebuilt from the `chest-awarded` events. */
   private readonly ledger = new PointsLedger();
+  /** Recent games and leaderboards, rebuilt from the endings, reclaims and chest awards. */
+  private readonly stats = new GameStats();
   private hooks: GameServiceHooks = {};
 
   private readonly table: TuningTable;
@@ -340,12 +363,27 @@ export class GameService {
       // `max(bet, maxPayout)` of the house balance. When the address still looks busy one chain
       // scan is made on the spot, so a game settled a moment ago is not held against it.
       let held = this.liveTicketOf(playerKey, now);
-      const busy = held !== null || this.hasActiveGame(playerKey);
+      const busy = held !== null || this.hasActiveGame(playerKey) || this.mayHaveUnseenGame(playerKey, now);
       if (busy) {
         // Counted before the chain is read: the scan is not free for the asking.
         this.countTicket(playerKey, now);
         await this.hooks.syncChain?.();
-        if (this.hasActiveGame(playerKey)) throw new ApiError('ALREADY_ACTIVE');
+        // A scan that trails the clock shows a settlement already sent, or the game of a ticket
+        // that has just expired, a block or two late. Waiting for it beats refusing a player who
+        // starts the next game the moment the last one ended.
+        // The deadline is checked before every wait, the sleep and the scan alike, so the address's
+        // ticket lock is held for SCAN_WAIT_MS and at most one scan longer.
+        const until = performance.now() + SCAN_WAIT_MS;
+        while (this.awaitingScan(playerKey, now)) {
+          const left = until - performance.now();
+          if (left <= 0) break;
+          await sleep(Math.min(SCAN_RETRY_MS, left));
+          if (performance.now() >= until) break;
+          await this.hooks.syncChain?.();
+        }
+        if (this.hasActiveGame(playerKey) || this.mayHaveUnseenGame(playerKey, now)) {
+          throw new ApiError('ALREADY_ACTIVE');
+        }
         held = this.liveTicketOf(playerKey, now);
       }
       if (held !== null) return this.rebind(held, tokenHash, now);
@@ -664,6 +702,19 @@ export class GameService {
    */
   pointsOf(address: string): LedgerAccount | null {
     return this.ledger.account(address);
+  }
+
+  /** The most recent ended (or reclaimed) games, newest first, at most `FEED_LIMIT`. */
+  recentGames(): readonly FeedGame[] {
+    return this.stats.recentGames();
+  }
+
+  /**
+   * A leaderboard as of chain second `nowSec`, with the row of `address` (any letter case) when
+   * one is given.
+   */
+  leaderboard(board: LeaderboardBoard, address: string | null, nowSec: number): Standings {
+    return this.stats.standings(board, address, nowSec);
   }
 
   // ----- internals -----
@@ -1050,7 +1101,10 @@ export class GameService {
           chestRule: event.chestRule ?? null,
         };
         this.live.delete(gameId);
-        if (game.final === null) this.unsettled.add(gameId);
+        if (game.final === null) {
+          this.unsettled.add(gameId);
+          this.stats.ended(this.statsGameOf(game), game.ended);
+        }
         return;
       }
       case 'chest-awarded': {
@@ -1075,6 +1129,7 @@ export class GameService {
           invalid();
         }
         this.ledger.add(event, step);
+        this.stats.awarded(event.player, BigInt(event.points));
         game.chests.push({
           cell: event.cell,
           kind,
@@ -1096,6 +1151,10 @@ export class GameService {
       case 'settle-mined':
       case 'reclaimed': {
         if (game.chain === null) invalid();
+        // A reclaim counts in place of the ending the server signed, if any: it was never settled.
+        if (event.type === 'reclaimed' && game.final === null) {
+          this.stats.reclaimed(this.statsGameOf(game), game.ended, BigInt(event.amountWei), event.atSec);
+        }
         game.final = event.type === 'settle-mined' ? 'settled' : 'reclaimed';
         if (event.type === 'settle-mined') game.settle.minedTxHash = event.txHash;
         this.live.delete(gameId);
@@ -1126,6 +1185,46 @@ export class GameService {
   }
 
   /**
+   * True when the chain scan has read every block up to chain second `sec`, so that a game created
+   * by then is known. Always true when the scan keeps up with the clock.
+   */
+  private scannedPast(sec: number): boolean {
+    const scanned = this.hooks.scannedTimeSec?.();
+    return scanned === undefined || scanned === null || scanned > sec;
+  }
+
+  /**
+   * True when a ticket of the address has expired by the clock, but a game it created in its last
+   * seconds may sit in a block the scan has not reached yet.
+   */
+  private mayHaveUnseenGame(playerKey: string, now: number): boolean {
+    for (const gameId of this.ticketsByPlayer.get(playerKey) ?? []) {
+      const game = this.games.get(gameId);
+      if (game !== undefined && game.chain === null && now > game.expirySec && !this.scannedPast(game.expirySec)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * True while the scan trails the clock and is about to show what keeps the address busy: every
+   * game of it that is `Active` on chain has ended here with its settlement sent, or one of its
+   * tickets may have an unseen game.
+   */
+  private awaitingScan(playerKey: string, now: number): boolean {
+    if (this.hooks.scannedTimeSec === undefined) return false;
+    if (this.mayHaveUnseenGame(playerKey, now)) return true;
+    const active = this.activeByPlayer.get(playerKey);
+    if (active === undefined || active.size === 0) return false;
+    for (const gameId of active) {
+      const game = this.games.get(gameId);
+      if (game === undefined || game.ended === null || game.settle.lastTxHash === null) return false;
+    }
+    return true;
+  }
+
+  /**
    * The address's ticket that has not expired and has not yet created a game, or `null`. A game
    * can still be created from it at `now === expirySec`: the contract accepts a ticket up to
    * and including its expiry second. Synchronous, so the check and what follows it stay atomic
@@ -1139,6 +1238,8 @@ export class GameService {
     for (const gameId of [...tickets]) {
       const game = this.games.get(gameId);
       if (game !== undefined && game.chain === null && now <= game.expirySec) live = game;
+      // Expired, but its game may still turn up: kept for `mayHaveUnseenGame`.
+      else if (game !== undefined && game.chain === null && !this.scannedPast(game.expirySec)) continue;
       else tickets.delete(gameId);
     }
     if (tickets.size === 0) this.ticketsByPlayer.delete(playerKey);
@@ -1281,7 +1382,8 @@ export class GameService {
     await this.hooks.syncChain?.();
     if (game.chain !== null) return;
     const now = await this.clock.chainNow();
-    throw new ApiError(now > game.expirySec ? 'TICKET_EXPIRED' : 'NOT_ON_CHAIN');
+    // A game created up to the ticket's expiry may sit in a block the scan has not reached yet.
+    throw new ApiError(now > game.expirySec && this.scannedPast(game.expirySec) ? 'TICKET_EXPIRED' : 'NOT_ON_CHAIN');
   }
 
   private isDue(game: Game, now: number): boolean {
@@ -1311,6 +1413,11 @@ export class GameService {
       maxGameSec: this.deps.maxGameSec,
       withPath,
     });
+  }
+
+  /** What the stats count of a game that is on chain. */
+  private statsGameOf(game: Game): StatsGame {
+    return { gameId: game.gameId, player: game.player, n: game.n, betWei: game.chain!.betWei };
   }
 
   private finalSeedOf(game: Game, clientSeed: Hex): Hex {

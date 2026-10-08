@@ -2,8 +2,8 @@
 # 06 verify screen: a tampered record is caught (plan §9.1; AC-M5, AC-W5, AC-M4).
 #
 # Plays a short game (two moves, cash-out), takes the play record the page saved in
-# localStorage, changes one wall bit of one observation and pastes it into the import page
-# (/verify).
+# localStorage, changes one wall bit of one observation and pastes it into the verify dialog's
+# import box (/?verify=import, where the old /verify page redirects).
 #
 #   DOM    the untouched game verifies clean; with one wall bit of observation 1 flipped,
 #          exactly that cell (and that row) is marked data-match = false, every other cell
@@ -35,7 +35,7 @@ plan "cashout:$MOVES" || fail_scenario "the solution of this maze is shorter tha
 # shellcheck disable=SC2086
 walk A click $PLAN_MOVES
 PAYOUT="$(refund_wei "$BET_WEI" "$TIER" "$MOVES")"
-ui_click A cashout-button 10 || fail_scenario "cashout-button is not clickable"
+cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable"
 expect_result A cashout "$PAYOUT"
 expect_settled 1 "$MOVES" "$PAYOUT" cashed_out false
 
@@ -49,7 +49,7 @@ REVEAL_BEFORE="$(printf '%s' "$HTTP_BODY" | jq -cS '.')"
 open_verify A V
 expect_verify_ok V $((MOVES + 1))
 # The record is the one the game page saved in localStorage (plan §7.6), which is what the
-# verify page just checked.
+# verify dialog just checked.
 RECORD="$(ui_storage_get V "maze:record:$GAME_ID")" || fail_scenario "the play record could not be read: $ASIDE_ERROR"
 printf '%s' "$RECORD" | jq -e '.observations | length == 3' >/dev/null 2>&1 ||
   fail_scenario "the saved play record does not hold three observations"
@@ -61,16 +61,17 @@ TAMPERED="$(printf '%s' "$RECORD" | jq -c '.observations[1].open |= (if ((. / 2 
 BAD_SEED="$(printf '%s' "$RECORD" | jq -c '.terminal.serverSeed |= (.[0:65] + (if .[65:66] == "0" then "1" else "0" end))')"
 ui 30 'M.close("V")' || fail_scenario "closing the verify tab failed: $ASIDE_ERROR"
 
-# import_record <json>: pastes a record into the import page and submits it.
+# import_record <json>: pastes a record into the dialog's import box and submits it.
 import_record() {
   ui_fill I verify-import "$1" || fail_scenario "verify-import could not be filled"
   ui_click I verify-import-submit 10 || fail_scenario "verify-import-submit is not clickable"
 }
 
-# ----- the import page -----
+# ----- the import dialog -----
 
-ui_open I "$APP_URL/verify"
-expect_present "the import page starts without a record" I verify-empty 20
+ui_open I "$APP_URL/?verify=import"
+expect_present "/?verify=import opens the verify dialog on load" I verify-modal 20
+expect_present "the import dialog starts without a record" I verify-empty 20
 
 import_record "$TAMPERED"
 expect_attr "the imported record is shown as this game" I verify-game data-game-id "$GAME_ID" 10

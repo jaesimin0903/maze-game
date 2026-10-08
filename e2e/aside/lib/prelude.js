@@ -9,7 +9,9 @@
 //     page.reload, page.goto(url, { waitUntil: 'load' }), page.screenshot, sleep.
 //   - It never touches a tab it did not open: no listBrowserTabs, no attachBrowserTab, no
 //     attachActiveBrowserTab, and none of the account-connected globals of the REPL.
-//   - Inside a page it reads the DOM and touches only localStorage keys that start with "maze:".
+//   - Inside a page it reads the DOM and touches only localStorage keys that start with "maze:",
+//     and (setValue) the value of one of the app's own form fields, such as the hidden client
+//     seed, which Playwright's fill refuses because it is not visible.
 //   - Every result leaves through M.out as one line "@@R <json>", which lib.sh parses.
 //   - ASCII only: the file travels to the REPL as base64.
 
@@ -50,6 +52,8 @@ globalThis.M = (() => {
         text: form ? el.value : (el.textContent || '').replace(/\s+/g, ' ').trim(),
         attrs,
         disabled: el.disabled === true,
+        // Laid out at all (a display: none chip or a hidden input has no boxes).
+        visible: el.getClientRects().length > 0,
       };
     }
     return result;
@@ -87,6 +91,20 @@ globalThis.M = (() => {
       return keys.length;
     }
     throw new Error('unknown storage operation');
+  };
+
+  /**
+   * Sets a form field of the app the way a script would, then fires `input` and `change` so the
+   * page's own native listeners see it (the app's fields listen natively, not through React).
+   */
+  const setValueInPage = (request) => {
+    const el = document.querySelector('[data-testid="' + request.id + '"]');
+    if (!el) return { ok: false, reason: 'not in the DOM' };
+    if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return { ok: false, reason: 'not a text field' };
+    el.value = request.value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: el.value === request.value, value: el.value };
   };
 
   /** Records the game API calls this page makes from now on (scenario 08 reads the refusal). */
@@ -210,6 +228,10 @@ globalThis.M = (() => {
     return { ok: after !== null && after.text === value, value: after === null ? null : after.text };
   }
 
+  async function setValue(name, id, value) {
+    return page(name).evaluate(setValueInPage, { id, value });
+  }
+
   async function select(name, id, value) {
     await page(name).locator(sel(id)).selectOption(value);
     const after = (await read(name, [id]))[id];
@@ -277,6 +299,7 @@ globalThis.M = (() => {
     waitFor,
     click,
     fill,
+    setValue,
     select,
     press,
     race,

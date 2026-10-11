@@ -91,7 +91,7 @@ async function startAnvil(): Promise<{ stop(): Promise<void> }> {
   if (await rpcAlive(RPC_URL)) {
     throw new Error(`port ${ANVIL_PORT} already answers JSON-RPC; the integration tests need it free`);
   }
-  const child = spawn('anvil', ['--port', String(ANVIL_PORT), '--block-time', '1', '--silent'], {
+  const child = spawn('anvil', ['--port', String(ANVIL_PORT), '--block-time', '1', '--prune-history', '--silent'], {
     stdio: ['ignore', 'ignore', 'pipe'],
   });
   let stderr = '';

@@ -11,7 +11,8 @@
 #   --no-supervisor      start the app directly; nothing restarts it when it exits
 #
 # What it does, in order:
-#   1. starts `anvil --block-time 1` on the Anvil port;
+#   1. starts `anvil --block-time 1 --prune-history` on the Anvil port (--prune-history keeps
+#      anvil from writing a full state snapshot per block to ~/.foundry/anvil/tmp);
 #   2. deploys and funds the contract with scripts/deploy-local.ts, which writes
 #      deployments/local-<port>.json;
 #   3. builds the app into its own NEXT_DIST_DIR;
@@ -222,8 +223,8 @@ trap cleanup EXIT
 
 # ----- 1. Anvil -----
 
-say "starting anvil --block-time 1 on port $ANVIL_PORT"
-nohup anvil --port "$ANVIL_PORT" --block-time 1 >"$STATE_DIR/anvil.log" 2>&1 </dev/null &
+say "starting anvil --block-time 1 --prune-history on port $ANVIL_PORT"
+nohup anvil --port "$ANVIL_PORT" --block-time 1 --prune-history >"$STATE_DIR/anvil.log" 2>&1 </dev/null &
 ANVIL_PID=$!
 echo "$ANVIL_PID" >"$ANVIL_PID_FILE"
 

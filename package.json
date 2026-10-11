@@ -34,6 +34,7 @@
     "sim:attack": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js attack",
     "sim:human": "nice -n 10 tsx packages/sim/src/human/cli.ts",
     "sim:chest": "nice -n 10 tsx packages/sim/src/chest/cli.ts",
+    "sim:escape": "nice -n 10 tsx packages/sim/src/escape/cli.ts",
     "tune": "pnpm --filter @maze/sim build && nice -n 10 node packages/sim/dist/cli.js tune",
     "e2e:aside": "bash scripts/e2e-aside.sh",
     "audit:exploit": "tsx scripts/audit-check.ts",

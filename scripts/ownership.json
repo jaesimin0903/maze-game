@@ -158,6 +158,9 @@
         "scripts/monad.ts",
         "docs/deploy-monad.md"
       ]
+    },
+    "sim-escape": {
+      "paths": ["docs/escape-report.md", "docs/escape-report.*.json"]
     }
   },
   "phases": {

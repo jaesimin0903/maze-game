@@ -1,0 +1,185 @@
+{
+ "run": {
+  "generatedAt": "2026-10-11 16:41:26",
+  "command": "pnpm sim:escape --sizes 4 --policies naive-greedy --escapes 1 --seed 1 --out .data/sim-escape/census4-seed1",
+  "seconds": 6.146,
+  "workers": 4
+ },
+ "schema": 1,
+ "request": {
+  "sizes": [
+   4
+  ],
+  "policies": [
+   "naive-greedy"
+  ],
+  "escapes": 1,
+  "maxGames": 50000000,
+  "seed": 1,
+  "censusPerMaze": 100
+ },
+ "stream": {
+  "label": "maze-sim/stream/escape/v1",
+  "base": "0xba1e09c9b4e7f70f",
+  "firstIndex": 4294967296,
+  "disjoint": true
+ },
+ "tiers": [],
+ "cells": [
+  {
+   "n": 4,
+   "policy": "naive-greedy",
+   "games": 2,
+   "escapes": 1,
+   "reachedTarget": true,
+   "pHat": 0.5,
+   "wilson95": {
+    "lo": 0.09453120573423074,
+    "hi": 0.9054687942657693
+   },
+   "rates": {
+    "exit": 0.5,
+    "cashOut": 0,
+    "deadEnd": 0.5
+   },
+   "exitGivenNoCashOut": 0.5,
+   "meanSteps": 5.5,
+   "meanStepsToExit": 8,
+   "meanCashOutStep": null,
+   "pathLength": {
+    "mean": 7,
+    "sd": 1,
+    "min": 6,
+    "p10": 6,
+    "p50": 6,
+    "p90": 8,
+    "max": 8
+   },
+   "exactAverage": null,
+   "fullExact": {
+    "pHat": {
+     "value": 0.5074293710018991,
+     "z": -0.021015754542047075,
+     "agrees": true,
+     "insideInterval": true
+    },
+    "exactAverage": null
+   },
+   "counts": {
+    "games": 2,
+    "exits": 1,
+    "cashOuts": 0,
+    "deadEnds": 1,
+    "steps": 11,
+    "exitSteps": 8,
+    "cashSteps": 0,
+    "pathHist": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "exitPathHist": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "sumP": 0,
+    "sumP2": 0
+   }
+  }
+ ],
+ "skipped": [],
+ "exact": [
+  {
+   "exact": {
+    "n": 4,
+    "mazes": 60032,
+    "eastMazes": 30016,
+    "southMazes": 30016,
+    "uniform": true,
+    "escape": {
+     "random-walk": 0.192040229007599,
+     "naive-greedy": 0.5074293710018991,
+     "harmonic": 0.5112606609805854
+    },
+    "optimal": 0.5112606609808102,
+    "pathLength": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.677871801705892,
+     0,
+     0.24690165245206808,
+     0,
+     0.061600479744139895,
+     0,
+     0.012160181236673753,
+     0,
+     0.0014658848614072485,
+     0
+    ]
+   },
+   "census": {
+    "n": 4,
+    "draws": 6003200,
+    "unknown": 0,
+    "chiSquare": 60020.50000000091,
+    "df": 60031,
+    "z": -0.028380824860057732,
+    "zeroCells": 0,
+    "expectedZeroCells": 2.2313767256820948e-39,
+    "minCount": 61,
+    "maxResidual": 4.7,
+    "pass": true
+   },
+   "used": true
+  }
+ ],
+ "comparisons": [],
+ "checks": [
+  {
+   "name": "stream",
+   "pass": true,
+   "detail": "maze-sim/stream/escape/v1 (0xba1e09c9b4e7f70f) meets none of the streams A..E, human and chest"
+  },
+  {
+   "name": "census 4x4",
+   "pass": true,
+   "detail": "6003200 draws over 60032 mazes (T_E 30016, T_S 30016): chi-square 60020.5 on 60031 df, z -0.03, 0 unknown"
+  },
+  {
+   "name": "naive-greedy 4x4: p̂ vs exact",
+   "pass": true,
+   "detail": "p̂ 50.000% vs exact 50.743%, z -0.02 (limit ±4)"
+  }
+ ]
+}

@@ -1,0 +1,200 @@
+{
+ "run": {
+  "generatedAt": "2026-10-11 16:40:16",
+  "command": "pnpm sim:escape --sizes 7 --policies random-walk --escapes 30000 --census 0 --out .data/sim-escape/rw7-k30000",
+  "seconds": 6.13,
+  "workers": 4
+ },
+ "schema": 1,
+ "request": {
+  "sizes": [
+   7
+  ],
+  "policies": [
+   "random-walk"
+  ],
+  "escapes": 30000,
+  "maxGames": 50000000,
+  "seed": 0,
+  "censusPerMaze": 0
+ },
+ "stream": {
+  "label": "maze-sim/stream/escape/v1",
+  "base": "0xba1e09c9b4e7f70f",
+  "firstIndex": 0,
+  "disjoint": true
+ },
+ "tiers": [],
+ "cells": [
+  {
+   "n": 7,
+   "policy": "random-walk",
+   "games": 1853640,
+   "escapes": 30000,
+   "reachedTarget": true,
+   "pHat": 0.01618437237003949,
+   "wilson95": {
+    "lo": 0.0160037204419609,
+    "hi": 0.01636702960007391
+   },
+   "rates": {
+    "exit": 0.01618437237003949,
+    "cashOut": 0,
+    "deadEnd": 0.9838156276299606
+   },
+   "exitGivenNoCashOut": 0.01618437237003949,
+   "meanSteps": 6.6586268099523105,
+   "meanStepsToExit": 14.290733333333334,
+   "meanCashOutStep": null,
+   "pathLength": {
+    "mean": 15.048435510670895,
+    "sd": 2.9531493579590937,
+    "min": 12,
+    "p10": 12,
+    "p50": 14,
+    "p90": 18,
+    "max": 36
+   },
+   "exactAverage": {
+    "mean": 0.016113307319135264,
+    "sd": 0.02559402512168924,
+    "ci95": {
+     "lo": 0.016076462707206318,
+     "hi": 0.01615015193106421
+    },
+    "z": 0.7848140377497513,
+    "agrees": true,
+    "insideWilson": true
+   },
+   "fullExact": null,
+   "counts": {
+    "games": 1853640,
+    "exits": 30000,
+    "cashOuts": 0,
+    "deadEnds": 1823640,
+    "steps": 12342697,
+    "exitSteps": 428722,
+    "cashSteps": 0,
+    "pathHist": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     522724,
+     0,
+     554610,
+     0,
+     380978,
+     0,
+     210680,
+     0,
+     102779,
+     0,
+     46885,
+     0,
+     21043,
+     0,
+     8752,
+     0,
+     3546,
+     0,
+     1213,
+     0,
+     348,
+     0,
+     67,
+     0,
+     15,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "exitPathHist": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     10806,
+     0,
+     9989,
+     0,
+     5482,
+     0,
+     2259,
+     0,
+     962,
+     0,
+     315,
+     0,
+     123,
+     0,
+     45,
+     0,
+     16,
+     0,
+     3,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "sumP": 29868.270979041892,
+    "sumP2": 1695.510496896084
+   }
+  }
+ ],
+ "skipped": [],
+ "exact": [],
+ "comparisons": [],
+ "checks": [
+  {
+   "name": "stream",
+   "pass": true,
+   "detail": "maze-sim/stream/escape/v1 (0xba1e09c9b4e7f70f) meets none of the streams A..E, human and chest"
+  },
+  {
+   "name": "random-walk 7x7: escapes vs exact probabilities",
+   "pass": true,
+   "detail": "30000 escapes vs Σp 29868.3 on the same 1853640 mazes, z 0.78 (limit ±4)"
+  }
+ ]
+}

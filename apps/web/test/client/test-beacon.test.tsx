@@ -5,7 +5,7 @@ import { GameApp } from '../../src/client/GameApp';
 import { collectSnapshot } from '../../src/client/components/TestBeacon';
 import { FakeWorld, TABLE } from './helpers';
 
-/** The amount the dock starts with: 0.05. */
+/** The coin the pad starts on: 0.05. */
 const BET = 5n * 10n ** 16n;
 
 beforeEach(() => window.localStorage.clear());
@@ -15,7 +15,7 @@ describe('TestBeacon', () => {
   it('AC-A5: is not rendered and sends nothing when testHooks is off', async () => {
     const world = new FakeWorld({ testHooks: false });
     render(<GameApp deps={world.deps()} />);
-    await screen.findByTestId('bet-start');
+    await screen.findByTestId('btn-a');
     await new Promise((resolve) => setTimeout(resolve, 120));
     expect(screen.queryByTestId('test-beacon')).toBeNull();
     expect(world.requests.filter((r) => r.includes('/api/test/'))).toEqual([]);
@@ -31,13 +31,15 @@ describe('TestBeacon', () => {
     const first = world.snapshots[world.snapshots.length - 1];
     expect(first.url).toBe(window.location.href);
     expect(first.chainNowSec).toBe(world.chainNow);
-    expect(first.items['bet-amount'].text).toBe('0.05');
+    expect(first.items['bet-preset-.05'].attrs['aria-pressed']).toBe('true');
+    expect(first.items['bet-preset-.01'].attrs['aria-pressed']).toBe('false');
     expect(first.items['tier-0'].attrs['data-selected']).toBe('true');
     expect(first.items['escape-payout'].attrs['data-wei']).toBe(exitPayoutWei(TABLE, BET, 0).toString());
     expect(first.items['escape-payout'].text).toBe(
       screen.getByTestId('escape-payout').textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(first.items['bet-start']).toBeDefined();
+    expect(first.items['btn-a'].attrs['data-action']).toBe('start');
+    expect(first.items['console'].attrs['data-mode']).toBe('ready');
     expect(first.items['fixture-banner']).toBeDefined();
 
     // A change on the page reaches the server as a new snapshot.
@@ -52,7 +54,7 @@ describe('TestBeacon', () => {
 
     // The bet sheet: its button, disabled without a wallet, is reported with its attribute, and
     // its refund schedule for the chosen size with the rows' text as the DOM has it.
-    fireEvent.click(screen.getByTestId('bet-start'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await waitFor(() => {
       const latest = world.snapshots[world.snapshots.length - 1];
       expect(latest.items['bet-submit'].attrs).toHaveProperty('disabled');

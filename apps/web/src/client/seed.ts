@@ -19,7 +19,7 @@ export function randomHex32(): Hex {
 }
 
 /**
- * A fresh client seed for the dock's reroll: 28 random bytes, then the mark that picks a start
+ * A fresh client seed for the side panel's MIX: 28 random bytes, then the mark that picks a start
  * side (`side`, or a random one), so the player sees which way the maze opens before betting.
  */
 export function randomStartSeed(side?: StartSide): Hex {

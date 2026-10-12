@@ -5,35 +5,33 @@ import {
   ONCHAIN_STATUS,
   exitPayoutWei,
   markStartSide,
-  refundWei,
   type ConfigResponse,
   type Dir,
-  type Hex,
 } from '@maze/shared';
 import { ApiError, ServerUnreachableError, apiMessage } from './api';
 import {
-  TYPICAL_BET_GAS,
   betBlocked,
-  betPresets,
   betShortfall,
-  initialAmount,
-  readAmount,
+  betTicks,
+  initialBet,
+  maxAffordable,
+  normalizeBet,
   stepPreset,
   stepTag,
-  stepText,
 } from './bet-form';
-import { assertConfig, tableFromConfig } from './config';
+import { assertConfig, tableFromConfig, tierName } from './config';
 import { defaultDeps, type ClientDeps } from './deps';
-import { formatClock, formatEth, formatMultiplier, formatPoints, shortHex } from './format';
+import { formatClock, formatMultiplier, formatPoints, shortHex } from './format';
 import { NetworkContext, explorerLink, networkView, useNetwork } from './network';
 import { useChainClock } from './poll';
 import { dungeonOf } from './dungeon';
-import { blockedReason, dirOfFacing, facingOf, startFacing, type Blocked } from './screen-model';
+import { blockedReason, facingOf, startFacing, type Blocked } from './screen-model';
 import { isHex32, randomStartSeed } from './seed';
 import { useGame } from './use-game';
 import type { WalletApi } from './wallet';
-import { Console, type ScreenNotice, type ScreenTimer } from './components/Console';
-import { Dock, type DockModel } from './components/Dock';
+import { Console, type ConsoleAction, type ScreenNotice, type ScreenTimer } from './components/Console';
+import { DexPanel } from './components/DexPanel';
+import { HpRow, ScreenMenu, panelMode, type PanelModel } from './components/Panel';
 import { PointsBalance } from './components/PointsBalance';
 import { Bankroll, Leaderboard, RecentGames } from './components/SidePanels';
 import { SignSheet } from './components/SignSheet';
@@ -143,6 +141,27 @@ const KEY_DIR: Record<string, Dir> = {
 
 const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
+/** A press of A this soon after the cash-out question opened is the same press, not an answer. */
+const CONFIRM_GUARD_MS = 300;
+
+/** Where the lobby keeps the difficulty and the bet chosen last, so that a reload shows them. */
+const LOBBY_KEY = 'maze:lobby';
+
+function readLobby(): { tier?: unknown; betWei?: unknown } | null {
+  try {
+    const raw = window.localStorage.getItem(LOBBY_KEY);
+    const value: unknown = raw === null ? null : JSON.parse(raw);
+    return typeof value === 'object' && value !== null ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Smooth scrolling, unless the player asked for reduced motion. */
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
 function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const chain = useMemo(() => deps.chain(config), [deps, config]);
   const table = useMemo(() => tableFromConfig(config), [config]);
@@ -154,9 +173,9 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const { state, result } = game;
   const { phase, record, view } = state;
 
-  // The wallet's balance for the dock's small print, and the fee bid for the bet's fee: read on
-  // connect, again after every phase change (a bet or a payout moves the balance), when the bet
-  // sheet opens, and every 15 seconds while the lobby shows them.
+  // The wallet's balance for the console, and the fee bid for the bet's fee: read on connect, again
+  // after every phase change (a bet or a payout moves the balance), when the bet sheet opens, and
+  // every 15 seconds while the lobby shows them.
   const [balance, setBalance] = useState<{ address: string; wei: bigint } | null>(null);
   const [maxFeeWei, setMaxFeeWei] = useState<bigint | null>(null);
   const [balanceTick, setBalanceTick] = useState(0);
@@ -184,73 +203,63 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     };
   }, [chain, balanceOf, phase, balanceTick]);
 
-  // The gas price for the fee guide in the dock, read in the lobby every 15 seconds, wallet or not.
-  const [gasPriceWei, setGasPriceWei] = useState<bigint | null>(null);
+  // ----- the bet being set up: a difficulty and an amount on the side panel, and the client seed
+  const ticks = useMemo(() => betTicks(BigInt(config.minBetWei), BigInt(config.maxBetWei)), [config]);
+  const minWei = ticks[0].wei;
+  const maxWei = ticks[ticks.length - 1].wei;
+  /** A tier index the table has; anything else (a corrupt record, a changed table) is not one. */
+  const tierOk = (t: number | undefined): t is number =>
+    t !== undefined && Number.isInteger(t) && t >= 0 && t < config.tiers.length;
+  // The lobby starts from the difficulty and bet chosen last on this browser, when they still fit.
+  const [tier, setTier] = useState(() => {
+    const stored = readLobby()?.tier;
+    return typeof stored === 'number' && tierOk(stored) ? stored : 0;
+  });
+  const [amountWei, setAmountWei] = useState(() => {
+    const stored = readLobby()?.betWei;
+    return typeof stored === 'string' && /^\d{1,30}$/.test(stored) ? normalizeBet(ticks, BigInt(stored)) : initialBet(ticks);
+  });
+  const savedLobby = useRef<string | null>(null);
   useEffect(() => {
-    if (phase !== 'lobby') return;
-    let live = true;
-    const read = (): void => {
-      chain
-        .gasPrice()
-        .then((wei) => live && setGasPriceWei(wei))
-        .catch(() => undefined);
-    };
-    read();
-    const timer = setInterval(read, 15_000);
-    return () => {
-      live = false;
-      clearInterval(timer);
-    };
-  }, [chain, phase]);
-
-  // What the bet transaction cost in fees, from its receipt, for the end screen. A game restored
-  // without its transaction, or a receipt that cannot be read, shows no fee rather than a guess.
-  const createTx: Hex | null = phase === 'ended' ? (record?.createTxHash ?? null) : null;
-  const [betFee, setBetFee] = useState<{ hash: Hex; wei: bigint } | null>(null);
-  useEffect(() => {
-    if (createTx === null) return;
-    let live = true;
-    chain
-      .txFee(createTx)
-      .then((wei) => live && wei !== null && setBetFee({ hash: createTx, wei }))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [chain, createTx]);
-  const betFeeWei = betFee !== null && betFee.hash === createTx ? betFee.wei : null;
-
-  // ----- the bet being set up
-  const minWei = BigInt(config.minBetWei);
-  const maxWei = BigInt(config.maxBetWei);
-  const presets = useMemo(() => betPresets(BigInt(config.minBetWei), BigInt(config.maxBetWei)), [config]);
-  const [tier, setTier] = useState(0);
-  const [amountText, setAmountText] = useState(() => initialAmount(minWei, maxWei));
+    const next = JSON.stringify({ tier, betWei: amountWei.toString() });
+    // The first run only notes what the page started with: nothing has been chosen yet.
+    if (savedLobby.current === null || savedLobby.current === next) {
+      savedLobby.current = next;
+      return;
+    }
+    savedLobby.current = next;
+    try {
+      window.localStorage.setItem(LOBBY_KEY, next);
+    } catch {
+      // Storage is off: the choice lasts as long as the page.
+    }
+  }, [tier, amountWei]);
   const [seedText, setSeedText] = useState<string>(() => randomStartSeed());
   const [sheetOpen, setSheetOpen] = useState(false);
   /** The game the fairness dialog checks, `'import'` for a pasted record, or `null` when closed. */
   const [verifyOf, setVerifyOf] = useState<string | null>(null);
   const modalOpen = sheetOpen || verifyOf !== null;
-  const amount = readAmount(amountText, minWei, maxWei, network.symbol);
-  const amountWei = 'betWei' in amount ? amount.betWei : null;
-  const amountProblem = 'reason' in amount ? amount.reason : null;
   const seedOk = isHex32(seedText.trim());
-  // A wallet that cannot pay the bet and its fee is not asked to sign for it.
+  // A wallet that cannot pay the bet and its fee is not asked to sign for it, and A does not start.
   const shortWei =
-    balanceWei !== null && maxFeeWei !== null && amountWei !== null
-      ? betShortfall(balanceWei, amountWei, maxFeeWei)
-      : null;
+    balanceWei !== null && maxFeeWei !== null ? betShortfall(balanceWei, amountWei, maxFeeWei) : null;
   const blocked = betBlocked({
     walletConnected: wallet !== null,
-    amountReason: amountProblem,
+    betWei: amountWei,
+    minWei,
+    maxWei,
     seedOk,
     shortWei,
     symbol: network.symbol,
   });
 
   // ----- play controls
-  const [confirm, setConfirm] = useState<{ open: boolean; choice: 0 | 1 }>({ open: false, choice: 0 });
+  // The cash-out question: `choice` 0 is "Take it", 1 is "Keep going", which it opens on.
+  const [confirm, setConfirm] = useState<{ open: boolean; choice: 0 | 1 }>({ open: false, choice: 1 });
+  const confirmAt = useRef(0);
   const [endChoice, setEndChoice] = useState<0 | 1>(0);
+  /** Changes on every A pressed while the wallet is short: the NEED bubble pulses. */
+  const [pulse, setPulse] = useState(0);
   const [bump, setBump] = useState<{ tick: number; text: string; step: number } | null>(null);
   const [flash, setFlash] = useState(0);
 
@@ -268,6 +277,9 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     rec && rec.observations.length > 0 ? facingOf(rec.observations, rec.moves) : startFacing(dungeon?.side ?? null);
   const betWei =
     view !== null ? BigInt(view.betWei) : record?.betWei !== undefined ? BigInt(record.betWei) : null;
+  // The side panel and the LEDs show the difficulty being set up, or the game's own once there is
+  // one: the server's view first, then the stored record, either only when the table has it.
+  const shownTier = rec === null ? tier : tierOk(view?.tier) ? view.tier : tierOk(rec.tier) ? rec.tier : tier;
   const settledOnChain = state.onchain?.status === ONCHAIN_STATUS.Settled;
   const confirmed = settledOnChain || state.onchain?.status === ONCHAIN_STATUS.Reclaimed;
   const ended = phase === 'ended' ? (result?.outcome ?? null) : null;
@@ -281,16 +293,20 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     if (phase === 'playing' || phase === 'ended') setSheetOpen(false);
   }, [phase]);
   useEffect(() => {
-    if (!active) setConfirm((c) => (c.open ? { open: false, choice: 0 } : c));
+    if (!active) setConfirm((c) => (c.open ? { open: false, choice: 1 } : c));
   }, [active]);
-  // When play starts on a short screen, scroll the D-pad out from under the dock.
+  // When play starts, bring the console into view: the side panel under it on a phone may have
+  // scrolled its screen away, and a short window may hide its D-pad. A console taller than the
+  // window keeps its D-pad in view.
   useEffect(() => {
     if (!active) return;
-    const consoleBox = document.querySelector('[data-console]')?.getBoundingClientRect();
-    const dockBox = document.querySelector('[data-testid="dock"]')?.getBoundingClientRect();
-    if (!consoleBox || !dockBox || dockBox.height === 0) return;
-    const hidden = Math.min(consoleBox.bottom - dockBox.top + 8, consoleBox.top);
-    if (hidden > 0) window.scrollBy?.({ top: hidden, behavior: 'smooth' });
+    const box = document.querySelector('[data-console]')?.getBoundingClientRect();
+    if (!box || box.height === 0) return;
+    const below = box.bottom - window.innerHeight + 8;
+    let move = 0;
+    if (box.top < 0 && box.height + 16 <= window.innerHeight) move = box.top - 8;
+    else if (below > 0) move = Math.min(below, Math.max(0, box.top));
+    if (move !== 0) window.scrollBy?.({ top: move, behavior: scrollBehavior() });
   }, [active]);
 
   const openSheet = (): void => {
@@ -302,17 +318,15 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     setSheetOpen(true);
     setBalanceTick((t) => t + 1);
     // The wallet controls sit in the header, above the sheet; bring them into view when needed.
-    if (wallet === null) window.scrollTo?.({ top: 0, behavior: 'smooth' });
+    if (wallet === null) window.scrollTo?.({ top: 0, behavior: scrollBehavior() });
   };
 
   const submitBet = (): void => {
-    // Read the fields from the DOM, so values set by script without events are still honoured.
-    const field = (id: string): string | undefined =>
-      (document.getElementById(id) as HTMLInputElement | null)?.value;
-    const nowAmount = readAmount(field('bet-amount') ?? amountText, minWei, maxWei, network.symbol);
-    const nowSeed = (field('client-seed') ?? seedText).trim();
-    if (!wallet || 'reason' in nowAmount || !isHex32(nowSeed)) return;
-    const bet = { tier, betWei: nowAmount.betWei, clientSeed: nowSeed };
+    // Read the seed from the DOM, so a value set by script without events is still honoured.
+    const nowSeed = ((document.getElementById('client-seed') as HTMLInputElement | null)?.value ?? seedText).trim();
+    // The sheet's button is off while the bet is blocked; this is the last word on it all the same.
+    if (!wallet || !isHex32(nowSeed) || amountWei < minWei || amountWei > maxWei || !tierOk(tier)) return;
+    const bet = { tier, betWei: amountWei, clientSeed: nowSeed };
     const address = wallet.address;
     // The balance on screen may be 15 seconds old: read it again before the signature, so a wallet
     // that cannot pay the bet and its fee is stopped here. An unreadable chain leaves it to the wallet.
@@ -327,8 +341,12 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   };
 
   const newGame = (): void => {
+    // The side panel keeps the finished game's difficulty and bet, a reloaded page included, as
+    // the slider holds them: on its 0.001 grid and within the table's limits.
+    if (rec !== null && tierOk(shownTier)) setTier(shownTier);
+    if (betWei !== null) setAmountWei(normalizeBet(ticks, betWei));
     game.newGame();
-    setConfirm({ open: false, choice: 0 });
+    setConfirm({ open: false, choice: 1 });
     setEndChoice(0);
     setBump(null);
     setSeedText(randomStartSeed());
@@ -359,7 +377,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   };
 
   const takeCashOut = (): void => {
-    setConfirm({ open: false, choice: 0 });
+    setConfirm({ open: false, choice: 1 });
     void game.cashOut();
   };
 
@@ -382,17 +400,19 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       if (dir === 0 || dir === 2) {
         setTier((t) => Math.max(0, Math.min(config.tiers.length - 1, t + (dir === 2 ? 1 : -1))));
       } else {
-        const next = stepPreset(presets, amountWei, dir === 1 ? 1 : -1);
-        if (next) setAmountText(formatEth(next.wei, 18));
+        const next = stepPreset(ticks, amountWei, dir === 1 ? 1 : -1);
+        if (next) setAmountWei(next.wei);
       }
       return;
     }
     if (phase === 'ended') {
-      if (dir === 1 || dir === 3) setEndChoice((c) => (c === 0 ? 1 : 0));
+      // New game on the left, Verify on the right.
+      if (dir === 1 || dir === 3) setEndChoice(dir === 1 ? 1 : 0);
       return;
     }
     if (confirm.open) {
-      if (dir === 1 || dir === 3) setConfirm((c) => ({ open: true, choice: c.choice === 0 ? 1 : 0 }));
+      // "Keep going" on the left, "Take it" on the right: only the D-pad (or a tap) gets to it.
+      if (dir === 1 || dir === 3) setConfirm({ open: true, choice: dir === 1 ? 0 : 1 });
       return;
     }
     tryMove(dir);
@@ -402,48 +422,60 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     if (rec) openVerify(rec.gameId);
   };
 
+  /**
+   * A starts (the bet sheet), cashes out (asks, then takes the highlighted answer) and, once a game
+   * is over, opens the highlighted choice. It never moves: the D-pad does.
+   */
   const onA = (): void => {
     if (modalOpen) return;
-    if (inLobby) return openSheet();
+    if (inLobby) {
+      // A wallet short of the bet and its fee is told so on the slider; A waits for the coins, and
+      // looks again at once, so that coins just fetched from a faucet count.
+      if (shortWei === null) openSheet();
+      else if (phase === 'lobby') {
+        setBalanceTick((t) => t + 1);
+        setPulse((n) => n + 1);
+      }
+      return;
+    }
     if (phase === 'ended') {
       if (endKeysFree) return endChoice === 0 ? newGame() : goVerify();
       return;
     }
     if (!active) return;
-    if (confirm.open) return confirm.choice === 0 ? takeCashOut() : setConfirm({ open: false, choice: 0 });
-    tryMove(dirOfFacing(facing));
-  };
-
-  const onStart = (): void => {
-    if (modalOpen) return;
-    if (inLobby) return openSheet();
-    if (phase === 'ended') {
-      if (endKeysFree) newGame();
-      return;
+    if (confirm.open) {
+      // A pressed again right after asking is the same press, not an answer.
+      if (performance.now() - confirmAt.current < CONFIRM_GUARD_MS) return;
+      return confirm.choice === 0 ? takeCashOut() : setConfirm({ open: false, choice: 1 });
     }
-    if (active && state.busy === null) setConfirm((c) => ({ open: !c.open, choice: 0 }));
+    if (state.busy === null) {
+      // The question opens on "Keep going": A, A asks and puts it away again.
+      confirmAt.current = performance.now();
+      setConfirm({ open: true, choice: 1 });
+    }
   };
 
   /** Escape backs out of the cash-out question; it never starts or leaves a game. */
   const onBack = (): void => {
-    if (confirm.open) setConfirm({ open: false, choice: 0 });
+    if (confirm.open) setConfirm({ open: false, choice: 1 });
   };
 
-  const onSelect = (): void => {
+  /** Brings the leaderboard into view (under the console on a narrow screen) and flashes it. */
+  const showRank = (): void => {
     document
       .querySelector('[data-testid="side-leaderboard"]')
-      ?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+      ?.scrollIntoView?.({ behavior: scrollBehavior(), block: 'nearest' });
     setFlash((f) => f + 1);
   };
 
-  // Keyboard: arrows/WASD are the D-pad, Space/Z is A, Enter is START, Escape is back, R is SELECT.
-  // The handlers are swapped in before paint, so a key pressed right after a render uses the new ones.
+  // Keyboard: arrows/WASD are the D-pad, Enter, Space and Z are A, Escape is back, R shows the
+  // leaderboard. The handlers are swapped in before paint, so a key pressed right after a render
+  // uses the new ones.
   const keyState = {
     onDir,
     onA,
-    onStart,
     onBack,
-    onSelect,
+    showRank,
     sheetOpen,
     closeSheet: () => setSheetOpen(false),
     betting: phase === 'betting',
@@ -458,7 +490,10 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     const onKey = (event: KeyboardEvent): void => {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target as HTMLElement | null;
-      if (target && (TYPING_TAGS.has(target.tagName) || target.isContentEditable)) return;
+      const isEnter = event.code === 'Enter' || event.code === 'NumpadEnter';
+      // The bet slider keeps its arrows and page keys; Enter, which it has no use for, is still A.
+      const onSlider = target instanceof HTMLInputElement && target.type === 'range';
+      if (target && !(onSlider && isEnter) && (TYPING_TAGS.has(target.tagName) || target.isContentEditable)) return;
       // A key pressed in a window laid over the page from outside it (the Privy login) is its own.
       if (target instanceof Element && target !== document.body && target.closest('.app') === null) return;
       const k = keys.current;
@@ -479,31 +514,28 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       }
       // A focused button or link keeps its own Enter and Space.
       const onControl = target !== null && (target.tagName === 'BUTTON' || target.tagName === 'A');
-      const isEnter = event.code === 'Enter' || event.code === 'NumpadEnter';
       if (onControl && (isEnter || event.code === 'Space')) return;
       const dir = KEY_DIR[event.code];
       const action =
         dir !== undefined
           ? () => k.onDir(dir)
-          : event.code === 'Space' || event.code === 'KeyZ'
+          : isEnter || event.code === 'Space' || event.code === 'KeyZ'
             ? k.onA
-            : isEnter
-              ? k.onStart
-              : event.code === 'Escape'
-                ? k.onBack
-                : event.code === 'KeyR'
-                  ? k.onSelect
-                  : null;
+            : event.code === 'Escape'
+              ? k.onBack
+              : event.code === 'KeyR'
+                ? k.showRank
+                : null;
       if (action === null) return;
       // A held key does not scroll the page, and does not repeat the action either.
       event.preventDefault();
       if (!event.repeat) action();
     };
-    // Console and dock buttons give their focus back after a pointer click, so Space and Enter keep
-    // meaning A and START instead of pressing the last button again. Keyboard presses keep focus.
+    // The device's buttons give their focus back after a pointer click, so Space and Enter keep
+    // meaning A instead of pressing the last button again. Keyboard presses keep focus.
     const onClick = (event: MouseEvent): void => {
       if (event.detail === 0) return;
-      const button = (event.target as Element | null)?.closest?.('[data-console] button, [data-testid="dock"] button');
+      const button = (event.target as Element | null)?.closest?.('[data-device] button');
       if (button instanceof HTMLElement) button.blur();
     };
     window.addEventListener('keydown', onKey);
@@ -521,7 +553,10 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const pathChests = (rec?.chests ?? []).filter((c) => c.kind === 'path');
   const gamePoints = (rec?.chests ?? []).reduce((sum, c) => sum + BigInt(c.points), 0n);
   if (inLobby) {
-    tag = phase === 'betting' && state.betStep !== null ? stepTag(state.betStep) : `READY · ${n}×${n}`;
+    tag =
+      phase === 'betting' && state.betStep !== null
+        ? stepTag(state.betStep)
+        : `READY ${tierName(tier, config.tiers.length)}`;
   } else if (phase === 'playing' && observations.length === 0) {
     tag = 'WAITING FOR CHAIN';
     notice = { text: 'The server is confirming your bet on chain...', waiting: true };
@@ -545,44 +580,20 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     }
   }
 
-  // ----- what the dock shows
+  // ----- what the console shows around the screen
   const size = `${n}×${n}`;
   const walletConnected = wallet !== null;
-  // The direct reclaim joins the dock that is already up: a game in play keeps its cash-out, and a
-  // finished game keeps its result next to the player's own settle, which for a winner pays more
-  // than the bet back. It takes the whole dock only when there is nothing else to show.
+  // The direct reclaim joins what is already up: a game in play keeps its meter, and a finished
+  // game keeps its result next to the player's own settle, which for a winner pays more than the
+  // bet back. It takes the whole panel only when there is nothing else to show.
   const reclaim =
     game.reclaim === null ? null : { info: game.reclaim, now: clock.now, onReclaim: () => void game.reclaimBet() };
   const noBoardYet = view === null || observations.length === 0;
-  let dock: DockModel;
+  let panel: PanelModel;
   if (rec === null) {
-    dock =
-      phase === 'betting' && state.betStep !== null
-        ? { kind: 'betting', step: state.betStep, text: stepText(state.betStep, wallet?.kind ?? null) }
-        : {
-            kind: 'ready',
-            tiers: config.tiers.map((t, index) => ({ index, n: t.n, multiplierBps: t.multiplierBps })),
-            tier,
-            presets,
-            amountText,
-            amountWei,
-            amountProblem,
-            exitWei: amountWei === null ? null : exitPayoutWei(table, amountWei, tier),
-            multiplier: formatMultiplier(config.tiers[tier].multiplierBps),
-            balanceWei,
-            shortWei,
-            faucetUrl: config.network?.faucetUrl ?? null,
-            feeWei: gasPriceWei === null ? null : TYPICAL_BET_GAS * gasPriceWei,
-            seedText,
-            startSide: dungeon?.side ?? null,
-            onTier: setTier,
-            onAmount: setAmountText,
-            onSeed: setSeedText,
-            onReroll: reroll,
-            onStart: openSheet,
-          };
+    panel = { kind: phase === 'betting' ? 'betting' : 'ready', betWei: amountWei };
   } else if (game.reclaim !== null && (phase === 'ended' ? result === null : noBoardYet)) {
-    dock = {
+    panel = {
       kind: 'reclaim',
       info: game.reclaim,
       now: clock.now,
@@ -592,7 +603,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       onReclaim: () => void game.reclaimBet(),
     };
   } else if (phase === 'ended') {
-    dock = {
+    panel = {
       kind: 'ended',
       gameId: rec.gameId,
       result,
@@ -608,41 +619,56 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       onVerify: () => openVerify(rec.gameId),
     };
   } else if (view === null || noBoardYet) {
-    dock = { kind: 'waiting', betWei, size };
-  } else if (confirm.open && active) {
-    dock = {
-      kind: 'confirm',
-      refundWei: BigInt(view.refundableWei),
-      choice: confirm.choice,
-      busy: state.busy !== null,
-      onTake: takeCashOut,
-      onKeep: () => setConfirm({ open: false, choice: 0 }),
-    };
+    panel = { kind: 'waiting', betWei };
   } else {
-    const bet = BigInt(view.betWei);
-    const nextStep = view.step + 1;
-    const hasNext = nextStep < (table.tiers[view.tier]?.refundBps.length ?? 0);
-    const nextWei = hasNext ? refundWei(table, bet, view.tier, nextStep) : null;
-    const refundable = BigInt(view.refundableWei);
-    dock = {
+    panel = {
       kind: 'play',
       view,
-      next: nextWei === null ? null : { wei: nextWei, dropWei: refundable > nextWei ? refundable - nextWei : 0n },
+      table,
       size,
       gameLeftSec: clock.now === 0 ? null : view.gameDeadlineSec - clock.now,
       points:
         config.chest !== undefined && view.chests !== undefined
           ? { total: view.chests.reduce((sum, c) => sum + BigInt(c.points), 0n).toString(), count: view.chests.length }
           : null,
-      busy: state.busy !== null,
-      canCashOut: active,
       walletConnected,
+      busy: state.busy !== null,
       reclaim,
-      onCashOut: () => {
-        if (active && state.busy === null) setConfirm({ open: true, choice: 0 });
-      },
+      confirm:
+        confirm.open && active
+          ? { choice: confirm.choice, onTake: takeCashOut, onKeep: () => setConfirm({ open: false, choice: 1 }) }
+          : null,
     };
   }
+  // The side panel shows the bet being set up, or the game's own once there is one.
+  const shownBetWei = rec === null ? amountWei : (betWei ?? amountWei);
+  const tierNames = config.tiers.map((_, index) => tierName(index, config.tiers.length));
+  const ready = panel.kind === 'ready';
+  const affordWei =
+    ready && balanceWei !== null && maxFeeWei !== null ? (maxAffordable(balanceWei, maxFeeWei) ?? 0n) : null;
+  // What locks the side panel: a bet being placed, then the game, then its end.
+  const lock =
+    panel.kind === 'ready'
+      ? null
+      : panel.kind === 'betting'
+        ? state.betStep === 'sign'
+          ? 'SIGNING'
+          : 'PLACING BET'
+        : panel.kind === 'waiting'
+          ? 'PLACING BET'
+          : phase === 'ended'
+            ? 'GAME OVER'
+            : 'IN GAME';
+  // A finished game that the keys may not leave yet is still settling: A waits, and says so.
+  const action: ConsoleAction = inLobby
+    ? 'start'
+    : phase === 'ended'
+      ? !endKeysFree
+        ? 'settling'
+        : endChoice === 1
+          ? 'verify'
+          : 'new-game'
+      : 'cashout';
 
   const refreshKey = `${phase}:${state.onchain?.status ?? ''}:${record?.gameId ?? ''}`;
   const sheetTier = config.tiers[tier];
@@ -716,40 +742,70 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       {/* Behind an open dialog only the header (the wallet) stays reachable. */}
       <div className="layout" inert={modalOpen}>
         <div className="col-main">
-          <Console
-            n={n}
-            gameId={rec?.gameId ?? null}
-            observations={observations}
-            facing={facing}
-            legal={game.legal}
-            moving={state.busy === 'move'}
-            bumpTick={bump?.tick ?? 0}
-            ended={ended}
-            deadEndChest={phase === 'ended' && result?.chest ? result.chest.cell : null}
-            found={rec?.chests ?? []}
-            endFigures={
-              phase === 'ended' && result !== null
-                ? {
-                    payoutWei: result.payoutWei,
-                    betWei,
-                    feeWei: betFeeWei,
-                    points: (result.chests ?? []).reduce((sum, c) => sum + BigInt(c.points), 0n),
-                  }
-                : null
-            }
-            dungeon={dungeon}
-            showSeed={rec === null}
-            tag={tag}
-            timer={timer}
-            notice={notice}
-            onDir={onDir}
-            onCell={(dir) => {
-              if (!modalOpen && !confirm.open) tryMove(dir);
-            }}
-            onA={onA}
-            onStart={onStart}
-            onSelect={onSelect}
-          />
+          <div className="device" data-device="">
+            <Console
+              n={n}
+              gameId={rec?.gameId ?? null}
+              observations={observations}
+              facing={facing}
+              legal={game.legal}
+              moving={state.busy === 'move'}
+              bumpTick={bump?.tick ?? 0}
+              ended={ended}
+              deadEndChest={phase === 'ended' && result?.chest ? result.chest.cell : null}
+              found={rec?.chests ?? []}
+              endFigures={
+                phase === 'ended' && result !== null
+                  ? {
+                      payoutWei: result.payoutWei,
+                      betWei,
+                      points: (result.chests ?? []).reduce((sum, c) => sum + BigInt(c.points), 0n),
+                    }
+                  : null
+              }
+              dungeon={dungeon}
+              showSeed={rec === null}
+              tag={tag}
+              timer={timer}
+              notice={notice}
+              mode={panelMode(panel)}
+              hp={<HpRow model={panel} />}
+              menu={<ScreenMenu model={panel} />}
+              difficulty={{ names: tierNames, index: shownTier }}
+              balanceWei={balanceWei}
+              action={action}
+              onDir={onDir}
+              onCell={(dir) => {
+                if (!modalOpen && !confirm.open) tryMove(dir);
+              }}
+              onA={onA}
+            />
+            <div className="hinge" aria-hidden="true" />
+            <DexPanel
+              tiers={config.tiers.map((t, index) => ({
+                index,
+                n: t.n,
+                multiplierBps: t.multiplierBps,
+                name: tierNames[index],
+              }))}
+              tier={shownTier}
+              ticks={ticks}
+              betWei={shownBetWei}
+              exitWei={exitPayoutWei(table, shownBetWei, shownTier)}
+              affordWei={affordWei}
+              shortWei={ready ? shortWei : null}
+              faucetUrl={config.network?.faucetUrl ?? null}
+              seedText={seedText}
+              startSide={dungeon?.side ?? null}
+              lock={lock}
+              pulse={pulse}
+              onTier={setTier}
+              onBet={setAmountWei}
+              onSeed={setSeedText}
+              onReroll={reroll}
+              onRank={showRank}
+            />
+          </div>
           <div className="dfoot">
             <span>
               {rec !== null ? (
@@ -804,16 +860,12 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
         </aside>
       </div>
 
-      <div inert={modalOpen}>
-        <Dock model={dock} />
-      </div>
-
       {sheetOpen && (
         <SignSheet
           size={`${sheetTier.n}×${sheetTier.n}`}
           multiplier={formatMultiplier(sheetTier.multiplierBps)}
           betWei={amountWei}
-          exitWei={amountWei === null ? null : exitPayoutWei(table, amountWei, tier)}
+          exitWei={exitPayoutWei(table, amountWei, tier)}
           seedCode={dungeon?.code ?? null}
           startSide={dungeon?.side ?? null}
           seedText={seedText}

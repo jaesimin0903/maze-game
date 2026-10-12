@@ -110,9 +110,9 @@ async function openAndBet(world: FakeWorld, clientSeed: Hex): Promise<Hex> {
   fireEvent.click(await screen.findByTestId('wallet-dev-option'));
   await screen.findByTestId('wallet-address');
   fireEvent.click(screen.getByTestId('tier-0'));
-  fireEvent.change(screen.getByTestId('bet-amount'), { target: { value: '0.01' } });
+  fireEvent.click(screen.getByTestId('bet-preset-.01'));
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: clientSeed } });
-  fireEvent.click(screen.getByTestId('bet-start'));
+  fireEvent.click(screen.getByTestId('btn-a'));
   fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   return attr('board', 'data-game-id') as Hex;
@@ -202,7 +202,7 @@ describe('AC-P6: chests on the page', () => {
     const cashWorld = new FakeWorld({ chest: CHEST_CONFIG });
     await openAndBet(cashWorld, planned.clientSeed);
     await walk(planned.moves.slice(0, 1));
-    fireEvent.click(screen.getByTestId('cashout-open'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     fireEvent.click(screen.getByTestId('cashout-button'));
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('cashout');
     expectNoChestShown();
@@ -300,7 +300,7 @@ describe('AC-P11: path chests on the page', () => {
     await openAndBet(world, planned.clientSeed);
     await walk(planned.moves.slice(0, first.step));
     expect(attr('chest-just-found', 'data-points')).toBe(first.points);
-    fireEvent.click(screen.getByTestId('cashout-open'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     fireEvent.click(screen.getByTestId('cashout-button'));
 
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('cashout');

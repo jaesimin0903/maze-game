@@ -12,7 +12,7 @@ import {
 import { GameApp } from '../../src/client/GameApp';
 import { DIRS, DIR_NAMES, legalMoves } from '../../src/client/board-view';
 import type { ClientDeps } from '../../src/client/deps';
-import { formatEth } from '../../src/client/format';
+import { formatEth, formatEthFixed } from '../../src/client/format';
 import { activeGameId, loadRecord } from '../../src/client/record';
 import { hashSessionToken } from '../../src/client/seed';
 import type { WalletApi } from '../../src/client/wallet';
@@ -53,18 +53,18 @@ const noPoll = (world: FakeWorld): ClientDeps => ({
 });
 
 /**
- * Opens the page, connects the dev wallet, picks the smallest maze, the amount and the client
- * seed (a hidden field of the dock) and presses START, which opens the bet sheet. The dock is
- * inert behind the open sheet, so everything in it is set first.
+ * Opens the page, connects the dev wallet, picks the smallest maze, the 0.01 coin and the client
+ * seed (a hidden field of the pad) and presses A, which opens the bet sheet. The console is inert
+ * behind the open sheet, so everything on it is set first.
  */
 async function openLobby(world: FakeWorld, deps: ClientDeps = world.deps()): Promise<void> {
   render(<GameApp deps={deps} />);
   fireEvent.click(await screen.findByTestId('wallet-dev-option'));
   await screen.findByTestId('wallet-address');
   fireEvent.click(screen.getByTestId('tier-0'));
-  fireEvent.change(screen.getByTestId('bet-amount'), { target: { value: '0.01' } });
+  fireEvent.click(screen.getByTestId('bet-preset-.01'));
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
-  fireEvent.click(screen.getByTestId('bet-start'));
+  fireEvent.click(screen.getByTestId('btn-a'));
   await screen.findByTestId('sign-sheet');
 }
 
@@ -82,24 +82,24 @@ async function startGame(world: FakeWorld, deps: ClientDeps = world.deps()): Pro
 }
 
 /**
- * The bet failed: the page is back in the lobby (the empty board, the ready dock) with `text` on
+ * The bet failed: the page is back in the lobby (the empty board, the ready console) with `text` on
  * screen, and the sheet is still open with "Sign and bet" usable again.
  */
 async function backInLobbyWith(text: string): Promise<void> {
   expect((await screen.findByTestId('error-message')).textContent).toContain(text);
   expect(attr('board', 'data-game-id')).toBe('');
-  expect(attr('dock', 'data-mode')).toBe('ready');
+  expect(attr('console', 'data-mode')).toBe('ready');
   expect(screen.getByTestId('sign-sheet')).toBeTruthy();
   expect(button('bet-submit').disabled).toBe(false);
   expect(attr('bet-status', 'data-step')).toBe('');
 }
 
-/** With the bet sheet open: closes it, chooses size `tier` in the dock and opens it again. */
+/** With the bet sheet open: closes it, chooses size `tier` on the pad and opens it again. */
 async function chooseSize(tier: number): Promise<void> {
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
   fireEvent.click(screen.getByTestId(`tier-${tier}`));
-  fireEvent.click(screen.getByTestId('bet-start'));
+  fireEvent.click(screen.getByTestId('btn-a'));
   await screen.findByTestId('sign-sheet');
 }
 
@@ -152,8 +152,12 @@ describe('game flow', () => {
 
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('loss');
     expect(attr('result-payout', 'data-wei')).toBe('0');
-    expect(screen.queryByTestId('cashout-open')).toBeNull();
+    // Nothing is left to cash out: A waits for the settlement, then starts a new game, and the HP
+    // meter is gone.
+    expect(['settling', 'new-game']).toContain(attr('btn-a', 'data-action'));
+    await waitFor(() => expect(attr('btn-a', 'data-action')).toBe('new-game'));
     expect(screen.queryByTestId('cashout-button')).toBeNull();
+    expect(screen.queryByTestId('hp-bar')).toBeNull();
     expect(world.txs).toEqual(['createGame']);
   });
 
@@ -169,14 +173,14 @@ describe('game flow', () => {
       // What one more step would leave.
       expect(attr('next-step', 'data-wei')).toBe(refundWei(TABLE, BET, 0, k + 1).toString());
       expect(attr('exit-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, 0).toString());
-      expect(button('cashout-open').disabled).toBe(false);
+      expect(attr('btn-a', 'data-action')).toBe('cashout');
     }
 
     // Asking is not cashing out: the question names the amount and nothing reaches the server.
     const asked = world.requests.length;
-    fireEvent.click(button('cashout-open'));
-    expect(attr('dock', 'data-mode')).toBe('confirm');
-    expect(screen.getByTestId('dock').textContent).toContain(`${formatEth(refundWei(TABLE, BET, 0, 3), 4)} ETH`);
+    fireEvent.click(button('btn-a'));
+    expect(attr('console', 'data-mode')).toBe('confirm');
+    expect(screen.getByTestId('console').textContent).toContain(`Take ${formatEthFixed(refundWei(TABLE, BET, 0, 3), 4)} ETH`);
     expect(world.requests.slice(asked).filter((r) => r !== 'GET /api/games/:id')).toEqual([]);
     fireEvent.click(button('cashout-button'));
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe(
@@ -227,11 +231,12 @@ describe('game flow', () => {
       String(deadline + 1 - world.chainNow),
     );
     expect(button('reclaim-button').disabled).toBe(true);
-    expect(button('reclaim-button').textContent).toBe('Reclaim bet');
-    // The outage does not take the game away: the play dock stays, with the reclaim beside it.
-    expect(attr('dock', 'data-mode')).toBe('play');
+    expect(button('reclaim-button').textContent).toBe('RECLAIM BET');
+    // The outage does not take the game away: the meter and A's cash-out stay, with the reclaim
+    // on the screen.
+    expect(attr('console', 'data-mode')).toBe('play');
     expect(attr('refundable-amount', 'data-wei')).toBe(refundWei(TABLE, BET, 0, 1).toString());
-    expect(screen.getByTestId('cashout-open')).toBeTruthy();
+    expect(attr('btn-a', 'data-action')).toBe('cashout');
     expect(screen.getByTestId('next-step')).toBeTruthy();
     expect(screen.getByTestId('exit-payout')).toBeTruthy();
 
@@ -258,7 +263,7 @@ describe('game flow', () => {
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('reclaimed');
     expect(attr('result-payout', 'data-wei')).toBe(BET.toString());
     expect(attr('board', 'data-game-id')).toBe(gameId);
-    expect(attr('dock', 'data-mode')).toBe('ended');
+    expect(attr('console', 'data-mode')).toBe('ended');
   });
 
   it('the reclaim panel stays hidden while the server answers and the deadline has not passed', async () => {
@@ -361,8 +366,8 @@ describe('game flow', () => {
     // result of the game.
     await screen.findByTestId('reclaim-countdown');
     expect(button('reclaim-button').disabled).toBe(true);
-    expect(button('reclaim-button').textContent).toMatch(/^Reclaim · \d+:\d\d$/);
-    expect(attr('dock', 'data-mode')).toBe('ended');
+    expect(button('reclaim-button').textContent).toMatch(/^RECLAIM \d+:\d\d$/);
+    expect(attr('console', 'data-mode')).toBe('ended');
     expect(attr('result-outcome', 'data-outcome')).toBe('exit');
     fireEvent.click(await screen.findByTestId('settle-self'));
     await waitFor(() => expect(attr('settle-tx', 'data-tx')).toMatch(/^0x5e1f/));
@@ -427,7 +432,7 @@ describe('a finished game', () => {
     render(<GameApp deps={world.deps()} />);
     expect((await screen.findByTestId('result-outcome')).getAttribute('data-outcome')).toBe('exit');
     expect(attr('board', 'data-game-id')).toBe(gameId);
-    expect(attr('dock', 'data-mode')).toBe('ended');
+    expect(attr('console', 'data-mode')).toBe('ended');
     expect(attr('result-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, 0).toString());
     await waitFor(() => expect(attr('settle-tx', 'data-confirmed')).toBe('true'));
     // The reloaded page names the settlement again: the hash in the record, confirmed on chain.
@@ -438,17 +443,17 @@ describe('a finished game', () => {
     fireEvent.click(await screen.findByTestId('wallet-disconnect'));
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
-    expect(attr('dock', 'data-mode')).toBe('ended');
+    expect(attr('console', 'data-mode')).toBe('ended');
     expect(attr('result-outcome', 'data-outcome')).toBe('exit');
     expect(attr('board', 'data-game-id')).toBe(gameId);
 
     // New game leaves it, for good: the next load starts in the lobby.
     fireEvent.click(screen.getByTestId('new-game'));
-    await waitFor(() => expect(attr('dock', 'data-mode')).toBe('ready'));
+    await waitFor(() => expect(attr('console', 'data-mode')).toBe('ready'));
     expect(activeGameId()).toBeNull();
     cleanup();
     render(<GameApp deps={world.deps()} />);
-    await screen.findByTestId('bet-start');
+    await screen.findByTestId('btn-a');
     expect(attr('board', 'data-game-id')).toBe('');
     expect(screen.queryByTestId('result-outcome')).toBeNull();
     // The record itself is kept for the verify dialog.
@@ -596,7 +601,7 @@ describe('ticket request', () => {
     await backInLobbyWith('transaction was rejected in the wallet');
 
     // The 5×5 ticket is still unused; the player now asks for 7×7. The size is chosen in the
-    // dock, which the open sheet makes inert: close the sheet, choose, press START again.
+    // pad, which the open sheet makes inert: close the sheet, choose, press A again.
     await chooseSize(1);
     fireEvent.click(screen.getByTestId('bet-submit'));
     await backInLobbyWith('unused 5×5 ticket');
@@ -646,7 +651,7 @@ describe('ticket request', () => {
       );
       expect((await screen.findByTestId('wallet-address')).getAttribute('data-kind')).toBe(kind);
       fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
-      fireEvent.click(screen.getByTestId('bet-start'));
+      fireEvent.click(screen.getByTestId('btn-a'));
       fireEvent.click(await screen.findByTestId('bet-submit'));
 
       await waitFor(() => expect(attr('bet-status', 'data-step')).toBe('sign'));
@@ -865,9 +870,10 @@ describe('recovery', () => {
     // A fresh chain and server: neither knows the game.
     const fresh = new FakeWorld();
     render(<GameApp deps={fresh.deps()} />);
-    await screen.findByTestId('bet-start', undefined, { timeout: 3000 });
+    // The lobby is back once A starts a bet again.
+    await waitFor(() => expect(attr('btn-a', 'data-action')).toBe('start'), { timeout: 3000 });
     expect(attr('board', 'data-game-id')).toBe('');
-    expect(attr('dock', 'data-mode')).toBe('ready');
+    expect(attr('console', 'data-mode')).toBe('ready');
     expect(loadRecord(gameId)).not.toBeNull();
   });
 
@@ -881,7 +887,7 @@ describe('recovery', () => {
     render(<GameApp deps={world.deps()} />);
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
-    fireEvent.click(screen.getByTestId('bet-start'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     fireEvent.click(await screen.findByTestId('bet-submit'));
     expect((await screen.findByTestId('error-message')).textContent).toContain('already has a game in progress');
     expect(attr('board', 'data-game-id')).toBe('');

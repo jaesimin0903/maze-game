@@ -3,12 +3,14 @@
 # AC-T8, and the positive half of AC-A4).
 #
 # Connects the dev wallet, reads the escape payout and the refund schedule BEFORE betting (for
-# every size of the table, with two different amounts), bets on the smallest size from the bet
-# sheet START opens, walks the solution to the exit, and opens the verify dialog.
+# every size of the table, with two different amounts: 0.02 set on the slider between its ticks,
+# and BET_ETH), bets on the smallest size from the bet sheet A opens, walks the solution to the
+# exit, and opens the verify dialog.
 #
-#   DOM    the dev wallet option is offered and connects Anvil #2; before any bet the dock's
-#          size chips carry the table's sizes and multipliers and escape-payout equals bet x
-#          multiplier for the chosen size and amount, following a change of size and amount; in
+#   DOM    the dev wallet option is offered and connects Anvil #2; before any bet the side
+#          panel's difficulty keys carry the table's sizes and multipliers, the slider holds the
+#          bet set, and escape-payout equals bet x multiplier for the chosen size and bet,
+#          following a change of size and bet; in
 #          the bet sheet every schedule row and the exit payout equal the table for that size and
 #          amount (the other sizes' sheets are closed with Escape, so they need the pressKey
 #          capability); the sheet's rules state the refund right after the bet and after the
@@ -61,15 +63,16 @@ LOGS_BEFORE="$(cast logs --from-block 0 --to-block latest --address "$CONTRACT" 
   'GameCreated(bytes32 indexed,address indexed,uint8,uint256,uint256,bytes32,bytes32,uint64)' 2>/dev/null | jq 'length')"
 check chain "no game exists on chain while the payouts are read" 0 "$LOGS_BEFORE"
 
-# Every other size of the table and another amount first, to see that the escape payout and the
-# schedule follow the dock for each size the table offers. The open sheet covers the dock, so it
-# is closed again (Escape) before the next size is chosen.
+# Every other size of the table and another amount first, set on the slider between two ticks, to
+# see that the escape payout and the schedule follow the side panel for each size the table
+# offers. The open sheet covers the device, so it is closed again (Escape) before the next size is
+# chosen.
 OTHER=$(($(tier_count) - 1))
 while [ "$OTHER" -ge 1 ]; do
   choose_bet A "$OTHER" 0.02
   expect_escape_payout A "$OTHER" "$BET_WEI"
   if cap pressKey; then
-    ui_click A bet-start 10 || fail_scenario "bet-start is not clickable"
+    ui_click A btn-a 10 || fail_scenario "btn-a (A, START) is not clickable"
     expect_schedule A "$OTHER" "$BET_WEI"
     close_sheet A || fail_scenario "the bet sheet did not close on Escape"
   else
@@ -80,7 +83,7 @@ done
 choose_bet A 0 "$BET_ETH"
 expect_escape_payout A 0 "$BET_WEI"
 
-# START opens the bet sheet: the schedule of the size and amount the bet is placed with, and the
+# A opens the bet sheet: the schedule of the size and amount the bet is placed with, and the
 # rules naming the refund right after the bet and after the first step, and the idle and
 # maximum-time rules, as the table and /api/config give them.
 fill_bet A 0 "$BET_ETH" "$(client_seed 1)"
@@ -90,7 +93,7 @@ expect_attr "schedule-row-1 is the refund after the first move" A schedule-row-1
 # percent <bps>: as the page prints it, 9500 -> 95.00%
 percent() { printf '%d.%02d%%' $(($1 / 100)) $(($1 % 100)); }
 RULES_WANT="$(percent "$(tier_refund_bps 0 0)") $(percent "$(tier_refund_bps 0 1)") $(printf '%s' "$CONFIG_JSON" | jq -r '.idleTimeoutSec')s $(printf '%s' "$CONFIG_JSON" | jq -r '.maxGameSec')s"
-expect_present "START opens the bet sheet with its rules (bet-rules)" A bet-rules 5
+expect_present "A opens the bet sheet with its rules (bet-rules)" A bet-rules 5
 if RULES_TEXT="$(dom_text A bet-rules)"; then
   RULES_SEEN=""
   for RULE in $RULES_WANT; do
@@ -112,7 +115,7 @@ PAYOUT="$(exit_wei "$BET_WEI" "$TIER")"
 expect_fog A 0
 expect_refundable A 0
 expect_attr "exit-payout shows bet x multiplier" A exit-payout data-wei "$PAYOUT" 5
-expect_present "the cash-out button (CASH OUT) is on screen" A cashout-open 5
+expect_attr "A is the cash-out button (CASH OUT) during play" A btn-a data-action cashout 5
 
 FIRST=1
 # shellcheck disable=SC2086

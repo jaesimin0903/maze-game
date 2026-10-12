@@ -85,7 +85,7 @@ fi
 expect_absent "the page shows no error: it sent none of these moves" A error-message 2
 
 # The game is still playable: a normal cash-out settles it.
-cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable after the refused moves"
+cash_out A || fail_scenario "the cash-out (A, then cashout-button) is not clickable after the refused moves"
 expect_result A cashout "$REFUND"
 expect_settled 1 "$K" "$REFUND" cashed_out false
 

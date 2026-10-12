@@ -16,7 +16,6 @@ import {
   FACING,
   blockedReason,
   cellBox,
-  dirOfFacing,
   facingOf,
   playTiles,
   readyTiles,
@@ -273,9 +272,8 @@ describe('facingOf', () => {
     expect(facingOf([], [])).toBe('D');
   });
 
-  it('turns a facing back into its direction', () => {
+  it('names the four facings in direction order', () => {
     expect(FACING).toEqual(['U', 'R', 'D', 'L']);
-    FACING.forEach((facing, dir) => expect(dirOfFacing(facing)).toBe(dir));
   });
 });
 

@@ -3,8 +3,8 @@
 // Login with Privy: email, Google, a passkey or an external wallet. Loaded only when the server
 // names a Privy app. A player without a wallet of their own gets an embedded one, used as a plain
 // account (no session keys, no smart account) with Privy's confirmation screens turned off, so the
-// ticket signature and the bet transaction go through without a popup: the dock's Start button is
-// the player's consent. A player who logs in with an external wallet plays with that wallet, which
+// ticket signature and the bet transaction go through without a popup: "Sign and bet" in the bet
+// sheet is the player's consent. A player who logs in with an external wallet plays with that wallet, which
 // asks for both signatures as a browser wallet does.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

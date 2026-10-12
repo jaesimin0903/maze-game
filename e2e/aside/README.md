@@ -116,9 +116,9 @@ game and waits for the supervisor to bring it back.
 
 | # | Script | Proves | Chain | HTTP | DOM |
 |---|---|---|---|---|---|
-| 01 | `01-exit.sh` | exit win on the smallest size; escape payout and refund schedule **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; size chips (size, multiplier) and `escape-payout` for every size, with two amounts; in the bet sheet every `schedule-row-<k>` and `schedule-exit-payout` for every size (the other sizes' sheets are closed with Escape, so they need `pressKey`) and the rules (refund after the bet and after one step, idle and maximum time); fog board; result, settlement tx; verify dialog (hash, cells, solution) |
+| 01 | `01-exit.sh` | exit win on the smallest size; escape payout and refund schedule **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; difficulty keys (size, multiplier) and `escape-payout` for every size, with two amounts (0.02 set on the slider between ticks, and `BET_ETH`); in the bet sheet every `schedule-row-<k>` and `schedule-exit-payout` for every size (the other sizes' sheets are closed with Escape, so they need `pressKey`) and the rules (refund after the bet and after one step, idle and maximum time); fog board; result, settlement tx; verify dialog (hash, cells, solution) |
 | 02 | `02-deadend.sh` | dead-end loss on the middle size, moves by arrow keys | outcome 2, payout 0, balance unchanged | status lost, reveal | result loss, payout 0; verify dialog |
-| 03 | `03-cashout.sh` | cash-out after 3 moves on the largest size | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount at every step, exit payout, CASH OUT (`cashout-open`) then "Take it" (`cashout-button`), result; verify dialog |
+| 03 | `03-cashout.sh` | cash-out after 3 moves on the largest size | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount and the HP meter (`hp-bar`) at every step, exit payout, A named CASH OUT (`btn-a`) then "Take it" (`cashout-button`), result; verify dialog |
 | 04 | `04-idle-auto-cashout.sh` | idle auto cash-out (`MAZE_IDLE_TIMEOUT_SEC=6`) learnt by polling | outcome 1, steps 2, mined at or after the idle deadline, relayer sent it | idleTimeoutSec 6; cashed_out, auto true | idle deadline on screen; `auto-cashout` shown without input within 5 (+3) chain seconds |
 | 05 | `05-server-down-reclaim.sh` | server killed: the open page reclaims after the settle deadline | `DeadlineNotReached` before; Reclaimed, amount = bet, sent by the player's wallet, balance + bet - fee, never settled | active before the stop, unreachable after | `server-unreachable`, countdown on block time, button disabled then enabled, result `reclaimed` |
 | 06 | `06-verify-mismatch.sh` | the verify dialog flags a tampered record, imported through `/?verify=import` | still Settled, once | game read and reveal unchanged by imports | one flipped wall bit marks exactly that cell and row; a changed seed fails the hash check; the untouched record passes |
@@ -133,14 +133,20 @@ Order: 01 02 03 04 06 07 08 09 11 12, then the two that move the chain clock, 10
 
 How the scenarios drive the page (`lib.sh`):
 
-- **Bet.** The size (`tier-<i>`; on a phone-wide window, where those chips are hidden, the one
-  `tier-cycle` chip is pressed until the size is selected) and the amount (`bet-amount`) are
-  chosen in the lobby dock (`choose_bet`). The client seed is `client-seed-input`, a hidden field
-  of the dock: Playwright's fill refuses hidden inputs, so `fill_bet` sets it by script
-  (`M.setValue`: `page.evaluate`, then an `input` event), presses START (`bet-start`), which opens
-  the bet sheet, and checks that the sheet shows that seed (`sheet-full-seed`). `submit_bet`
-  clicks "Sign and bet" (`bet-submit`). The open sheet covers the dock (which is `inert`
-  meanwhile), so everything in the dock is set first; `close_sheet` closes the sheet with Escape.
+- **Bet.** The difficulty key (`tier-<i>`) and the bet are set on the device's side panel
+  (`choose_bet`). A bet on one of the slider's ticks (`.001`, `.01`, `.05`, `.1` on the tables in
+  use) is set with the tick label's button (`bet-preset-<label>`); any other amount (01 uses
+  0.02) is written into the slider (`bet-slider`, a range input from 0 to 1000) at its position
+  (`slider_position`, the page's mapping: ticks evenly spaced, straight lines between them) with
+  an input event; only a pointer snaps to a tick, so the amount lands as it is. Either way
+  `bet-slider`'s `data-wei` must then equal the bet. `BET_ETH` (`MAZE_E2E_BET_ETH`, default 0.01)
+  may be any amount within the table's limits in steps of 0.001.
+  The client seed is `client-seed-input`, a hidden field of the side panel: Playwright's fill
+  refuses hidden inputs, so `fill_bet` sets it by script (`M.setValue`: `page.evaluate`, then an
+  `input` event), presses A (`btn-a`, `data-action="start"` in the lobby), which opens the bet
+  sheet, and checks that the sheet shows that seed (`sheet-full-seed`). `submit_bet` clicks "Sign
+  and bet" (`bet-submit`). The open sheet covers the device (which is `inert` meanwhile), so
+  everything on the side panel is set first; `close_sheet` closes the sheet with Escape.
   The sheet holds the refund schedule (`refund-schedule`, `schedule-row-<k>`,
   `schedule-exit-payout`, in a collapsed block that is read from the DOM). It closes by itself
   once the first cell is shown; a refused bet leaves it open. The scenarios' client seeds carry
@@ -149,8 +155,10 @@ How the scenarios drive the page (`lib.sh`):
 - **Moves.** The D-pad buttons `move-N/E/S/W` are never disabled: `data-legal` says whether the
   move is open, and a press that is not is refused on the page (it sends nothing). `move` waits
   for `data-legal="true"` before it clicks or presses the arrow key.
-- **Cash-out.** CASH OUT (`cashout-open`) asks the question, "Take it" (`cashout-button`) cashes
-  out (`cash_out`); "Keep going" is `cashout-cancel`.
+- **Cash-out.** A (`btn-a`, `data-action="cashout"` during a game) asks the question on the
+  screen, "Take it" (`cashout-button`) cashes out (`cash_out`); "Keep going" is `cashout-cancel`.
+  A never moves. The HP meter above the screen (`hp-bar`, `data-bps` and `data-wei`) shows what
+  a cash-out pays now; `expect_refundable` checks it with `refundable-amount`.
 - **Verify.** The fairness check is a dialog over the game (`verify-modal`, closed with
   `verify-close`). `open_verify` clicks the result's `verify-link` (`/?verify=<gameId>`), sees the
   dialog open for the game in place and closes it, then closes the game tab and opens a new tab on

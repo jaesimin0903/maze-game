@@ -55,6 +55,7 @@ STATUS_ACTIVE=1
 STATUS_SETTLED=2
 STATUS_RECLAIMED=3
 
+# The bet of every game, in ETH, from the table's minimum to its maximum in steps of 0.001.
 BET_ETH="${MAZE_E2E_BET_ETH:-0.01}"
 
 ASIDE_BIN="${ASIDE_BIN:-$(command -v aside 2>/dev/null || true)}"
@@ -1024,7 +1025,7 @@ expect_absent() {
 
 # open_lobby <tab>: opens the app in a new tab, removes records an earlier run may have left in
 # this origin's localStorage (the page would resume that game), and waits for the lobby (the
-# dock's START button, bet-start).
+# console's A button, btn-a, named START: data-action start).
 open_lobby() {
   local left
   ui_open "$1" "$APP_URL/"
@@ -1034,8 +1035,24 @@ open_lobby() {
     log "removed $left maze:* localStorage key(s) left by an earlier run; reloading"
     ui 30 "M.reload($(js_str "$1"))" || fail_scenario "reload failed: $ASIDE_ERROR"
   fi
-  ui 40 "M.waitFor($(js_str "$1"), { id: \"bet-start\" }, 30000)" || fail_scenario "the lobby could not be read: $ASIDE_ERROR"
-  [ "$(ui_field '.ok')" = true ] || fail_scenario "the lobby did not render within 30 seconds"
+  wait_lobby "$1" || fail_scenario "the lobby did not render within 30 seconds"
+}
+
+# wait_lobby <tab>: waits until A starts a bet (btn-a with data-action start). Returns 1 when it
+# does not within 30 seconds.
+wait_lobby() {
+  ui 40 "M.waitFor($(js_str "$1"), { id: \"btn-a\", attr: \"data-action\", equals: \"start\" }, 30000)" ||
+    fail_scenario "the lobby could not be read: $ASIDE_ERROR"
+  [ "$(ui_field '.ok')" = true ]
+}
+
+# coin_label <amount in ETH>: the label of the slider's tick for that amount, as the page writes
+# it in the tick button's test id (bet-preset-<label>): 0.01 -> .01, 0.10 -> .1, 1 -> 1.
+coin_label() {
+  local v="$1"
+  case "$v" in *.*) v="$(printf '%s' "$v" | sed -E 's/0+$//; s/\.$//')" ;; esac
+  case "$v" in 0.*) v="${v#0}" ;; esac
+  printf '%s' "$v"
 }
 
 # connect_dev_wallet <tab>: clicks wallet-dev-option (never wallet-connect, which would talk to
@@ -1047,36 +1064,57 @@ connect_dev_wallet() {
   WALLET_SHOWN="$(ui_field '.item.text')"
 }
 
-# choose_bet <tab> <tier> <amount in ETH>: chooses the size and types the amount in the lobby
-# dock, with the bet sheet closed. On a phone-wide window the size chips are hidden and one chip
-# (tier-cycle) steps through the sizes; it is pressed until the size is selected. Sets TIER and
-# BET_WEI.
-choose_bet() {
-  local _
-  ui 20 "M.read($(js_str "$1"), [\"tier-$2\"])" || fail_scenario "the size chips could not be read: $ASIDE_ERROR"
-  if [ "$(ui_field ".[\"tier-$2\"].visible")" = false ]; then
-    for _ in $(seq 1 "$(tier_count)"); do
-      [ "$(ui_attr "$1" "tier-$2" data-selected)" = true ] && break
-      ui_click "$1" tier-cycle 10 || fail_scenario "tier-cycle is not clickable"
-    done
-    [ "$(ui_attr "$1" "tier-$2" data-selected)" = true ] || fail_scenario "tier-cycle never selected size $2"
-  else
-    ui_click "$1" "tier-$2" 10 || fail_scenario "tier-$2 is not clickable"
-  fi
-  ui_fill "$1" bet-amount "$3" || fail_scenario "bet-amount could not be filled"
-  TIER="$2"
-  BET_WEI="$(cast to-wei "$3" ether)"
+# slider_position <bet wei>: where that bet sits on the bet slider, 0 to 1000, by the page's
+# mapping: the ticks (the table's minimum, 0.01 and 0.05 between the limits, the table's maximum)
+# evenly spaced, straight lines between them.
+slider_position() {
+  local lo hi
+  lo="$(printf '%s' "$CONFIG_JSON" | jq -r .minBetWei)"
+  hi="$(printf '%s' "$CONFIG_JSON" | jq -r .maxBetWei)"
+  awk -v v="$1" -v lo="$lo" -v hi="$hi" 'BEGIN {
+    n = 0; t[n++] = lo + 0
+    if (1e16 > lo && 1e16 < hi) t[n++] = 1e16
+    if (5e16 > lo && 5e16 < hi) t[n++] = 5e16
+    t[n++] = hi + 0
+    if (v <= t[0]) { print 0; exit }
+    if (v >= t[n - 1]) { print 1000; exit }
+    for (i = 0; i < n - 1; i++) if (v >= t[i] && v <= t[i + 1]) break
+    printf "%d\n", int(((i + (v - t[i]) / (t[i + 1] - t[i])) / (n - 1)) * 1000 + 0.5)
+  }'
 }
 
-# fill_bet <tab> <tier> <amount in ETH> <client seed>: chooses the size and the amount in the
-# dock, sets the client seed (client-seed-input, a hidden field of the dock, set by script with
-# an input event) and presses START (bet-start), which opens the bet sheet. The open sheet makes
-# the dock inert and covers it, so everything in the dock is set first. Sets TIER, BET_WEI and
-# CLIENT_SEED.
+# choose_bet <tab> <tier> <amount in ETH>: presses the difficulty key (tier-<tier>) and sets the bet
+# on the side panel's slider, with the bet sheet closed: an amount on a tick (0.001, 0.01, 0.05 or
+# 0.1 on the tables in use) by the tick label's button (bet-preset-<label>), any other amount by
+# writing its position (slider_position) into the slider with an input event. Only a pointer
+# snaps to a tick, so any amount on the 0.001 grid lands as it is. Checks that the slider holds
+# the bet (bet-slider data-wei). Sets TIER and BET_WEI.
+choose_bet() {
+  local tick
+  tick="bet-preset-$(coin_label "$3")"
+  ui_click "$1" "tier-$2" 10 || fail_scenario "tier-$2 is not clickable"
+  [ "$(ui_attr "$1" "tier-$2" data-selected)" = true ] || fail_scenario "tier-$2 was not selected"
+  TIER="$2"
+  BET_WEI="$(cast to-wei "$3" ether)"
+  ui 20 "M.read($(js_str "$1"), [$(js_str "$tick")])" || fail_scenario "the bet slider could not be read: $ASIDE_ERROR"
+  if [ "$(ui_field ".[\"$tick\"] != null")" = true ]; then
+    ui_click "$1" "$tick" 10 || fail_scenario "$tick is not clickable"
+  else
+    ui_set_value "$1" bet-slider "$(slider_position "$BET_WEI")" ||
+      fail_scenario "bet-slider could not be set to $3 ETH (position $(slider_position "$BET_WEI")): $ASIDE_RESULT"
+  fi
+  expect_attr "the bet slider holds the bet ($3 ETH)" "$1" bet-slider data-wei "$BET_WEI" 5
+}
+
+# fill_bet <tab> <tier> <amount in ETH> <client seed>: chooses the difficulty and the bet on the
+# side panel, sets the client seed (client-seed-input, a hidden field of the side panel, set by
+# script with an input event) and presses A (btn-a, named START in the lobby), which opens the bet
+# sheet. The open sheet makes the device inert and covers it, so everything on the side panel is
+# set first. Sets TIER, BET_WEI and CLIENT_SEED.
 fill_bet() {
   choose_bet "$1" "$2" "$3"
   ui_set_value "$1" client-seed-input "$4" || fail_scenario "client-seed-input could not be set: $ASIDE_RESULT"
-  ui_click "$1" bet-start 10 || fail_scenario "bet-start is not clickable"
+  ui_click "$1" btn-a 10 || fail_scenario "btn-a (A, START) is not clickable"
   ui 20 "M.waitFor($(js_str "$1"), { id: \"sheet-full-seed\", text: $(js_str "$4") }, 10000)" ||
     fail_scenario "the bet sheet could not be read: $ASIDE_ERROR"
   [ "$(ui_field '.ok')" = true ] || fail_scenario "the bet sheet does not show the client seed $4 ($(ui_field '.item.text'))"
@@ -1118,19 +1156,21 @@ open_game_for() {
       return 0
     fi
     log "the maze of game $attempt cannot serve \"$goal\"; cashing out at step 0 and betting again"
-    cash_out "$tab" || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable while abandoning game $attempt"
+    cash_out "$tab" || fail_scenario "the cash-out (A, then cashout-button) is not clickable while abandoning game $attempt"
     wait_status "$GAME_ID" "$STATUS_SETTLED" 40 || fail_scenario "the abandoned game $GAME_ID was not settled"
     ui_click "$tab" new-game 20 || fail_scenario "new-game is not clickable after abandoning game $attempt"
-    ui 40 "M.waitFor($(js_str "$tab"), { id: \"bet-start\" }, 30000)" || fail_scenario "the lobby could not be read: $ASIDE_ERROR"
-    [ "$(ui_field '.ok')" = true ] || fail_scenario "the lobby did not come back after new-game"
+    wait_lobby "$tab" || fail_scenario "the lobby did not come back after new-game"
   done
   fail_scenario "none of 4 mazes could serve the goal \"$goal\""
 }
 
-# cash_out <tab>: asks to cash out (cashout-open, the dock's CASH OUT) and takes it
-# (cashout-button, "Take it"). Returns 1 when either button never became clickable.
+# cash_out <tab>: asks to cash out (A, btn-a, named CASH OUT during a game) and takes it
+# (cashout-button, "Take it", on the screen). Returns 1 when A never offered the cash-out or
+# either button never became clickable.
 cash_out() {
-  ui_click "$1" cashout-open 10 || return 1
+  ui 20 "M.waitFor($(js_str "$1"), { id: \"btn-a\", attr: \"data-action\", equals: \"cashout\" }, 10000)" || return 1
+  [ "$(ui_field '.ok')" = true ] || return 1
+  ui_click "$1" btn-a 10 || return 1
   ui_click "$1" cashout-button 10
 }
 
@@ -1168,16 +1208,16 @@ expect_fog() {
   check dom "the exit cell is marked" "cell-$last-$last" "$(printf '%s' "$cells" | jq -r '[.[] | select(.attrs["data-exit"] == "true") | .id] | join(",")')"
 }
 
-# expect_escape_payout <tab> <tier> <bet wei>: before any bet, the lobby dock shows the chosen
-# size selected, its chip carries the table's size and multiplier, and escape-payout (what an
-# escape would pay) is bet x multiplier for the typed amount (AC-W6, AC-R1, AC-T8).
+# expect_escape_payout <tab> <tier> <bet wei>: before any bet, the side panel shows the chosen
+# difficulty selected, its key carries the table's size and multiplier, and escape-payout (what an
+# escape would pay, on the LCD) is bet x multiplier for the chosen bet (AC-W6, AC-R1, AC-T8).
 expect_escape_payout() {
   local payout
   payout="$(exit_wei "$3" "$2")"
-  expect_attr "size $2 is the selected size in the dock" "$1" "tier-$2" data-selected true 5
+  expect_attr "size $2 is the selected difficulty on the side panel" "$1" "tier-$2" data-selected true 5
   expect_attr "size $2: its chip shows the table's size" "$1" "tier-$2" data-n "$(tier_n "$2")" 5
   expect_attr "size $2: its chip carries the table's multiplier" "$1" "tier-$2" data-multiplier-bps "$(tier_multiplier_bps "$2")" 5
-  expect_attr "size $2: escape-payout for the typed amount ($3 wei) is bet x multiplier" "$1" escape-payout data-wei "$payout" 5
+  expect_attr "size $2: escape-payout for the chosen bet ($3 wei) is bet x multiplier" "$1" escape-payout data-wei "$payout" 5
   check chain "size $2: the contract quotes the same exit payout" "$payout" "$(chain_call 'quoteExitPayout(uint8,uint256)(uint256)' "$2" "$3")"
   check chain "size $2: the contract's size and multiplier are the table's" "$(tier_n "$2") $(tier_multiplier_bps "$2")" \
     "$(chain_call 'tiers(uint8)(uint8,uint32)' "$2" | paste -sd ' ' -)"
@@ -1191,7 +1231,7 @@ expect_schedule() {
   local rows expected="" actual k bps payout
   payout="$(exit_wei "$3" "$2")"
   expect_attr "the bet sheet's refund-schedule is drawn for size $2" "$1" refund-schedule data-tier "$2" 5
-  expect_attr "the bet sheet's refund-schedule is drawn for the typed amount ($3 wei)" "$1" refund-schedule data-bet-wei "$3" 5
+  expect_attr "the bet sheet's refund-schedule is drawn for the chosen bet ($3 wei)" "$1" refund-schedule data-bet-wei "$3" 5
   if rows="$(dom_list "$1" schedule-row-)"; then
     while read -r k bps; do
       expected="$expected$k:$bps:$(mul_bps "$3" "$bps") "
@@ -1283,12 +1323,14 @@ expect_game_open() {
   check http "refundableWei at step 0 is bet x refundBps[0]" "$(refund_wei "$BET_WEI" "$TIER" 0)" "$(http_field .refundableWei)"
 }
 
-# expect_refundable <tab> <k>: after k moves the page, the server and the contract's table agree
-# on what a cash-out would pay (AC-W3, AC-T8).
+# expect_refundable <tab> <k>: after k moves the page (refundable-amount and the HP meter,
+# hp-bar), the server and the contract's table agree on what a cash-out would pay (AC-W3, AC-T8).
 expect_refundable() {
   local expected
   expected="$(refund_wei "$BET_WEI" "$TIER" "$2")"
   expect_attr "refundable-amount after $2 move(s) is bet x refundBps[$2]" "$1" refundable-amount data-wei "$expected" 5
+  expect_attr "the HP meter after $2 move(s) shows refundBps[$2] of the bet" "$1" hp-bar data-bps "$(tier_refund_bps "$TIER" "$2")" 5
+  expect_attr "the HP meter after $2 move(s) shows bet x refundBps[$2]" "$1" hp-bar data-wei "$expected" 5
   check chain "the contract's refundBps($TIER, $2) is the table's" "$(tier_refund_bps "$TIER" "$2")" "$(chain_call 'refundBps(uint8,uint16)(uint16)' "$TIER" "$2")"
   http_game
   check http "the server's refundableWei after $2 move(s)" "$expected" "$(http_field .refundableWei)"

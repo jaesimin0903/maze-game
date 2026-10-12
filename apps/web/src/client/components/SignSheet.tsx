@@ -39,6 +39,12 @@ interface Props {
   onClose(): void;
 }
 
+/**
+ * A key press on "Sign and bet" this soon after the sheet opened is the press that opened it (A)
+ * coming twice, not a decision: with an account wallet it would bet without a prompt.
+ */
+const SUBMIT_GUARD_MS = 300;
+
 const STEPS: { key: BetStep; label: string }[] = [
   { key: 'sign', label: 'Sign the ticket request' },
   { key: 'ticket', label: 'Server commits to its seed' },
@@ -103,10 +109,12 @@ export function SignSheet(p: Props) {
   const sheet = useRef<HTMLDivElement>(null);
   const submit = useRef<HTMLButtonElement>(null);
   const own = useRef<HTMLInputElement>(null);
+  const openedAt = useRef(0);
   const [ownError, setOwnError] = useState<string | null>(null);
   // Focus moves into the sheet when it opens (the bet button, or the first control that can take
   // it while the bet is blocked) and goes back where it was when the sheet closes.
   useEffect(() => {
+    openedAt.current = performance.now();
     const before = document.activeElement;
     const target =
       submit.current !== null && !submit.current.disabled
@@ -134,10 +142,24 @@ export function SignSheet(p: Props) {
         aria-labelledby="sign-title"
         data-testid="sign-sheet"
         onKeyDown={(event) => {
+          // A held Enter or Space opened the sheet as A: its repeats must not press "Sign and bet",
+          // which with an account wallet bets without a prompt. Each bet takes a press of its own,
+          // and not one that comes right on top of the press that opened the sheet.
+          const press = event.key === 'Enter' || event.key === ' ' || event.code === 'Space';
+          const early = event.target === submit.current && performance.now() - openedAt.current < SUBMIT_GUARD_MS;
+          if (press && (event.repeat || early)) {
+            event.preventDefault();
+            return;
+          }
           // Escape closes the sheet from anywhere in it, the seed field included.
           if (event.key !== 'Escape' && event.code !== 'Escape') return;
           event.preventDefault();
           if (!busy) p.onClose();
+        }}
+        onKeyUp={(event) => {
+          // Space presses a button on its release: the same guard.
+          const early = event.target === submit.current && performance.now() - openedAt.current < SUBMIT_GUARD_MS;
+          if (early && (event.key === ' ' || event.code === 'Space')) event.preventDefault();
         }}
       >
         <div className="sheet-head">

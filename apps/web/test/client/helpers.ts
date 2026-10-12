@@ -189,8 +189,6 @@ export class FakeWorld {
   /** Contract functions the wallet sent, in order. */
   txs: string[] = [];
   snapshots: UiSnapshotInput[] = [];
-  /** What every transaction of the fake chain cost in fees (`ChainApi.txFee`); `null`: no receipt. */
-  txFeeWei: bigint | null = 173_824n * 102_000_000_000n;
   /** Configs the chain factory was called with. */
   chainConfigs: ConfigResponse[] = [];
 
@@ -557,7 +555,6 @@ export class FakeWorld {
     maxFeePerGas: async () => 1_200_000_000n,
     estimateTransferGas: async () => 21_000n,
     waitForTx: async () => 'success',
-    txFee: async () => this.txFeeWei,
     settledBy: async (hash, gameId) => {
       if (!this.rpcUp) throw new Error('rpc down');
       return this.settledBy.get(gameId) === hash;

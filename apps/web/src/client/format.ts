@@ -13,14 +13,12 @@ export function formatEth(wei: bigint, decimals = 6): string {
   return kept === '' ? whole : `${whole}.${kept}`;
 }
 
-/**
- * Wei with two significant digits, for a figure the page marks as approximate (~):
- * 17_850_000_000_000_000n -> "0.018", 175_000_000_000_000n -> "0.00018".
- */
-export function formatApprox(wei: bigint): string {
-  return new Intl.NumberFormat('en-US', { maximumSignificantDigits: 2, useGrouping: false }).format(
-    Number(formatEther(wei)),
-  );
+/** Wei with exactly `decimals` fraction digits, rounded down: (5e16, 4) -> "0.0500". */
+export function formatEthFixed(wei: bigint, decimals: number): string {
+  const text = formatEth(wei, decimals);
+  if (text.startsWith('<')) return text;
+  const [whole, fraction = ''] = text.split('.');
+  return `${whole}.${fraction.padEnd(decimals, '0')}`;
 }
 
 /** An ETH amount typed by the player, or `null` when it is not a plain decimal number. */
@@ -48,6 +46,17 @@ export function formatPercent(bps: number): string {
 export function formatMultiplier(bps: number): string {
   const fraction = String(bps % 10_000).padStart(4, '0').replace(/0{1,2}$/, '');
   return `×${Math.floor(bps / 10_000)}.${fraction}`;
+}
+
+/**
+ * A multiplier to three significant digits, rounded down like `formatMultiplier` so it never shows
+ * more than the contract pays: 26088 -> "×2.60", 66112 -> "×6.61", 184695 -> "×18.4".
+ */
+export function formatMultiplierShort(bps: number): string {
+  const whole = Math.floor(bps / 10_000);
+  if (whole >= 100) return `×${whole}`;
+  if (whole >= 10) return `×${whole}.${Math.floor(bps / 1_000) % 10}`;
+  return `×${whole}.${String(Math.floor(bps / 100) % 100).padStart(2, '0')}`;
 }
 
 export function shortHex(value: string, head = 6, tail = 4): string {

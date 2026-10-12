@@ -1,70 +1,117 @@
-// The bet a player is about to place: amount checks, the one-tap amounts the dock offers, and
-// what the page says while the wallet and the chain do their part.
+// The bet a player is about to place: the bet slider's marks and its mapping, the balance check,
+// and what the page says while the wallet and the chain do their part.
 
-import { formatEther, parseEther } from 'viem';
-import { formatEth, parseEthInput } from './format';
+import { parseEther } from 'viem';
+import { formatEth } from './format';
 import type { BetStep } from './use-game';
 import type { WalletKind } from './wallet';
 
 /**
- * The amounts the dock offers as chips next to the amount field, in the chain's coin. On Monad the
- * bet transaction's fee is near 0.018 MON, so smaller chips would lose more to the fee than a
- * win pays; a smaller amount can still be typed.
+ * The marks between the table's limits on the bet slider, in the chain's coin. On Monad the bet
+ * transaction's fee is near 0.018 MON, so much smaller bets lose more to the fee than a win pays.
  */
-const CHIPS = ['0.01', '0.05', '0.1'];
+const MARKS = ['0.01', '0.05'];
+
+/** The slider moves in steps of 0.001 between its marks. */
+export const BET_STEP_WEI = 10n ** 15n;
+
+/** A pointer that lets go within this share of the track from a tick puts the bet on the tick. */
+export const SNAP = 0.02;
 
 export interface Preset {
   wei: bigint;
-  /** Short chip text: ".05", "1". */
+  /** Short tick text: ".05", "1". */
   label: string;
 }
 
-function chipLabel(wei: bigint): string {
+function tickLabel(wei: bigint): string {
   const text = formatEth(wei);
   return text.startsWith('0.') ? text.slice(1) : text;
 }
 
 /**
- * The chips 0.01, 0.05 and 0.1 that lie within the table's limits; any other amount is typed into
- * the field. A table whose limits hold none of them gets its limits as chips.
+ * The slider's ticks, evenly spaced along the track: the table's minimum, the marks 0.01 and 0.05
+ * that lie strictly between the limits, and the table's maximum (0.001, 0.01, 0.05, 0.1 on the
+ * tables in use).
  */
-export function betPresets(minWei: bigint, maxWei: bigint): Preset[] {
-  let picks = CHIPS.map((eth) => parseEther(eth)).filter((wei) => wei >= minWei && wei <= maxWei);
-  if (picks.length === 0) picks = minWei === maxWei ? [minWei] : [minWei, maxWei];
-  return picks.map((wei) => ({ wei, label: chipLabel(wei) }));
+export function betTicks(minWei: bigint, maxWei: bigint): Preset[] {
+  const marks = MARKS.map((eth) => parseEther(eth)).filter((wei) => wei > minWei && wei < maxWei);
+  const all = minWei === maxWei ? [minWei] : [minWei, ...marks, maxWei];
+  return all.map((wei) => ({ wei, label: tickLabel(wei) }));
 }
 
-/** The chip a D-pad press moves to from `wei`: the next one up or down, staying in range. */
+/** Where `wei` sits on the track, from 0 (the first tick) to 1 (the last), straight between ticks. */
+export function sliderPosition(ticks: Preset[], wei: bigint): number {
+  const n = ticks.length - 1;
+  if (n <= 0 || wei <= ticks[0].wei) return 0;
+  if (wei >= ticks[n].wei) return 1;
+  const i = ticks.findIndex((t, k) => k < n && wei >= t.wei && wei <= ticks[k + 1].wei);
+  const span = Number(ticks[i + 1].wei - ticks[i].wei);
+  return (i + Number(wei - ticks[i].wei) / span) / n;
+}
+
+function clampWei(ticks: Preset[], wei: bigint): bigint {
+  const lo = ticks[0].wei;
+  const hi = ticks[ticks.length - 1].wei;
+  return wei < lo ? lo : wei > hi ? hi : wei;
+}
+
+/**
+ * The bet at `position` (0..1) on the track: the amount on the straight line between the two ticks
+ * around it, in steps of 0.001, kept within the table's limits. With `snap` (a pointer's input) a
+ * position within `SNAP` of a tick is the tick; keyboard and assistive-technology input never snaps.
+ */
+export function sliderValue(ticks: Preset[], position: number, snap = false): bigint {
+  const n = ticks.length - 1;
+  if (n <= 0) return ticks[0].wei;
+  const p = Math.max(0, Math.min(1, position));
+  // A hair of slack, so that exactly 2% from a tick still counts despite rounding in `p`.
+  const near = snap ? ticks.findIndex((_, k) => Math.abs(p - k / n) <= SNAP + 1e-9) : -1;
+  if (near !== -1) return ticks[near].wei;
+  const i = Math.min(n - 1, Math.floor(p * n));
+  const from = Number(ticks[i].wei / BET_STEP_WEI);
+  const to = Number(ticks[i + 1].wei / BET_STEP_WEI);
+  const steps = Math.round(from + (to - from) * (p * n - i));
+  return clampWei(ticks, BigInt(steps) * BET_STEP_WEI);
+}
+
+/**
+ * A bet carried over from elsewhere (a finished game, the page's storage) as the slider holds it:
+ * rounded down to the 0.001 grid, then kept within the table's limits.
+ */
+export function normalizeBet(ticks: Preset[], wei: bigint): bigint {
+  return clampWei(ticks, (wei / BET_STEP_WEI) * BET_STEP_WEI);
+}
+
+/** One 0.001 step up or down from `wei`, kept within the table's limits (the arrow keys). */
+export function stepBet(ticks: Preset[], wei: bigint, delta: 1 | -1): bigint {
+  return clampWei(ticks, wei + BigInt(delta) * BET_STEP_WEI);
+}
+
+/** The tick `wei` sits on, or `null` between ticks. */
+export function tickAt(ticks: Preset[], wei: bigint): Preset | null {
+  return ticks.find((t) => t.wei === wei) ?? null;
+}
+
+/**
+ * The tick PageUp, PageDown and a D-pad press move to from `wei`: the next one up or down,
+ * staying in range.
+ */
 export function stepPreset(presets: Preset[], wei: bigint | null, delta: 1 | -1): Preset | null {
   if (presets.length === 0) return null;
   if (wei === null) return presets[0];
   let index = presets.findIndex((p) => p.wei >= wei);
   if (index === -1) index = presets.length;
-  // `index` is the first chip at or above the amount; moving down from an amount between two
-  // chips lands on the lower one.
+  // `index` is the first tick at or above the amount; moving down from an amount between two
+  // ticks lands on the lower one.
   const exact = presets[index]?.wei === wei;
   const target = delta > 0 ? (exact ? index + 1 : index) : index - 1;
   return presets[Math.max(0, Math.min(presets.length - 1, target))];
 }
 
-/** The amount the bet field starts with: 0.05, kept within the table's limits. */
-export function initialAmount(minWei: bigint, maxWei: bigint): string {
-  const preferred = parseEther('0.05');
-  return formatEther(preferred < minWei ? minWei : preferred > maxWei ? maxWei : preferred);
-}
-
-/** The bet in wei, or the reason the typed amount cannot be bet. `symbol` names the chain's coin. */
-export function readAmount(
-  text: string,
-  minWei: bigint,
-  maxWei: bigint,
-  symbol = 'ETH',
-): { betWei: bigint } | { reason: string } {
-  const wei = parseEthInput(text);
-  if (wei === null) return { reason: `Enter the bet in ${symbol}, for example 0.01` };
-  if (wei < minWei) return { reason: `The minimum bet is ${formatEth(minWei)} ${symbol}` };
-  if (wei > maxWei) return { reason: `The maximum bet is ${formatEth(maxWei)} ${symbol}` };
-  return { betWei: wei };
+/** The bet the slider starts on: 0.05, kept within the table's limits. */
+export function initialBet(ticks: Preset[]): bigint {
+  return clampWei(ticks, parseEther('0.05'));
 }
 
 /**
@@ -76,10 +123,13 @@ export function readAmount(
 export const BET_GAS = 250_000n;
 
 /**
- * The gas a bet transaction typically uses, for the fee the dock shows as a guide: 173,824 on
- * Monad testnet. The balance check counts `BET_GAS` instead.
+ * The largest bet the balance pays with the bet transaction's fee reserved (`BET_GAS` at the fee
+ * bid per gas), or `null` when the balance does not even cover the fee.
  */
-export const TYPICAL_BET_GAS = 175_000n;
+export function maxAffordable(balanceWei: bigint, maxFeePerGasWei: bigint): bigint | null {
+  const left = balanceWei - BET_GAS * maxFeePerGasWei;
+  return left >= 0n ? left : null;
+}
 
 /**
  * What the wallet lacks for `betWei` plus the bet transaction's fee, or `null` when the balance
@@ -94,17 +144,22 @@ export function betShortfall(balanceWei: bigint, betWei: bigint, maxFeePerGasWei
 /** Why the bet cannot be placed yet, or `null` when it can. */
 export function betBlocked(p: {
   walletConnected: boolean;
-  amountReason: string | null;
+  /** The bet, and the table's limits it must lie within. */
+  betWei: bigint;
+  minWei: bigint;
+  maxWei: bigint;
   seedOk: boolean;
   /** What the wallet lacks for the bet and its fee (`betShortfall`), when known. */
   shortWei?: bigint | null;
   symbol?: string;
 }): string | null {
   if (!p.walletConnected) return 'Connect a wallet first';
-  if (p.amountReason !== null) return p.amountReason;
+  const symbol = p.symbol ?? 'ETH';
+  if (p.betWei <= 0n) return 'Choose a bet';
+  if (p.betWei < p.minWei) return `The minimum bet is ${formatEth(p.minWei)} ${symbol}`;
+  if (p.betWei > p.maxWei) return `The maximum bet is ${formatEth(p.maxWei)} ${symbol}`;
   if (!p.seedOk) return 'The client seed must be 0x followed by 64 hex digits';
   if (p.shortWei !== undefined && p.shortWei !== null) {
-    const symbol = p.symbol ?? 'ETH';
     return `Not enough ${symbol}: the bet and its network fee need ${formatEth(p.shortWei)} ${symbol} more`;
   }
   return null;

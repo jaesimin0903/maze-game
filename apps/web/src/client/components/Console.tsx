@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Dir, FoundChest, Hex, Observation } from '@maze/shared';
 import { DIRS, DIR_NAMES, boardCells } from '../board-view';
+import { tierTone } from '../config';
 import type { Dungeon } from '../dungeon';
 import { formatEth, formatPoints } from '../format';
 import { useNetwork } from '../network';
@@ -20,11 +21,6 @@ export interface EndFigures {
   payoutWei: bigint;
   /** The bet, when known: a dead end shows it as the loss. */
   betWei: bigint | null;
-  /**
-   * What the bet transaction cost in fees, from its receipt; `null` when the page does not have
-   * it (a game restored without its transaction, a receipt that could not be read).
-   */
-  feeWei: bigint | null;
   /** Treasure points found in this game; they have no cash value. */
   points: bigint;
 }
@@ -64,13 +60,33 @@ interface Props {
   tag: string | null;
   timer: ScreenTimer | null;
   notice: ScreenNotice | null;
+  /** What the console is showing, as `data-mode`: ready, betting, waiting, play, confirm, ended, reclaim. */
+  mode: string;
+  /** The row between the status line and the screen: the bet, the HP meter or the result. */
+  hp: ReactNode;
+  /** A menu over the bottom of the screen (the cash-out question, the end choices), or `null`. */
+  menu: ReactNode;
+  /** The tiers' difficulty names, and the one chosen (or the game's): one LED each, that one lit. */
+  difficulty: { names: string[]; index: number };
+  /** The connected wallet's balance; `null` without a wallet or before its first read. */
+  balanceWei: bigint | null;
+  /** What A does now; its name is engraved under it. */
+  action: ConsoleAction;
   onDir(dir: Dir): void;
   /** A tap on a cell next to the hero: a step that way, and nothing else. */
   onCell(dir: Dir): void;
   onA(): void;
-  onStart(): void;
-  onSelect(): void;
 }
+
+export type ConsoleAction = 'start' | 'cashout' | 'settling' | 'new-game' | 'verify';
+
+const ACTION_TEXT: Record<ConsoleAction, { label: string; aria: string }> = {
+  start: { label: 'START', aria: 'A: start' },
+  cashout: { label: 'CASH OUT', aria: 'A: cash out' },
+  settling: { label: 'SETTLING', aria: 'A: waits while the game settles' },
+  'new-game': { label: 'NEW GAME', aria: 'A: new game' },
+  verify: { label: 'VERIFY', aria: 'A: verify' },
+};
 
 const DIR_WORD = ['up', 'right', 'down', 'left'] as const;
 const STATE_TEXT = { current: 'you are here', visited: 'visited', hidden: 'not visited' } as const;
@@ -91,11 +107,13 @@ function box(n: number, cell: number): CSSProperties {
 }
 
 /**
- * The handheld: a screen that shows only the maze, and the controls under it. Every maze cell
- * keeps its test id and data attributes; a hidden cell carries no wall data (`data-open` empty).
+ * The handheld: a lens and the difficulty LEDs, a screen that shows only the maze, and the controls
+ * under it. Every maze cell keeps its test id and data attributes; a hidden cell carries no wall
+ * data (`data-open` empty).
  */
 export function Console(p: Props) {
   const { n, observations, ended } = p;
+  const { symbol } = useNetwork();
   const cols = screenCols(n);
   const playing = observations.length > 0;
   const dungeon = p.dungeon;
@@ -124,7 +142,23 @@ export function Console(p: Props) {
     : 'rgba(10,8,20,.12)';
 
   return (
-    <section className="console" data-console="" aria-label="Game console">
+    <section className="console" data-console="" data-testid="console" data-mode={p.mode} aria-label="Game console">
+      <span className="screw" style={{ left: 12, top: 12 }} aria-hidden="true" />
+      <span className="screw" style={{ left: 12, bottom: 14 }} aria-hidden="true" />
+      <div className="topbar">
+        <span className="lens" aria-hidden="true" />
+        <div
+          className="leds"
+          role="img"
+          aria-label={`Difficulty ${p.difficulty.names[p.difficulty.index] ?? ''}`}
+          data-testid="difficulty-leds"
+          data-tier={p.difficulty.index}
+        >
+          {p.difficulty.names.map((name, k) => (
+            <i key={name} className={`led t-${tierTone(k)}${k === p.difficulty.index ? ' on' : ''}`} />
+          ))}
+        </div>
+      </div>
       <div className="bezel">
         {/* The status line sits above the screen, so nothing covers the maze. */}
         <div className="hud">
@@ -151,6 +185,7 @@ export function Console(p: Props) {
             )
           )}
         </div>
+        {p.hp}
         <div
           className={ended === 'loss' ? 'screen shake' : 'screen'}
           data-testid="board"
@@ -289,10 +324,22 @@ export function Console(p: Props) {
           )}
 
           {ended !== null && <EndEffect outcome={ended} figures={p.endFigures} />}
+          {p.menu}
         </div>
-        {/* Messages take the label's place under the screen instead of covering the maze. */}
+        {/* Messages take the balance's place under the screen instead of covering the maze. */}
         <div className="bezel-foot">
-          {p.notice !== null ? <Notice notice={p.notice} /> : <span className="bezel-label">MAZE BET</span>}
+          {p.notice !== null ? (
+            <Notice notice={p.notice} />
+          ) : (
+            <span
+              className="bezel-bal"
+              data-testid="console-balance"
+              data-wei={p.balanceWei?.toString() ?? ''}
+              title="Wallet balance"
+            >
+              BALANCE <b>{p.balanceWei === null ? '—' : `${formatEth(p.balanceWei, 4)} ${symbol}`}</b>
+            </span>
+          )}
         </div>
       </div>
 
@@ -315,35 +362,27 @@ export function Console(p: Props) {
           ))}
           <span className="dpad-hub" />
         </div>
-        <div className="pills">
-          <Pill testId="btn-select" label="SELECT·RANK" aria="SELECT: leaderboard" onPress={p.onSelect} />
-          <Pill testId="btn-start" label="START" aria="START: start or cash out" onPress={p.onStart} />
-        </div>
         <div className="a-wrap">
-          <button type="button" className="btn-a" data-testid="btn-a" aria-label="A: confirm or move" onClick={p.onA}>
+          <button
+            type="button"
+            className="btn-a"
+            data-testid="btn-a"
+            data-action={p.action}
+            aria-label={ACTION_TEXT[p.action].aria}
+            onClick={p.onA}
+          >
             A
           </button>
-          <span className="ctl-label">OK·GO</span>
+          <span className="ctl-label" aria-hidden="true">
+            {ACTION_TEXT[p.action].label}
+          </span>
         </div>
       </div>
-      <div className="grill" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
+      <div className="slots con-slots" aria-hidden="true">
+        <i />
+        <i />
       </div>
     </section>
-  );
-}
-
-function Pill({ testId, label, aria, onPress }: { testId: string; label: string; aria: string; onPress(): void }) {
-  return (
-    <>
-      <button type="button" className="pill" data-testid={testId} aria-label={aria} onClick={onPress}>
-        <span className="pillbar" />
-      </button>
-      <span className="ctl-label">{label}</span>
-    </>
   );
 }
 
@@ -388,32 +427,10 @@ function endMoney(
   return { text: `${formatEth(f.payoutWei, 4)} ${symbol} BACK`, wei: f.payoutWei, tone: 'even' };
 }
 
-/**
- * The line under the money: the bet transaction's fee and what the game came to with it counted,
- * payout less bet less fee ("fee -0.0177 · net -0.0016 MON"). A win smaller than the fee is a
- * loss for the wallet. `null` without the fee or the bet.
- */
-export function endFee(
-  f: EndFigures,
-  symbol: string,
-): { feeWei: bigint; netWei: bigint; fee: string; net: string; tone: string } | null {
-  if (f.feeWei === null || f.betWei === null) return null;
-  const netWei = f.payoutWei - f.betWei - f.feeWei;
-  const net = netWei >= 0n ? `+${formatEth(netWei, 4)}` : `-${formatEth(-netWei, 4)}`;
-  return {
-    feeWei: f.feeWei,
-    netWei,
-    fee: `fee -${formatEth(f.feeWei, 4)}`,
-    net: `net ${net} ${symbol}`,
-    tone: netWei > 0n ? 'win' : netWei < 0n ? 'loss' : 'even',
-  };
-}
-
 function EndEffect({ outcome, figures }: { outcome: ResultOutcome; figures: EndFigures | null }) {
   const { symbol } = useNetwork();
   const banner = END_BANNER[outcome];
   const money = figures === null ? null : endMoney(outcome, figures, symbol);
-  const fee = figures === null ? null : endFee(figures, symbol);
   return (
     <>
       {outcome === 'loss' && <div className="flash" />}
@@ -444,17 +461,6 @@ function EndEffect({ outcome, figures }: { outcome: ResultOutcome; figures: EndF
               style={{ animationDelay: '1.4s' }}
             >
               {money.text}
-            </span>
-          )}
-          {fee !== null && (
-            <span className="end-net pop" style={{ animationDelay: '1.5s' }}>
-              <span data-testid="end-fee" data-wei={fee.feeWei.toString()}>
-                {fee.fee}
-              </span>
-              {' · '}
-              <span className={fee.tone} data-testid="end-net" data-wei={fee.netWei.toString()}>
-                {fee.net}
-              </span>
             </span>
           )}
           {figures !== null && figures.points > 0n && (

@@ -348,7 +348,7 @@ describe('log in', () => {
     expect(screen.getByRole('alert').textContent).toBe('Log in failed to load.');
     expect(text('privy-retry')).toBe('Retry log in');
     expect(logged).toHaveBeenCalledWith('Privy failed', expect.any(Error));
-    expect(screen.getByTestId('bet-start')).toBeTruthy();
+    expect(screen.getByTestId('btn-a')).toBeTruthy();
 
     // A transient failure: Retry mounts the login again.
     privy.refuse = null;

@@ -34,7 +34,7 @@ async function playToExit(world: FakeWorld): Promise<Hex> {
   render(<GameApp deps={world.deps()} />);
   fireEvent.click(await screen.findByTestId('wallet-dev-option'));
   await screen.findByTestId('wallet-address');
-  fireEvent.click(screen.getByTestId('bet-start'));
+  fireEvent.click(screen.getByTestId('btn-a'));
   fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   const gameId = attr('board', 'data-game-id') as Hex;
@@ -65,7 +65,7 @@ describe('verify dialog', () => {
     // sheet leaves the header live for the wallet; this dialog has no use for it).
     expect(document.activeElement).toBe(screen.getByTestId('verify-close'));
     expect(inert('board')).toBe(true);
-    expect(inert('dock')).toBe(true);
+    expect(inert('console')).toBe(true);
     expect(inert('wallet-connect')).toBe(true);
     expect(inert('verify-modal')).toBe(false);
     // The game's keys do nothing behind it.
@@ -111,7 +111,7 @@ describe('verify dialog', () => {
     expect(screen.getByTestId('verify-modal')).toBeTruthy();
     fireEvent.click(dialog.parentElement as HTMLElement);
     await closed();
-    expect(attr('dock', 'data-mode')).toBe('ready');
+    expect(attr('console', 'data-mode')).toBe('ready');
   });
 
   it('after a game, the Verify link and the footer link open it for that game; closing it keeps the game on screen', async () => {
@@ -127,7 +127,7 @@ describe('verify dialog', () => {
     expect(window.location.search).toBe('');
     fireEvent.click(screen.getByTestId('verify-close'));
     await closed();
-    expect(attr('dock', 'data-mode')).toBe('ended');
+    expect(attr('console', 'data-mode')).toBe('ended');
     expect(attr('result-outcome', 'data-outcome')).toBe('exit');
 
     expect(attr('fairness-link', 'href')).toBe(`/?verify=${gameId}`);

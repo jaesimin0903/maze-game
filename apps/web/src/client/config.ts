@@ -59,7 +59,38 @@ export function tableFromConfig(config: ConfigResponse): TuningTable {
   };
 }
 
-/** Size names for the three standard tiers; any other table falls back to its position. */
-export function tierLabel(index: number, count: number): string {
-  return count === 3 ? (['S', 'M', 'L'][index] ?? String(index)) : `${index + 1}`;
+/** The difficulty names of the three standard tiers; any other table names its sizes by number. */
+export function tierName(index: number, count: number): string {
+  return count === 3 ? (['EASY', 'NORMAL', 'HARD'][index] ?? `SIZE ${index + 1}`) : `SIZE ${index + 1}`;
+}
+
+/** The difficulty colour of a tier, as a class suffix: green, orange, red (and red past the third). */
+export function tierTone(index: number): 'easy' | 'norm' | 'hard' {
+  return (['easy', 'norm', 'hard'] as const)[index] ?? 'hard';
+}
+
+/**
+ * How often a player who always walks toward the exit escapes a maze of each size: the
+ * naive-greedy row of docs/escape-report.md §3 (k = 3,000 escapes per size). Sizes the report does
+ * not cover show no odds.
+ */
+export const ESCAPE_RATES: Readonly<Record<number, number>> = {
+  5: 0.3318,
+  7: 0.1316,
+  9: 0.0452,
+};
+
+/**
+ * The odds the LCD shows for a maze size, both approximate and both rounded to the nearest: "~33%"
+ * (whole percents, one decimal below 10%) and "~1 IN 3". `null` for a size the report does not
+ * cover.
+ */
+export function escapeOdds(n: number): { percent: string; oneIn: number } | null {
+  const rate = ESCAPE_RATES[n];
+  if (rate === undefined) return null;
+  const percent = rate * 100;
+  return {
+    percent: `${percent < 10 ? Math.round(percent * 10) / 10 : Math.round(percent)}%`,
+    oneIn: Math.round(1 / rate),
+  };
 }

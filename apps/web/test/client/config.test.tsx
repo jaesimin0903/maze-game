@@ -29,7 +29,7 @@ describe('runtime configuration', () => {
       contract: '0x00000000000000000000000000000000000000AA',
     });
     render(<GameApp deps={world.deps()} />);
-    await screen.findByTestId('bet-start');
+    await screen.findByTestId('btn-a');
     expect(world.requests[0]).toBe('GET /api/config');
     expect(world.chainConfigs).toHaveLength(1);
     expect(world.chainConfigs[0].rpcUrl).toBe('http://127.0.0.1:8557');
@@ -82,7 +82,7 @@ describe('runtime configuration', () => {
 
     const production = new FakeWorld({ fixture: false, calibrated: true });
     render(<GameApp deps={production.deps()} />);
-    await screen.findByTestId('bet-start');
+    await screen.findByTestId('btn-a');
     expect(screen.queryByTestId('fixture-banner')).toBeNull();
   });
 
@@ -113,8 +113,8 @@ describe('runtime configuration', () => {
   it('tells the player what the idle and maximum-time rules are, from the config', async () => {
     const world = new FakeWorld({ idleTimeoutSec: 77, maxGameSec: 555 });
     render(<GameApp deps={world.deps()} />);
-    // The rules come with the bet sheet that START opens.
-    fireEvent.click(await screen.findByTestId('bet-start'));
+    // The rules come with the bet sheet that A opens.
+    fireEvent.click(await screen.findByTestId('btn-a'));
     const rules = (await screen.findByTestId('bet-rules')).textContent;
     expect(rules).toContain('If you do not move for 77s');
     expect(rules).toContain('555s after the start');
@@ -125,12 +125,12 @@ describe('runtime configuration', () => {
     world.serverUp = false;
     render(<GameApp deps={world.deps()} />);
     const banner = await screen.findByTestId('server-unreachable');
-    expect(screen.queryByTestId('bet-start')).toBeNull();
+    expect(screen.queryByTestId('btn-a')).toBeNull();
     expect(screen.queryByTestId('board')).toBeNull();
 
     world.serverUp = true;
     fireEvent.click(banner.querySelector('button') as HTMLButtonElement);
-    await screen.findByTestId('bet-start');
+    await screen.findByTestId('btn-a');
     await waitFor(() => expect(screen.queryByTestId('server-unreachable')).toBeNull());
   });
 });

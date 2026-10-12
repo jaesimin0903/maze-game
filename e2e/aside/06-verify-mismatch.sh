@@ -35,7 +35,7 @@ plan "cashout:$MOVES" || fail_scenario "the solution of this maze is shorter tha
 # shellcheck disable=SC2086
 walk A click $PLAN_MOVES
 PAYOUT="$(refund_wei "$BET_WEI" "$TIER" "$MOVES")"
-cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable"
+cash_out A || fail_scenario "the cash-out (A, then cashout-button) is not clickable"
 expect_result A cashout "$PAYOUT"
 expect_settled 1 "$MOVES" "$PAYOUT" cashed_out false
 

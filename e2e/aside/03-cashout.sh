@@ -4,8 +4,9 @@
 # Bets through the page on the largest size of the table, walks three moves of the solution,
 # cashes out, and follows the money.
 #
-#   DOM    after every move refundable-amount is bet x refundBps[k]; exit-payout and the
-#          cash-out button (CASH OUT, then "Take it") are on screen the whole time;
+#   DOM    after every move refundable-amount and the HP meter are bet x refundBps[k];
+#          exit-payout and the cash-out button (A named CASH OUT, then "Take it") are on screen
+#          the whole time;
 #          result-outcome = cashout with the refund of step 3; the settlement transaction is
 #          named; the verify dialog passes
 #   chain  getGame Active then Settled; GameSettled(outcome 1, steps 3, payout = bet x
@@ -37,7 +38,7 @@ plan "cashout:$MOVES" || fail_scenario "the solution of this maze is shorter tha
 
 expect_refundable A 0
 expect_attr "exit-payout shows bet x multiplier during play" A exit-payout data-wei "$(exit_wei "$BET_WEI" "$TIER")" 5
-expect_present "the cash-out button (CASH OUT) is on screen during play" A cashout-open 5
+expect_attr "A is the cash-out button (CASH OUT) during play" A btn-a data-action cashout 5
 # shellcheck disable=SC2086
 for DIR in $PLAN_MOVES; do
   move A "$DIR"
@@ -46,7 +47,7 @@ done
 expect_attr "exit-payout is unchanged after $MOVES moves" A exit-payout data-wei "$(exit_wei "$BET_WEI" "$TIER")" 5
 
 PAYOUT="$(refund_wei "$BET_WEI" "$TIER" "$MOVES")"
-cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable"
+cash_out A || fail_scenario "the cash-out (A, then cashout-button) is not clickable"
 expect_result A cashout "$PAYOUT"
 expect_settled 1 "$MOVES" "$PAYOUT" cashed_out false
 expect_result_tx A

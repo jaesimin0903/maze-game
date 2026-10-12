@@ -116,7 +116,7 @@ fi
 # ----- one settlement -----
 
 PAYOUT="$(refund_wei "$BET_WEI" "$TIER" $((K + 1)))"
-cash_out A || fail_scenario "the cash-out (cashout-open, then cashout-button) is not clickable in tab A"
+cash_out A || fail_scenario "the cash-out (A, then cashout-button) is not clickable in tab A"
 wait_tab A '{ id: "result-outcome" }' 20 || fail_scenario "tab A did not show a result after the cash-out"
 if [ "$TABS_READABLE" -eq 1 ]; then
   expect_result A cashout "$PAYOUT"

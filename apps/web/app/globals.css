@@ -1,7 +1,9 @@
 /*
- * Maze Bet. A pixel handheld on a dark desk: the game lives on the console screen, money moves
- * through the floating dock below it, and one warm colour (--brand) marks everything that matters.
- * Red (--danger) is for losses and for the cash-out button. Tiles and sprites keep their own art colours.
+ * Maze Bet. A pixel handheld on a dark desk, folded out like a Pokédex: the console (its screen,
+ * the HP row above it, the D-pad and A under it) and, across a hinge, a side panel with an LCD of
+ * the bet, the difficulty keys and the bet slider. One warm colour (--brand) marks everything that
+ * matters. Red (--danger) is for losses and for the cash-out button. Tiles, sprites and the
+ * difficulty colours keep their own art colours.
  */
 
 :root {
@@ -18,6 +20,17 @@
   --ink: #0a0812;
   --dev: #1d1828;
   --shell: #ef6b3a;
+  --shell-d: #c4502a;
+  --engrave: rgba(26, 18, 38, 0.8);
+  --grey: #d9d5e6;
+  /* The difficulties: easy, normal, hard. */
+  --easy: #4fd18b;
+  --norm: #ff9b3d;
+  --hard: #ff4f63;
+  /* The HP meter: what a cash-out pays now, as a share of the bet. */
+  --hp-g: #4fd18b;
+  --hp-y: #ffcc33;
+  --hp-r: #ff4f63;
 
   --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 'Press Start 2P', ui-monospace, monospace;
@@ -174,10 +187,9 @@ textarea {
 /* ------------------------------------------------------------------ shell */
 
 .app {
-  max-width: 1360px;
+  max-width: 1600px;
   margin: 0 auto;
-  /* Room at the bottom for the floating dock (about 190px on a desktop). */
-  padding: 18px clamp(16px, 3vw, 36px) 224px;
+  padding: 18px clamp(16px, 3vw, 36px) 32px;
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -444,10 +456,14 @@ textarea {
 
 .col-main {
   width: 100%;
-  max-width: 560px;
+  max-width: 440px;
+  /* The device sits in the middle of the window under the header, when the window is tall enough. */
+  min-height: calc(100vh - 120px);
+  min-height: calc(100svh - 120px);
   margin-inline: auto;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: 20px;
 }
@@ -461,33 +477,62 @@ textarea {
   gap: 18px;
 }
 
+/* Wide enough for the console and its panel side by side. */
+@media (min-width: 860px) {
+  .col-main {
+    max-width: 800px;
+  }
+}
+
+/* The device, with the recent games and the leaderboard beside it, one above the other. */
 @media (min-width: 1180px) {
   .layout {
-    grid-template-columns: minmax(240px, 300px) minmax(440px, 560px) minmax(260px, 340px);
+    grid-template-columns: auto minmax(260px, 320px);
+    grid-template-rows: auto 1fr;
     justify-content: center;
     justify-items: stretch;
     align-items: start;
-    gap: 36px;
+    gap: 24px 36px;
+  }
+
+  .col-main {
+    grid-column: 1;
+    grid-row: 1 / span 2;
   }
 
   .col-left {
-    order: -1;
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .col-right {
-    order: 1;
+    grid-column: 2;
+    grid-row: 2;
   }
 
   .side {
     max-width: none;
   }
+}
 
-  /* The console and the dock fit one screen: the console shrinks with the window height. */
+/* Wider still: the recent games on the left, the leaderboard on the right. */
+@media (min-width: 1600px) {
+  .layout {
+    grid-template-columns: minmax(240px, 300px) auto minmax(260px, 340px);
+  }
+
+  .col-left {
+    grid-column: 1;
+  }
+
   .col-main {
-    /* The console is about its width plus 220px tall (status line and message line included);
-       with the header, its footer line and the dock (about 200px) that leaves 100vh - 560px for
-       its width. */
-    max-width: min(560px, max(360px, calc(100vh - 560px)));
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .col-right {
+    grid-column: 3;
+    grid-row: 1;
   }
 }
 
@@ -703,17 +748,149 @@ textarea {
   }
 }
 
-/* ---------------------------------------------------------------- console */
+/* ----------------------------------------------------------------- device */
 
-.console {
+/* The console, a hinge and the side panel, like a Pokédex: side by side on a wide window, the
+   panel under the console (and the hinge across) on a narrow one. */
+.device {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.device .console {
+  border-radius: 24px 24px 8px 8px;
+}
+
+.hinge {
+  position: relative;
+  z-index: 1;
+  width: 86%;
+  height: 26px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, var(--shell-d) 0%, var(--shell) 38%, #ff9f78 52%, var(--shell) 66%, var(--shell-d) 100%);
+  box-shadow: 0 0 0 3px var(--ink), 6px 10px 0 var(--ink);
+}
+
+@media (min-width: 860px) {
+  .device {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .device .console {
+    width: 400px;
+    border-radius: 24px 8px 8px 24px;
+  }
+
+  .hinge {
+    align-self: stretch;
+    width: 34px;
+    height: auto;
+    margin: 56px 0;
+    border-radius: 17px;
+    background: linear-gradient(90deg, var(--shell-d) 0%, var(--shell) 38%, #ff9f78 52%, var(--shell) 66%, var(--shell-d) 100%);
+  }
+}
+
+/* Decoration of both panels: screws in the corners and slots at the bottom. */
+.screw {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.slots {
+  display: flex;
+  gap: 14px;
+}
+
+.slots i {
+  flex: 1;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--ink);
+  opacity: 0.85;
+}
+
+.con-slots {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  width: min(96px, 24cqi);
+  transform: translateX(-50%);
+  gap: 8px;
+}
+
+.con-slots i {
+  height: 8px;
+  border-radius: 4px;
+  opacity: 0.55;
+  transform: rotate(-22deg);
+}
+
+/* The console's top bar: a lens, and an LED per difficulty, the chosen one lit. */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-left: 10px;
+}
+
+.lens {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: #1d2a6b;
+  box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.35), inset 4px 4px 0 rgba(140, 170, 255, 0.35);
+}
+
+.leds {
+  display: flex;
+  gap: 8px;
+}
+
+.led {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.led.on {
+  opacity: 1;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.t-easy {
+  color: var(--easy);
+}
+
+.t-norm {
+  color: var(--norm);
+}
+
+.t-hard {
+  color: var(--hard);
+}
+
+/* The side panel. */
+.dex {
   position: relative;
   width: 100%;
-  max-width: 560px;
-  padding: 22px 26px 26px;
-  border-radius: 26px 26px 90px 26px;
+  max-width: 440px;
+  padding: 26px 20px 30px;
+  border-radius: 8px 8px 84px 24px;
   background: var(--shell);
-  /* The controls scale with the console's width (cqi below) so they fit a narrow phone. */
-  container-type: inline-size;
   box-shadow:
     inset -10px -12px 0 rgba(0, 0, 0, 0.2),
     inset 8px 8px 0 rgba(255, 255, 255, 0.22),
@@ -723,19 +900,603 @@ textarea {
   gap: 16px;
 }
 
-.bezel {
-  padding: 10px 18px 10px;
-  border-radius: 12px 12px 44px 12px;
-  background: var(--dev);
-  box-shadow: inset 0 0 0 3px var(--ink);
+@media (min-width: 860px) {
+  .dex {
+    width: 330px;
+    padding: 30px 24px 34px;
+    border-radius: 8px 24px 84px 8px;
+  }
 }
 
-.bezel-label {
-  display: block;
-  text-align: center;
+.eng {
+  color: var(--engrave);
   font-family: var(--px);
+  font-size: 7px;
+  line-height: 1.6;
+}
+
+/* The LCD: every figure of the bet. */
+.lcd {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 9px;
+  border-radius: 4px;
+  background: #0b0b10;
+  box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 22px rgba(255, 204, 51, 0.07);
+  color: var(--text);
+  font-family: var(--vt);
+  font-size: 21px;
+  line-height: 1.12;
+}
+
+.lr {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.lr .y {
+  color: var(--brand);
+}
+
+.lr.small {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+/* The difficulty keys: colour and name only. */
+.drow {
+  display: flex;
+  gap: 6px;
+}
+
+.dk {
+  --c: var(--muted);
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  min-height: 0;
+  padding: 0 0 5px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--c);
+  color: var(--ink);
+  font-family: var(--px);
+  font-size: 9px;
+  font-weight: 400;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.3), 0 3px 0 var(--ink);
+  filter: saturate(0.5) brightness(0.72);
+}
+
+.dk:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dk.on,
+.dk.on:active:not(:disabled) {
+  filter: none;
+  transform: translateY(3px);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3), 0 0 0 2px var(--text);
+}
+
+.dk:disabled {
+  opacity: 1;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.3), 0 3px 0 var(--ink);
+  cursor: default;
+  filter: saturate(0.3) brightness(0.55);
+}
+
+.dk.on:disabled {
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3), 0 0 0 2px var(--text);
+  filter: saturate(0.7) brightness(0.8);
+}
+
+.dk-easy {
+  --c: var(--easy);
+}
+
+.dk-norm {
+  --c: var(--norm);
+}
+
+.dk-hard {
+  --c: var(--hard);
+}
+
+/* The bet slider: a track with diamond ticks, a fill, a thumb and a value bubble. */
+.sl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sl.dimmed {
+  opacity: 0.5;
+}
+
+.slh {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.slh .bub {
+  margin-left: auto;
+}
+
+.bub {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--brand);
+  font-family: var(--vt);
+  font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bub.red {
+  color: var(--hard);
+}
+
+/* A pressed while short: the bubble says it again. */
+.need {
+  display: inline-block;
+}
+
+.need.pulse {
+  animation: need 0.5s ease-out;
+}
+
+@keyframes need {
+  0%, 60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.sl-link {
+  margin-left: auto;
+  color: var(--ink);
+  font-family: var(--px);
+  font-size: 7px;
+}
+
+.sl-link + .bub {
+  margin-left: 0;
+}
+
+.trk {
+  position: relative;
+  height: 10px;
+  margin: 10px 11px 6px;
+  border-radius: 5px;
+  background: var(--dev);
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.5), 0 0 0 2px var(--ink);
+}
+
+.trk i {
+  position: absolute;
+}
+
+.trk .fill {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 5px;
+  background: var(--brand);
+}
+
+.trk .fill.red {
+  background: var(--hard);
+}
+
+/* Past what the wallet can pay. */
+.trk .no {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  border-radius: 0 5px 5px 0;
+  background: repeating-linear-gradient(45deg, rgba(10, 8, 18, 0.85) 0, rgba(10, 8, 18, 0.85) 3px, rgba(255, 79, 99, 0.6) 3px, rgba(255, 79, 99, 0.6) 6px);
+}
+
+.trk .tk {
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--ink);
+  background: var(--dev);
+  transform: rotate(45deg);
+}
+
+.trk .tk.on {
+  background: var(--brand);
+}
+
+.trk .th {
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px rgba(255, 204, 51, 0.45);
+  pointer-events: none;
+}
+
+.trk .th.red {
+  box-shadow: 0 0 0 3px rgba(255, 79, 99, 0.55);
+}
+
+/* The real control: a range input over the whole track, invisible; the keyboard focus shows on the thumb. */
+.trk .rng {
+  position: absolute;
+  left: -11px;
+  top: -12px;
+  width: calc(100% + 22px);
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.trk .rng:disabled {
+  cursor: default;
+}
+
+.trk:has(.rng:focus-visible) .th {
+  outline: 3px solid var(--brand);
+  outline-offset: 3px;
+}
+
+/* The tick labels: buttons that set the bet to their tick. */
+.tl {
+  position: relative;
+  height: 22px;
+  margin: 0 11px;
+}
+
+.tl button {
+  position: absolute;
+  top: 0;
+  min-height: 22px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--engrave);
+  font-family: var(--vt);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+.tl button:active:not(:disabled) {
+  transform: translateX(-50%) translateY(1px);
+  box-shadow: none;
+}
+
+.tl button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.tl button.on {
+  color: var(--ink);
+}
+
+/* MIX and RANK: small grey keys. */
+.grow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gk {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--grey);
+  color: var(--ink);
+  gap: 7px;
+  font-family: var(--px);
+  font-size: 7px;
+  font-weight: 400;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.22), 0 2px 0 var(--ink);
+}
+
+.gk:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+}
+
+.gk svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+}
+
+.gk svg circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.dex .slots {
+  margin-top: auto;
+}
+
+/* ---------------------------------------------------------------- console */
+
+.console {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 20px 22px 30px;
+  border-radius: 24px 24px 84px 24px;
+  background: var(--shell);
+  /* The controls scale with the console's width (cqi below) so they fit a narrow phone. */
+  container-type: inline-size;
+  box-shadow:
+    inset -10px -12px 0 rgba(0, 0, 0, 0.2),
+    inset 8px 8px 0 rgba(255, 255, 255, 0.22),
+    10px 14px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bezel {
+  padding: 8px 16px 10px;
+  border-radius: 12px 12px 40px 12px;
+  background: var(--dev);
+  box-shadow: inset 0 0 0 3px var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Under the screen: the wallet's balance, or a message in its place. */
+.bezel-bal {
+  font-family: var(--vt);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.bezel-bal b {
+  color: var(--brand);
+  font-weight: 400;
+}
+
+/* The row above the screen: the bet before a game, the HP meter during it, the result after it. */
+.hp {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  font-family: var(--vt);
+  font-size: min(18px, 4.9cqi);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hpl {
+  flex: 0 0 auto;
+  min-width: 22px;
+  color: var(--text);
+  font-family: var(--px);
+  font-size: 8px;
+}
+
+.hpt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+.hpt b {
+  color: var(--brand);
+  font-weight: 400;
+}
+
+.hp .loss {
+  color: var(--hp-r);
+}
+
+.hp .win {
+  color: var(--brand);
+}
+
+.hp .even {
+  color: var(--text);
+}
+
+.bar-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.bar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  overflow: hidden;
+  background: #0c0a16;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.bar .fill {
+  left: 0;
+  transition: width 0.3s steps(4, end);
+}
+
+.bar .fill.g {
+  background: var(--hp-g);
+}
+
+.bar .fill.y {
+  background: var(--hp-y);
+}
+
+.bar .fill.r {
+  background: var(--hp-r);
+}
+
+/* The part a step just cost, for a moment. */
+.bar .ghost {
+  background: rgba(255, 255, 255, 0.85);
+  animation: ghost 1.3s ease-out both;
+}
+
+/* Twenty segments. */
+.bar .seg {
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) calc(5% - 2px),
+    var(--dev) calc(5% - 2px),
+    var(--dev) 5%
+  );
+}
+
+.hpv {
+  flex: 0 0 auto;
+  color: var(--text);
+  text-align: right;
+}
+
+.hpv small {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+/* What the step cost, over the lost part of the bar: it pops up and fades. */
+.dmg {
+  position: absolute;
+  top: -2px;
+  color: var(--hp-r);
+  text-shadow: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: dmg 1.3s ease-out both;
+}
+
+@keyframes ghost {
+  0%, 50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes dmg {
+  0% { transform: translate(-50%, 4px); opacity: 0; }
+  15%, 60% { transform: translate(-50%, 0); opacity: 1; }
+  100% { transform: translate(-50%, -8px); opacity: 0; }
+}
+
+/* A menu over the bottom of the screen: the cash-out question, the choices once a game is over,
+   the bet's reclaim. */
+.scr-menu {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: 4%;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 10px;
+  border: 3px solid var(--ink);
+  background: rgba(16, 13, 30, 0.94);
+  box-shadow: inset 0 0 0 2px var(--line), 3px 3px 0 var(--ink);
+  text-align: center;
+}
+
+.scr-menu.reveal {
+  animation: slideup 0.35s ease-out 1.2s both;
+}
+
+.scr-title {
+  color: var(--brand);
+  font-family: var(--px);
+  font-size: 10px;
+}
+
+.scr-line {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.scr-line b {
+  color: var(--brand);
+  font-family: var(--vt);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.scr-print {
+  color: var(--muted);
   font-size: 11px;
-  font-style: italic;
+  line-height: 1.35;
+}
+
+.scr-print a {
+  color: inherit;
+}
+
+.scr-opts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.scr-opt {
+  min-height: 34px;
+  padding: 0 10px;
+  border-width: 2px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--px);
+  font-size: 8px;
+  font-weight: 400;
+}
+
+.scr-opt.go {
+  background: var(--brand);
+  color: var(--ink);
+}
+
+.scr-opt.cash {
+  background: var(--danger);
+  color: var(--ink);
+}
+
+.scr-opt.on {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
 }
 
 .screen {
@@ -923,47 +1684,12 @@ textarea {
   border-radius: 0 0 6px 6px;
 }
 
-.pills {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  align-self: flex-end;
-}
-
-.pill {
-  width: min(66px, 20cqi);
-  height: 44px;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.pill:active:not(:disabled) {
-  transform: none;
-  box-shadow: none;
-}
-
-.pillbar {
-  display: block;
-  width: min(54px, 16.5cqi);
-  height: 14px;
-  border-radius: 8px;
-  background: var(--dev);
-  transform: rotate(-22deg);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.4);
-}
-
-.pill:active .pillbar {
-  background: var(--line);
-}
-
 .ctl-label {
   font-family: var(--px);
-  font-size: min(7px, 2.1cqi);
-  color: rgba(26, 18, 38, 0.8);
+  font-size: min(8px, 2.4cqi);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--engrave);
 }
 
 .a-wrap {
@@ -996,22 +1722,6 @@ textarea {
   box-shadow:
     inset -4px -4px 0 rgba(0, 0, 0, 0.35),
     inset 3px 3px 0 rgba(255, 255, 255, 0.25);
-}
-
-.grill {
-  position: absolute;
-  right: 54px;
-  bottom: 16px;
-  display: flex;
-  gap: 8px;
-}
-
-.grill span {
-  width: 7px;
-  height: 34px;
-  border-radius: 4px;
-  background: rgba(26, 18, 38, 0.35);
-  transform: rotate(-28deg);
 }
 
 /* ------------------------------------------------------------ screen art */
@@ -1396,7 +2106,6 @@ textarea {
   justify-content: space-between;
   gap: 8px;
   min-height: 12px;
-  margin-bottom: 8px;
   font-family: var(--px);
   font-size: 9px;
   line-height: 1;
@@ -1416,12 +2125,11 @@ textarea {
   animation: blink 1s steps(1) infinite;
 }
 
-/* The line under the screen: the console's name, or a message in its place. */
+/* The line under the screen: the wallet's balance, or a message in its place. */
 .bezel-foot {
   display: grid;
   place-items: center;
   min-height: 34px;
-  margin-top: 8px;
 }
 
 .lcd-msg {
@@ -1458,29 +2166,6 @@ textarea {
   color: var(--danger);
 }
 
-/* The bet transaction's fee and the game's result with it counted, under the money. */
-.end-net {
-  max-width: 92%;
-  padding: 0.4cqw 2.4cqw;
-  background: rgba(10, 8, 20, 0.8);
-  color: var(--text);
-  font-family: var(--vt);
-  font-size: 6.6cqw;
-  line-height: 1;
-}
-
-.end-net .win {
-  color: var(--brand);
-}
-
-.end-net .loss {
-  color: var(--danger);
-}
-
-.end-net .even {
-  color: var(--text);
-}
-
 .end-pts {
   display: inline-flex;
   align-items: center;
@@ -1497,376 +2182,7 @@ textarea {
   height: 6cqw;
 }
 
-/* ------------------------------------------------------------------- dock */
-
-/*
- * The floating bar, after death.fun's: the headline figure in a pill with the amounts under it,
- * one row of controls, and a line of small print, all in a monospace face.
- */
-.dock {
-  --dock-bg: #0e0c17;
-  --dock-grey: #8b8798;
-  --dock-off: #2f2c3a;
-  position: fixed;
-  left: 50%;
-  bottom: 12px;
-  z-index: 20;
-  width: min(880px, calc(100% - 24px));
-  padding: 14px 22px 10px;
-  border: 2px solid rgba(255, 204, 51, 0.36);
-  border-radius: 18px;
-  background: var(--dock-bg);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-  font-family: var(--mono);
-}
-
-.dock button,
-.dock .button-link {
-  min-height: 40px;
-  border: 0;
-  border-radius: 7px;
-  box-shadow: none;
-  font-family: var(--mono);
-  font-weight: 700;
-}
-
-.dock button:active:not(:disabled),
-.dock .button-link:active {
-  transform: translateY(1px);
-  box-shadow: none;
-  filter: brightness(0.9);
-}
-
-.dock button:disabled {
-  opacity: 1;
-}
-
-.dhead {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-
-.dpillrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dpill {
-  padding: 1px 22px 3px;
-  border-radius: 999px;
-  background: var(--brand);
-  color: var(--ink);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.dpill small {
-  margin-left: 6px;
-  font-size: 0.72em;
-}
-
-.dpill.dim {
-  background: var(--line);
-  color: var(--text);
-}
-
-.dpill.even {
-  background: var(--text);
-}
-
-.dpill.loss {
-  background: var(--danger);
-}
-
-.dfair {
-  display: inline-flex;
-  color: #c9c4d9;
-}
-
-.ic-fair {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.3;
-}
-
-.dstats {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 26px;
-  min-height: 26px;
-  font-size: 19px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.deth,
-.dacc,
-.dbal {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--brand);
-}
-
-.dgain {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text);
-}
-
-.dres {
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-}
-
-.dres.win {
-  color: var(--brand);
-}
-
-.dres.loss {
-  color: var(--danger);
-}
-
-.dnote {
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-  text-align: center;
-  white-space: normal;
-}
-
-.ic-eth {
-  flex: 0 0 auto;
-  width: 0.6em;
-  height: 0.95em;
-  fill: currentColor;
-}
-
-.ic-face {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-}
-
-.ic-face circle {
-  fill: var(--text);
-}
-
-.ic-face .f {
-  fill: var(--dock-bg);
-}
-
-.ic-face .m {
-  fill: none;
-  stroke: var(--dock-bg);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-}
-
-.ic-wallet {
-  width: 13px;
-  height: 11px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.3;
-}
-
-.dctrl {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-width: 0;
-}
-
-.dshuffle {
-  flex: 0 0 auto;
-  gap: 8px;
-  padding: 0 16px;
-  background: var(--dock-grey);
-  color: #141318;
-  font-size: 13px;
-}
-
-.dshuffle:disabled {
-  background: var(--dock-off);
-  color: var(--dock-grey);
-}
-
-.dshuffle .dice rect {
-  fill: #141318;
-}
-
-.dshuffle .dice .pip {
-  fill: var(--dock-grey);
-}
-
-.dock .on {
-  outline: 3px solid var(--text);
-  outline-offset: 2px;
-}
-
-.dseglab {
-  flex: 0 0 auto;
-  color: var(--brand);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.dsegbox {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 2.5px solid var(--brand);
-  border-radius: 9px;
-}
-
-.dock .dsegopt {
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 5px;
-  background: transparent;
-  color: #8f88ad;
-  font-size: 14px;
-}
-
-.dock .dsegopt.on {
-  outline: 0;
-  background: var(--brand);
-  color: var(--ink);
-}
-
-.dock .dsegopt.on:focus-visible {
-  outline: 3px solid var(--text);
-  outline-offset: 2px;
-}
-
-.dgo {
-  flex: 0 0 auto;
-  padding: 0 24px;
-  background: var(--brand);
-  color: var(--ink);
-  font-size: 14px;
-}
-
-.dock .dgo:disabled {
-  background: var(--dock-off);
-  color: var(--dock-grey);
-}
-
-.dcash {
-  background: var(--danger);
-  color: var(--ink);
-}
-
-.dnext {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.dprint {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 4px 10px;
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.dslash {
-  opacity: 0.6;
-}
-
-.dcustom {
-  color: var(--brand);
-  letter-spacing: 0.04em;
-  cursor: pointer;
-}
-
-.dock .damount {
-  width: 80px;
-  min-height: 24px;
-  padding: 0 6px;
-  border: 0;
-  border-bottom: 1.5px dashed var(--brand);
-  background: transparent;
-  color: var(--brand);
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.dock .damount[aria-invalid='true'] {
-  border-bottom-color: var(--danger);
-  color: var(--danger);
-}
-
-.dunit {
-  color: var(--muted);
-}
-
-/* The bet transaction's typical fee, after the amount: small print, not a figure to act on. */
-.dfee {
-  color: var(--muted);
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.dnarrow {
-  display: none;
-}
-
-.dice {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-}
-
-.dice rect {
-  fill: var(--text);
-}
-
-.dice .pip {
-  fill: var(--ink);
-}
-
-.drop {
-  color: var(--danger);
-}
-
-.dreveal {
-  animation: slideup 0.35s ease-out 1.2s both;
-}
+/* ----------------------------------------------------------------- footer */
 
 .dfoot {
   width: 100%;
@@ -2402,66 +2718,14 @@ textarea {
     display: none !important;
   }
 
-  .dwide {
-    display: none;
-  }
-
-  .dnarrow {
-    display: inline-flex;
-  }
-
-  .dhead {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px 12px;
-  }
-
-  .dpill {
-    padding: 1px 12px 3px;
-    font-size: 20px;
-  }
-
-  .dfair {
-    display: none;
-  }
-
-  .dstats {
-    gap: 10px;
-    font-size: 13.5px;
-  }
-
-  .ic-face {
-    width: 15px;
-    height: 15px;
-  }
-
-  .dctrl {
-    gap: 6px;
-  }
-
-  .dshuffle {
-    padding: 0 12px;
-  }
-
-  .dock .dsegopt {
-    padding: 0 7px;
-    font-size: 13px;
-  }
-
-  .dgo {
-    padding: 0 14px;
-    font-size: 13px;
-  }
-
-  /* On a short phone the whole console fits above the play dock once the header scrolls away. */
+  /* A phone's console gives up some of its shell, so the screen keeps the width. */
   .console {
-    max-width: max(280px, calc(100svh - 380px));
-    margin-inline: auto;
+    padding: 16px 14px 26px;
+    border-radius: 20px 20px 64px 20px;
   }
 
-  .dock {
-    padding: 12px 12px 8px;
+  .bezel {
+    padding: 8px 10px 10px;
   }
 
   .sheet-summary {
@@ -2519,19 +2783,34 @@ textarea {
   }
 }
 
-/* The narrowest phones: the dock's control row gives up a few pixels of air. */
-@media (max-width: 379px) {
-  .dctrl {
-    flex-wrap: wrap;
-    gap: 6px 4px;
+/* A short window: the console gives up some air, so the D-pad and A fit with the screen. */
+@media (max-height: 900px) {
+  .console {
+    padding-top: 16px;
+    padding-bottom: 22px;
+    gap: 10px;
   }
 
-  .dock .dsegopt {
-    padding: 0 6px;
+  .bezel {
+    gap: 5px;
   }
 
-  .dgo {
-    padding: 0 12px;
+  .bezel-foot {
+    min-height: 28px;
+  }
+
+  .dpad-grid {
+    grid-template-columns: repeat(3, min(44px, 13.5cqi));
+    grid-template-rows: repeat(3, min(44px, 13.5cqi));
+  }
+
+  .btn-a {
+    width: min(68px, 21cqi);
+    height: min(68px, 21cqi);
+  }
+
+  .a-wrap {
+    gap: 6px;
   }
 }
 
@@ -2542,5 +2821,11 @@ textarea {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* What the last step cost stays put above the bar instead of rising and fading. */
+  .dmg {
+    animation: none !important;
+    transform: translateX(-50%);
   }
 }

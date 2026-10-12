@@ -166,11 +166,6 @@ export function facingOf(observations: Observation[], moves: readonly Dir[]): Fa
   return (start.open & DIR_BIT[2]) !== 0 ? 'D' : 'R';
 }
 
-/** The facing as a direction, for moving forward with A. */
-export function dirOfFacing(facing: Facing): Dir {
-  return FACING.indexOf(facing) as Dir;
-}
-
 /** Why `dir` is not a legal move from the current cell, or `null` when it is. */
 export function blockedReason(n: number, observations: Observation[], dir: Dir): Blocked | null {
   const current = observations.at(-1);

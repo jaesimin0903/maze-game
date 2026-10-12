@@ -45,12 +45,6 @@ export interface ChainApi {
   /** Resolves once the transaction is mined. */
   waitForTx(hash: Hex): Promise<'success' | 'reverted'>;
   /**
-   * What transaction `hash` cost its sender in fees: gas used × effective gas price from its
-   * receipt (on Monad gas used is the whole limit, which is what it charges). `null` while the
-   * transaction has no receipt.
-   */
-  txFee(hash: Hex): Promise<bigint | null>;
-  /**
    * Whether `hash` is the transaction that settled `gameId`: it is mined, it succeeded and the
    * contract's `GameSettled` event of that game is in its receipt. `false` for a transaction
    * that is pending, dropped, reverted, or about something else.
@@ -116,15 +110,6 @@ export function createChainApi(config: ChainConfig): ChainApi {
     async waitForTx(hash) {
       const receipt = await client.waitForTransactionReceipt({ hash });
       return receipt.status;
-    },
-    async txFee(hash) {
-      try {
-        const receipt = await client.getTransactionReceipt({ hash });
-        return receipt.gasUsed * receipt.effectiveGasPrice;
-      } catch (error) {
-        if (error instanceof TransactionReceiptNotFoundError) return null;
-        throw error;
-      }
     },
     async settledBy(hash, gameId) {
       let receipt;

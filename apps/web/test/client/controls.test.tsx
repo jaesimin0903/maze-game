@@ -1,12 +1,12 @@
 // The console controls and the keyboard: the D-pad and arrows/WASD move (only where the maze
-// lets them); A (the button, Enter, Space or Z) opens the bet sheet, asks about a cash-out and
-// takes the highlighted answer, or opens the highlighted choice once a game is over and nothing is
-// left to do for it; A never moves. Escape backs out (of the cash-out question, of the bet sheet),
-// R and the side panel's RANK key flash the leaderboard. Keys are left alone while the player types
-// into a field or while the bet sheet is open.
+// lets them); A (the button, Enter, Space or Z) places the bet the screen names, asks about a
+// cash-out and takes the highlighted answer, or opens the highlighted choice once a game is over and
+// nothing is left to do for it; A never moves. Escape backs out of the cash-out question, R and the
+// side panel's RANK key flash the leaderboard. Keys are left alone while the player types into a
+// field, while a dialog is open and while the bet is being placed.
 
 import { cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { refundWei, solve, type Dir, type Hex } from '@maze/shared';
 import { GameApp } from '../../src/client/GameApp';
 import { DIRS, DIR_NAMES, legalMoves } from '../../src/client/board-view';
@@ -41,19 +41,18 @@ const calls = (world: FakeWorld): string[] => world.requests.filter((r) => r !==
 /** Without the periodic poll, so that only the controls can reach the server. */
 const noPoll = (world: FakeWorld): ClientDeps => ({
   ...world.deps(),
-  timing: { pollMs: 600_000, clockMs: 15, startRetryMs: 15 },
+  timing: { ...world.deps().timing, pollMs: 600_000 },
 });
 
 async function startGame(world: FakeWorld, clientSeed: Hex = CLIENT_SEED, deps = noPoll(world)): Promise<Hex> {
   render(<GameApp deps={deps} />);
   fireEvent.click(await screen.findByTestId('wallet-dev-option'));
   await screen.findByTestId('wallet-address');
-  // The seed is a hidden field of the side panel, set before A: it is inert behind the sheet.
+  // The seed is a hidden field of the side panel, set before A, which bets at once.
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: clientSeed } });
   fireEvent.click(screen.getByTestId('btn-a'));
-  fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
-  await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+  expect(screen.queryByTestId('bet-loading')).toBeNull();
   return attr('board', 'data-game-id') as Hex;
 }
 
@@ -361,7 +360,8 @@ describe('lobby keys', () => {
     await settle();
     expect(tier()).toBe(0);
     expect(coin()).toBe('.05');
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
+    // Enter in the field was not A: the screen does not ask for a login.
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
     input.remove();
 
     press('ArrowDown');
@@ -409,41 +409,46 @@ describe('lobby keys', () => {
     expect(world.requests).toEqual(['GET /api/config']);
   });
 
-  it('A (Enter, Space, Z or the button) opens the bet sheet; while it is open the keys are its own, and Escape closes it', async () => {
+  it('A (Enter, Space, Z or the button) without a wallet asks for a login on the screen; Escape is not A', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('btn-a');
     expect(attr('btn-a', 'data-action')).toBe('start');
-    // Escape is not A: in the lobby it opens nothing.
+    // Escape is not A: in the lobby it does nothing.
     press('Escape');
     await settle();
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
-    press('Enter');
-    await screen.findByTestId('sign-sheet');
-
-    // The lobby keys do nothing behind the sheet.
-    press('ArrowDown');
-    press('ArrowRight');
-    press('Space');
-    press('Enter');
-    await settle();
-    expect(attr('tier-0', 'data-selected')).toBe('true');
-    expect(attr('bet-preset-.05', 'aria-pressed')).toBe('true');
-    expect(screen.getByTestId('sign-sheet')).toBeTruthy();
-    // Escape closes the sheet from anywhere in it, a focused control of it included.
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Cancel' }), { key: 'Escape', code: 'Escape' });
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
-
-    for (const open of [() => press('Space'), () => press('KeyZ'), () => press('NumpadEnter'), () => fireEvent.click(screen.getByTestId('btn-a'))]) {
-      open();
-      await screen.findByTestId('sign-sheet');
-      press('Escape');
-      await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
+    for (const a of [() => press('Enter'), () => press('Space'), () => press('KeyZ'), () => press('NumpadEnter'), () => fireEvent.click(screen.getByTestId('btn-a'))]) {
+      a();
+      await waitFor(() => expect(screen.getByTestId('screen-msg').textContent).toBe('Log in to bet'));
+      expect(attr('console', 'data-mode')).toBe('ready');
+      // The hint goes once the lobby changes.
+      press('ArrowDown');
+      await waitFor(() => expect(screen.queryByTestId('screen-msg')).toBeNull());
+      press('ArrowUp');
     }
     expect(world.requests).toEqual(['GET /api/config']);
+    expect(world.signed).toEqual([]);
   });
 
-  it('Escape does not close the sheet while the bet is being placed', async () => {
+  it('A (Enter, Space, Z or the button) with a wallet bets at once: no dialog, the screen shows the steps, then the board', async () => {
+    for (const a of [() => press('Enter'), () => press('Space'), () => press('KeyZ'), () => press('NumpadEnter'), () => fireEvent.click(screen.getByTestId('btn-a'))]) {
+      const world = new FakeWorld();
+      render(<GameApp deps={noPoll(world)} />);
+      fireEvent.click(await screen.findByTestId('wallet-dev-option'));
+      await screen.findByTestId('wallet-address');
+      a();
+      await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(world.signed).toHaveLength(1);
+      expect(world.txs).toEqual(['createGame']);
+      expect(attr('console', 'data-mode')).toBe('play');
+      cleanup();
+      window.localStorage.clear();
+    }
+  });
+
+  it('while the bet is being placed the screen shows its steps and the keys do nothing, Escape included', async () => {
     const world = new FakeWorld();
     const real = world.wallet();
     let release = (): void => undefined;
@@ -459,76 +464,325 @@ describe('lobby keys', () => {
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
     press('Enter');
-    fireEvent.click(await screen.findByTestId('bet-submit'));
-    await waitFor(() => expect(attr('bet-status', 'data-step')).toBe('sign'));
+    await waitFor(() => expect(attr('bet-loading', 'data-step')).toBe('sign'));
+    expect(attr('console', 'data-mode')).toBe('betting');
+    expect(attr('bet-status', 'data-step')).toBe('sign');
     // The side panel says what holds it: the signature, not a game yet.
     expect(screen.getByTestId('lcd-odds').textContent).toBe('SIGNINGLOCKED');
 
-    press('Escape');
-    fireEvent.keyDown(document.activeElement ?? screen.getByTestId('sign-sheet'), { key: 'Escape', code: 'Escape' });
-    fireEvent.keyDown(screen.getByTestId('sign-sheet'), { key: 'Escape', code: 'Escape' });
+    for (const code of ['Escape', 'Enter', 'Space', 'ArrowDown', 'ArrowRight']) press(code);
+    fireEvent.click(screen.getByTestId('btn-a'));
     await settle();
-    expect(screen.getByTestId('sign-sheet')).toBeTruthy();
     expect(attr('console', 'data-mode')).toBe('betting');
+    expect(attr('tier-0', 'data-selected')).toBe('true');
+    expect(attr('bet-preset-.05', 'aria-pressed')).toBe('true');
 
     release();
     await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+    expect(screen.queryByTestId('bet-loading')).toBeNull();
     expect(screen.getByTestId('lcd-odds').textContent).toBe('IN GAMELOCKED');
+    // One bet: the presses made while it was placed sent nothing more.
+    expect(world.signed).toHaveLength(1);
+    expect(world.txs).toEqual(['createGame']);
+    expect(world.requests.filter((r) => r === 'POST /api/games')).toHaveLength(1);
   });
 
-  it('a held Enter or Space opens the sheet once and never presses "Sign and bet"', async () => {
+  it('a held Enter or Space is one press: its repeats never bet', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={noPoll(world)} />);
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
     // The repeats of a held key are not presses of A.
-    press('Enter', { repeat: true });
-    press('Space', { repeat: true });
-    await settle();
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
-    press('Enter');
-    const submit = (await screen.findByTestId('bet-submit')) as HTMLButtonElement;
-    // The sheet puts the focus on its bet button: the key, still held, must not press it.
-    await waitFor(() => expect(document.activeElement).toBe(submit));
-    expect(fireEvent.keyDown(submit, { key: 'Enter', code: 'Enter', repeat: true })).toBe(false);
-    expect(fireEvent.keyDown(submit, { key: ' ', code: 'Space', repeat: true })).toBe(false);
-    // A fresh press right on top of the one that opened the sheet is not a decision either ...
-    expect(fireEvent.keyDown(submit, { key: 'Enter', code: 'Enter' })).toBe(false);
-    expect(fireEvent.keyUp(submit, { key: ' ', code: 'Space' })).toBe(false);
-    // ... a press after a beat is the button's own.
-    await new Promise((resolve) => setTimeout(resolve, 320));
-    expect(fireEvent.keyDown(submit, { key: 'Enter', code: 'Enter' })).toBe(true);
-    expect(fireEvent.keyUp(submit, { key: ' ', code: 'Space' })).toBe(true);
+    expect(fireEvent.keyDown(window, { code: 'Enter', repeat: true })).toBe(false);
+    expect(fireEvent.keyDown(window, { code: 'Space', repeat: true })).toBe(false);
     await settle();
     expect(world.signed).toEqual([]);
-    expect(world.txs).toEqual([]);
+    expect(attr('console', 'data-mode')).toBe('ready');
+    // The first press bets, and the held key's repeats after it add nothing.
+    press('Enter');
+    for (let k = 0; k < 5; k++) press('Enter', { repeat: true });
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    await settle();
+    expect(world.signed).toHaveLength(1);
+    expect(world.txs).toEqual(['createGame']);
   });
 
-  it('Enter, Enter opens the sheet and does not bet; a later Enter on "Sign and bet" does', async () => {
-    const world = new FakeWorld();
-    render(<GameApp deps={noPoll(world)} />);
+});
+
+describe('A in the lobby: the guards of a press that bets at once', () => {
+  // The guard's real 300 ms, on a clock the tests move by hand: only `performance` is faked, so
+  // the page's timers and the waits of the tests run as usual.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['performance'] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  const later = (ms: number): void => {
+    vi.advanceTimersByTime(ms);
+  };
+  const guarded = (world: FakeWorld, deps: ClientDeps = world.deps()): ClientDeps => ({
+    ...deps,
+    timing: { ...deps.timing, startGuardMs: 300 },
+  });
+  /** A balance read that waits for `open()` once `hold()` was called. */
+  const heldBalance = (world: FakeWorld) => {
+    let held: Promise<void> | null = null;
+    let open = (): void => undefined;
+    const deps: ClientDeps = {
+      ...world.deps(),
+      chain: () => ({
+        ...world.chain,
+        balanceOf: async () => {
+          if (held !== null) await held;
+          return world.balance;
+        },
+      }),
+    };
+    return {
+      deps,
+      hold: () => {
+        held = new Promise<void>((resolve) => (open = resolve));
+      },
+      open: () => open(),
+    };
+  };
+  const connect = async (): Promise<void> => {
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
-    /** Enter on a focused button, as a browser presses it: a click unless the keydown was stopped. */
-    const enterOn = (el: HTMLElement): void => {
-      if (fireEvent.keyDown(el, { key: 'Enter', code: 'Enter' })) fireEvent.click(el);
-    };
+  };
+
+  it('A right after a wallet connects is not a bet; 300 ms later it is', async () => {
+    const world = new FakeWorld();
+    render(<GameApp deps={guarded(world, noPoll(world))} />);
+    await connect();
     press('Enter');
-    const submit = (await screen.findByTestId('bet-submit')) as HTMLButtonElement;
-    await waitFor(() => expect(document.activeElement).toBe(submit));
-    // The second Enter, quickly: nothing is signed.
-    enterOn(submit);
+    fireEvent.click(screen.getByTestId('btn-a'));
     await settle();
     expect(world.signed).toEqual([]);
-    expect(world.txs).toEqual([]);
-    expect(screen.getByTestId('sign-sheet')).toBeTruthy();
-    // Later, Enter on "Sign and bet" is the player's decision: it bets.
-    await new Promise((resolve) => setTimeout(resolve, 320));
-    enterOn(submit);
-    await waitFor(() => expect(world.signed).toHaveLength(1));
+    expect(attr('console', 'data-mode')).toBe('ready');
+    later(299);
+    press('Enter');
+    await settle();
+    expect(world.signed).toEqual([]);
+    later(1);
+    press('Enter');
     await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect(world.signed).toHaveLength(1);
+  });
+
+  it('A right after New game is the press that left the game, not a bet; a later A bets', async () => {
+    const world = new FakeWorld();
+    // With the poll on, which brings the chain's settled status.
+    render(<GameApp deps={guarded(world)} />);
+    await connect();
+    later(300);
+    fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
+    press('Enter');
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    await waitFor(() => expect(attr('console', 'data-mode')).toBe('play'));
+    fireEvent.click(screen.getByTestId('btn-a'));
+    fireEvent.click(screen.getByTestId('cashout-button'));
+    await screen.findByTestId('result-outcome');
+    await waitFor(() => expect(attr('settle-tx', 'data-confirmed')).toBe('true'));
+    // A, A: the first leaves the game, the second comes too soon to be a decision.
+    press('Enter');
+    await waitFor(() => expect(attr('console', 'data-mode')).toBe('ready'));
+    press('Enter');
+    await settle();
+    expect(attr('console', 'data-mode')).toBe('ready');
+    expect(world.signed).toHaveLength(1);
+    // A later A is the player's decision: it bets.
+    later(300);
+    press('Enter');
+    await waitFor(() => expect(world.signed).toHaveLength(2));
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect(world.txs).toEqual(['createGame', 'createGame']);
+  });
+
+  it('A right after a failed bet brings the lobby back is not a bet; the next A only clears the error, the one after bets', async () => {
+    const world = new FakeWorld();
+    world.rejectNext = 'sign';
+    render(<GameApp deps={guarded(world, noPoll(world))} />);
+    await connect();
+    later(300);
+    press('Enter');
+    await waitFor(() => expect(screen.getByTestId('bet-error').textContent).toContain('signature was rejected'));
+    expect(attr('console', 'data-mode')).toBe('ready');
+    expect(attr('bet-prompt', 'data-ready')).toBe('false');
+    expect(screen.getByTestId('bet-prompt-why').textContent).toBe('PRESS A TO DISMISS THE ERROR');
+
+    // Mashing A as the lobby comes back: nothing, the error included, is touched.
+    press('Enter');
+    press('Space');
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await settle();
+    expect(screen.getByTestId('bet-error')).toBeTruthy();
+    expect(world.requests.filter((r) => r.startsWith('POST'))).toEqual([]);
+
+    // Past the guard, the first A clears the error and bets nothing; the next one bets.
+    later(300);
+    press('Enter');
+    await waitFor(() => expect(screen.queryByTestId('bet-error')).toBeNull());
+    expect(screen.queryByTestId('error-message')).toBeNull();
+    expect(attr('bet-prompt', 'data-ready')).toBe('true');
+    await settle();
+    expect(world.signed).toEqual([]);
+    expect(world.requests.filter((r) => r.startsWith('POST'))).toEqual([]);
+    press('Enter');
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect(world.signed).toHaveLength(1);
+  });
+
+  it('while the details are open A, Enter and the arrows do nothing, and A right after they close is not a bet', async () => {
+    const world = new FakeWorld();
+    render(<GameApp deps={guarded(world, noPoll(world))} />);
+    await connect();
+    later(300);
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
+    later(1000);
+    for (const code of ['Enter', 'NumpadEnter', 'Space', 'KeyZ', 'ArrowDown', 'ArrowRight']) press(code);
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await settle();
+    expect(screen.getByTestId('game-details')).toBeTruthy();
+    expect(world.signed).toEqual([]);
+    expect(attr('tier-0', 'data-selected')).toBe('true');
+    expect(attr('bet-preset-.05', 'aria-pressed')).toBe('true');
+
+    fireEvent.click(screen.getByTestId('details-close'));
+    await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
+    press('Enter');
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await settle();
+    expect(world.signed).toEqual([]);
+    expect(attr('console', 'data-mode')).toBe('ready');
+    later(300);
+    press('Enter');
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect(world.signed).toHaveLength(1);
+  });
+
+  it('Enter on the bet slider is the slider\'s: it never bets; Enter elsewhere is still A', async () => {
+    const world = new FakeWorld();
+    render(<GameApp deps={guarded(world, noPoll(world))} />);
+    await connect();
+    later(300);
+    const slider = screen.getByTestId('bet-slider') as HTMLInputElement;
+    slider.focus();
+    for (const code of ['Enter', 'NumpadEnter']) fireEvent.keyDown(slider, { key: 'Enter', code });
+    await settle();
+    expect(world.signed).toEqual([]);
+    expect(attr('console', 'data-mode')).toBe('ready');
+    slider.blur();
+    press('Enter');
+    await waitFor(() => expect(world.signed).toHaveLength(1));
+  });
+
+  it('A shows the first step at once while the balance is read; A again, the lobby keys and the side panel wait, and one bet is placed', async () => {
+    const world = new FakeWorld();
+    const read = heldBalance(world);
+    render(<GameApp deps={guarded(world, { ...read.deps, timing: noPoll(world).timing })} />);
+    await connect();
+    await waitFor(() => expect(screen.getByTestId('console-balance').textContent).toBe('BALANCE 10 ETH'));
+    later(300);
+    read.hold();
+    fireEvent.click(screen.getByTestId('btn-a'));
+    // At once, before the read answers: the loading screen on its first step.
+    expect(attr('console', 'data-mode')).toBe('betting');
+    expect(attr('bet-loading', 'data-step')).toBe('check');
+    expect(attr('bet-step-check', 'data-state')).toBe('now');
+    expect(attr('bet-step-sign', 'data-state')).toBe('todo');
+    expect(attr('bet-status', 'data-step')).toBe('check');
+    expect(screen.getByTestId('bet-status').textContent).toBe('Checking your balance before the bet');
+    expect(screen.getByTestId('screen-tag').textContent).toBe('CHECKING...');
+    expect(screen.getByTestId('lcd-odds').textContent).toBe('PLACING BETLOCKED');
+    expect((screen.getByTestId('bet-slider') as HTMLInputElement).disabled).toBe(true);
+
+    later(1000);
+    for (let k = 0; k < 3; k++) {
+      fireEvent.click(screen.getByTestId('btn-a'));
+      press('Enter');
+      press('Space');
+    }
+    press('ArrowDown');
+    press('ArrowRight');
+    await settle();
+    expect(world.signed).toEqual([]);
+    expect(attr('bet-loading', 'data-step')).toBe('check');
+
+    read.open();
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    await settle();
+    expect(world.signed).toHaveLength(1);
     expect(world.txs).toEqual(['createGame']);
+    expect(world.requests.filter((r) => r === 'POST /api/games')).toHaveLength(1);
+    expect(attr('tier-0', 'data-selected')).toBe('true');
+    expect([...world.onchain.values()].map((g) => g.bet)).toEqual([BET]);
+  });
+
+  it('a change of the bet while the balance is read cancels it: nothing is signed, and the screen says why', async () => {
+    const world = new FakeWorld();
+    const read = heldBalance(world);
+    render(<GameApp deps={guarded(world, { ...read.deps, timing: noPoll(world).timing })} />);
+    await connect();
+    await waitFor(() => expect(screen.getByTestId('console-balance').textContent).toBe('BALANCE 10 ETH'));
+    later(300);
+    read.hold();
+    press('Enter');
+    expect(attr('bet-loading', 'data-step')).toBe('check');
+    // The side panel is locked; a script that moves the slider anyway changes the bet.
+    fireEvent.change(screen.getByTestId('bet-slider'), { target: { value: '1000' } });
+    await waitFor(() => expect(attr('bet-slider', 'data-wei')).toBe((10n ** 17n).toString()));
+
+    read.open();
+    await waitFor(() => expect(screen.getByTestId('screen-msg').textContent).toContain('The bet changed before it was placed'));
+    expect(attr('console', 'data-mode')).toBe('ready');
+    await settle();
+    expect(world.signed).toEqual([]);
+    expect(world.requests.filter((r) => r.startsWith('POST'))).toEqual([]);
+
+    // A again bets the bet the screen names now.
+    read.hold();
+    press('Enter');
+    read.open();
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect([...world.onchain.values()].map((g) => g.bet)).toEqual([10n ** 17n]);
+  });
+
+  it('a balance read that does not answer in time leaves the check to the wallet: the bet goes ahead', async () => {
+    const world = new FakeWorld();
+    const read = heldBalance(world);
+    const deps = guarded(world, { ...read.deps, timing: { ...noPoll(world).timing, balanceCheckMs: 50 } });
+    render(<GameApp deps={deps} />);
+    await connect();
+    await waitFor(() => expect(screen.getByTestId('console-balance').textContent).toBe('BALANCE 10 ETH'));
+    later(300);
+    read.hold();
+    press('Enter');
+    expect(attr('bet-loading', 'data-step')).toBe('check');
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect(world.signed).toHaveLength(1);
+    expect(world.txs).toEqual(['createGame']);
+    read.open();
+  });
+
+  it('a top-up takes the "not enough" message off the screen', async () => {
+    const world = new FakeWorld();
+    render(<GameApp deps={guarded(world, noPoll(world))} />);
+    await connect();
+    await waitFor(() => expect(screen.getByTestId('console-balance').textContent).toBe('BALANCE 10 ETH'));
+    later(300);
+    // The wallet is emptied elsewhere after the page last looked: A reads the balance and says so.
+    world.balance = 0n;
+    press('Enter');
+    await waitFor(() => expect(screen.getByTestId('screen-msg').textContent).toContain('Not enough ETH'));
+    // The coins come back; the next read of the balance (A while short) takes the message away.
+    world.balance = 10n ** 19n;
+    press('Enter');
+    await waitFor(() => expect(screen.queryByTestId('bet-short')).toBeNull());
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
+    expect(world.signed).toEqual([]);
   });
 });
 
@@ -559,12 +813,12 @@ describe('leaderboard and focus', () => {
     const size = (await screen.findByTestId('tier-1')) as HTMLButtonElement;
     size.focus();
     expect(document.activeElement).toBe(size);
-    // On a focused button, Enter and Space are the button's, not A (which would open the bet
-    // sheet in the lobby).
+    // On a focused button, Enter and Space are the button's, not A (which would bet in the lobby,
+    // or without a wallet ask for a login).
     fireEvent.keyDown(size, { key: 'Enter', code: 'Enter' });
     fireEvent.keyDown(size, { key: ' ', code: 'Space' });
     await settle();
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
 
     // Pressed from the keyboard (no pointer, detail 0) it keeps the focus ...
     fireEvent.click(size, { detail: 0 });

@@ -1084,7 +1084,7 @@ slider_position() {
 }
 
 # choose_bet <tab> <tier> <amount in ETH>: presses the difficulty key (tier-<tier>) and sets the bet
-# on the side panel's slider, with the bet sheet closed: an amount on a tick (0.001, 0.01, 0.05 or
+# on the side panel's slider, with no dialog open: an amount on a tick (0.001, 0.01, 0.05 or
 # 0.1 on the tables in use) by the tick label's button (bet-preset-<label>), any other amount by
 # writing its position (slider_position) into the slider with an input event. Only a pointer
 # snaps to a tick, so any amount on the 0.001 grid lands as it is. Checks that the slider holds
@@ -1107,28 +1107,37 @@ choose_bet() {
 }
 
 # fill_bet <tab> <tier> <amount in ETH> <client seed>: chooses the difficulty and the bet on the
-# side panel, sets the client seed (client-seed-input, a hidden field of the side panel, set by
-# script with an input event) and presses A (btn-a, named START in the lobby), which opens the bet
-# sheet. The open sheet makes the device inert and covers it, so everything on the side panel is
-# set first. Sets TIER, BET_WEI and CLIENT_SEED.
+# side panel and sets the client seed (client-seed-input, a hidden field of the side panel, set by
+# script with an input event), then opens the game's details from the transaction log (tx-log-open)
+# and checks that they show that seed for the next bet (details-client-seed), and closes them
+# again. A is not pressed: in the lobby A bets at once (submit_bet). Sets TIER, BET_WEI and
+# CLIENT_SEED.
 fill_bet() {
   choose_bet "$1" "$2" "$3"
   ui_set_value "$1" client-seed-input "$4" || fail_scenario "client-seed-input could not be set: $ASIDE_RESULT"
-  ui_click "$1" btn-a 10 || fail_scenario "btn-a (A, START) is not clickable"
-  ui 20 "M.waitFor($(js_str "$1"), { id: \"sheet-full-seed\", text: $(js_str "$4") }, 10000)" ||
-    fail_scenario "the bet sheet could not be read: $ASIDE_ERROR"
-  [ "$(ui_field '.ok')" = true ] || fail_scenario "the bet sheet does not show the client seed $4 ($(ui_field '.item.text'))"
+  open_details "$1" || fail_scenario "the game's details did not open from the transaction log (tx-log-open)"
+  ui 20 "M.waitFor($(js_str "$1"), { id: \"details-client-seed\", text: $(js_str "$4") }, 10000)" ||
+    fail_scenario "the game's details could not be read: $ASIDE_ERROR"
+  [ "$(ui_field '.ok')" = true ] || fail_scenario "the game's details do not show the client seed $4 ($(ui_field '.item.text'))"
+  close_details "$1" || fail_scenario "the game's details did not close (details-close)"
   CLIENT_SEED="$4"
 }
 
-# submit_bet <tab>: after fill_bet, clicks bet-submit in the bet sheet and waits until the server
-# has shown the first cell (the sheet closes by itself). Sets GAME_ID, N, TOKEN and
-# BALANCE_AFTER_BET (the player's balance once the bet is mined).
+# submit_bet <tab>: after fill_bet, checks that the lobby screen names the bet (bet-prompt, the
+# consent line "A: BET ...") and presses A (btn-a, named START in the lobby), which places it at
+# once: the screen shows the steps (the balance check first) while the wallet and the chain do
+# their part. A is ignored for 300 ms after the lobby comes up (a new game, a wallet connected, a
+# dialog closed, as fill_bet's details just did), so the press waits that long first. Waits until
+# the server has shown the first cell. Sets GAME_ID, N, TOKEN and BALANCE_AFTER_BET (the player's
+# balance once the bet is mined).
 submit_bet() {
-  ui_click "$1" bet-submit 10 || fail_scenario "bet-submit is not clickable (is the bet sheet open, the form valid and the wallet connected?)"
+  expect_attr "the lobby screen names the bet A places (bet-prompt)" "$1" bet-prompt data-wei "$BET_WEI" 5
+  expect_attr "the lobby screen says A bets now (bet-prompt ready)" "$1" bet-prompt data-ready true 10
+  sleep 0.4
+  ui_click "$1" btn-a 10 || fail_scenario "btn-a (A, START) is not clickable"
   ui 60 "M.waitFor($(js_str "$1"), { id: \"refundable-amount\" }, 45000)" || fail_scenario "waiting for the board failed: $ASIDE_ERROR"
   if [ "$(ui_field '.ok')" != true ]; then
-    ui 20 "M.read($(js_str "$1"), [\"error-message\", \"bet-status\", \"sheet-error\"])"
+    ui 20 "M.read($(js_str "$1"), [\"error-message\", \"bet-error\", \"bet-status\", \"screen-msg\"])"
     fail_scenario "the board did not appear within 45 seconds of the bet (page says: $ASIDE_RESULT)"
   fi
   ui 20 "M.read($(js_str "$1"), [\"board\"])" || fail_scenario "the board could not be read: $ASIDE_ERROR"
@@ -1223,15 +1232,14 @@ expect_escape_payout() {
     "$(chain_call 'tiers(uint8)(uint8,uint32)' "$2" | paste -sd ' ' -)"
 }
 
-# expect_schedule <tab> <tier> <bet wei>: with the bet sheet open, its refund schedule (a
-# collapsed details block, read from the DOM) is drawn for the chosen size and amount: one row
-# per step with refundBps and bet x refundBps, and the exit payout with the multiplier (AC-W6,
-# AC-R1, AC-T8).
+# expect_schedule <tab> <tier> <bet wei>: with the game's details open before the bet, their refund
+# schedule is drawn for the chosen size and amount: one row per step with refundBps and bet x
+# refundBps, and the exit payout with the multiplier (AC-W6, AC-R1, AC-T8).
 expect_schedule() {
   local rows expected="" actual k bps payout
   payout="$(exit_wei "$3" "$2")"
-  expect_attr "the bet sheet's refund-schedule is drawn for size $2" "$1" refund-schedule data-tier "$2" 5
-  expect_attr "the bet sheet's refund-schedule is drawn for the chosen bet ($3 wei)" "$1" refund-schedule data-bet-wei "$3" 5
+  expect_attr "the details' refund-schedule is drawn for size $2" "$1" refund-schedule data-tier "$2" 5
+  expect_attr "the details' refund-schedule is drawn for the chosen bet ($3 wei)" "$1" refund-schedule data-bet-wei "$3" 5
   if rows="$(dom_list "$1" schedule-row-)"; then
     while read -r k bps; do
       expected="$expected$k:$bps:$(mul_bps "$3" "$bps") "
@@ -1245,12 +1253,19 @@ expect_schedule() {
   expect_attr "size $2: schedule-exit-payout names the table's multiplier" "$1" schedule-exit-payout data-multiplier-bps "$(tier_multiplier_bps "$2")" 5
 }
 
-# close_sheet <tab>: closes the bet sheet with Escape (its close buttons carry no test id).
-# Returns 1 when key presses were not verified by the probe or the sheet stays open.
-close_sheet() {
-  cap pressKey || return 1
-  ui_press "$1" Escape || return 1
-  ui 25 "M.waitFor($(js_str "$1"), { id: \"sign-sheet\", present: false }, 10000)" || return 1
+# open_details <tab>: opens the game's details from the transaction log beside the console
+# (tx-log-open); before a bet they show the lobby's choice. Returns 1 when they do not open.
+open_details() {
+  ui_click "$1" tx-log-open 10 || return 1
+  ui 25 "M.waitFor($(js_str "$1"), { id: \"game-details\" }, 10000)" || return 1
+  [ "$(ui_field '.ok')" = true ]
+}
+
+# close_details <tab>: closes the game's details with their close button (details-close).
+# Returns 1 when they stay open.
+close_details() {
+  ui_click "$1" details-close 10 || return 1
+  ui 25 "M.waitFor($(js_str "$1"), { id: \"game-details\", present: false }, 10000)" || return 1
   [ "$(ui_field '.ok')" = true ]
 }
 

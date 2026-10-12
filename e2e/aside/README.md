@@ -116,7 +116,7 @@ game and waits for the supervisor to bring it back.
 
 | # | Script | Proves | Chain | HTTP | DOM |
 |---|---|---|---|---|---|
-| 01 | `01-exit.sh` | exit win on the smallest size; escape payout and refund schedule **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; difficulty keys (size, multiplier) and `escape-payout` for every size, with two amounts (0.02 set on the slider between ticks, and `BET_ETH`); in the bet sheet every `schedule-row-<k>` and `schedule-exit-payout` for every size (the other sizes' sheets are closed with Escape, so they need `pressKey`) and the rules (refund after the bet and after one step, idle and maximum time); fog board; result, settlement tx; verify dialog (hash, cells, solution) |
+| 01 | `01-exit.sh` | exit win on the smallest size; escape payout and refund schedule **before** the bet, for every size of the table | nothing on chain before the bet; contract quotes the same payout and table; Settled, outcome 0, payout = bet x multiplier, relayer sent it, balance + payout, reserve back to 0, accounting | config (devWallet, testHooks, table mode), game read, reveal, TestBeacon snapshot | dev wallet connects #2; difficulty keys (size, multiplier) and `escape-payout` for every size, with two amounts (0.02 set on the slider between ticks, and `BET_ETH`); in the game's details before the bet (opened from the transaction log, `tx-log-open`) every `schedule-row-<k>` and `schedule-exit-payout` for every size and the rules (refund after the bet and after one step, idle and maximum time); the lobby screen's consent line (`bet-prompt`); fog board; result, settlement tx; verify dialog (hash, cells, solution) |
 | 02 | `02-deadend.sh` | dead-end loss on the middle size, moves by arrow keys | outcome 2, payout 0, balance unchanged | status lost, reveal | result loss, payout 0; verify dialog |
 | 03 | `03-cashout.sh` | cash-out after 3 moves on the largest size | payout = bet x refundBps[3] / 10000; contract's refundBps equal the table's | refundableWei at every step; cashed_out, auto false | refundable-amount and the HP meter (`hp-bar`) at every step, exit payout, A named CASH OUT (`btn-a`) then "Take it" (`cashout-button`), result; verify dialog |
 | 04 | `04-idle-auto-cashout.sh` | idle auto cash-out (`MAZE_IDLE_TIMEOUT_SEC=6`) learnt by polling | outcome 1, steps 2, mined at or after the idle deadline, relayer sent it | idleTimeoutSec 6; cashed_out, auto true | idle deadline on screen; `auto-cashout` shown without input within 5 (+3) chain seconds |
@@ -126,7 +126,7 @@ game and waits for the supervisor to bring it back.
 | 08 | `08-multi-tab.sh` | second tab resumes; two different moves for one step | settled exactly once | one 200 and one `409 STALE_STEP` without game state (recorded in the pages); one more step, not two | tab B resumes; both tabs converge on the server's cell; the refused tab says so; tab B learns the cash-out |
 | 09 | `09-exploratory-agent.sh` | advisory, only with `--with-exec`: invariants after a model-driven agent tried to cheat | accounting, owner, signer, table hash | games unreadable without token, no early reveal | none (the plan defines none) |
 | 10 | `10-cli-reclaim.sh` | server killed: a third party reclaims with `scripts/reclaim.sh` | exit 1 `DeadlineNotReached` before, exit 0 after; Reclaimed, sent by #9, player + bet exactly; second reclaim refused; restarted server does not settle | unreachable; after restart reveal reason `reclaimed`, move refused | open page learns `reclaimed` from the chain; verify dialog after restart |
-| 11 | `11-dev-wallet-gating.sh` | dev wallet offered only when `/api/config` says so, same build | chain 31337, no game created | devWallet false, then true after a restart | option absent and `bet-submit` disabled in the bet sheet; after restart and reload present and connects #2 |
+| 11 | `11-dev-wallet-gating.sh` | dev wallet offered only when `/api/config` says so, same build | chain 31337, no game created | devWallet false, then true after a restart | option absent, the lobby screen's `bet-prompt` not ready and A (`btn-a`) only showing "Log in to bet" (`screen-msg`); after restart and reload present and connects #2 |
 | 12 | `12-chest.sh` | a planned route past at least one path chest into a dead end that holds a treasure chest, middle size, chest rule 2: points only, no cash value (`docs/treasure-chest.md`) | outcome 2, payout 0, balance unchanged, reserve back to 0, accounting | config chest rule 2 with both kinds and `cashValue: false`; every in-game answer lists exactly the chests of the cells entered so far; each path chest in the ledger from the move that found it; no dead-end chest before the end; terminal chest; `GET /api/points/<player>` awards (game, kind, cell, bet, reward, points, rule, step) and total | on each path chest `chest-just-found`, `chest-pop` and `chest-cell-<x>-<y>` with its points, `game-points` and `points-balance` with the running total; nothing about the dead end before the last move; `chest-found` with the planned points and "No cash value", `chest-reveal` on the dead end, `game-chests` and `game-points-total` for the whole game, `points-balance` updated; verify dialog: `verify-chest-match` true, `verify-chests` lists the planned chests (rule 2, path count) |
 
 Order: 01 02 03 04 06 07 08 09 11 12, then the two that move the chain clock, 10 and 05 (05 last).
@@ -143,15 +143,23 @@ How the scenarios drive the page (`lib.sh`):
   may be any amount within the table's limits in steps of 0.001.
   The client seed is `client-seed-input`, a hidden field of the side panel: Playwright's fill
   refuses hidden inputs, so `fill_bet` sets it by script (`M.setValue`: `page.evaluate`, then an
-  `input` event), presses A (`btn-a`, `data-action="start"` in the lobby), which opens the bet
-  sheet, and checks that the sheet shows that seed (`sheet-full-seed`). `submit_bet` clicks "Sign
-  and bet" (`bet-submit`). The open sheet covers the device (which is `inert` meanwhile), so
-  everything on the side panel is set first; `close_sheet` closes the sheet with Escape.
-  The sheet holds the refund schedule (`refund-schedule`, `schedule-row-<k>`,
-  `schedule-exit-payout`, in a collapsed block that is read from the DOM). It closes by itself
-  once the first cell is shown; a refused bet leaves it open. The scenarios' client seeds carry
-  no start-side mark ("MZ>E" / "MZ>S"), so their mazes come from the plain seed formula; the
-  planner uses the shared `deriveFinalSeed` either way.
+  `input` event), opens the game's details from the transaction log beside the console
+  (`open_details`: `tx-log-open`, the dialog `game-details`), checks that they show that seed for
+  the next bet (`details-client-seed`) and closes them (`close_details`: `details-close`). The
+  details cover the device (which is `inert` meanwhile), so they are closed before anything on the
+  side panel changes. Before a bet they hold the refund schedule (`refund-schedule`,
+  `schedule-row-<k>`, `schedule-exit-payout`) and the rules (`bet-rules`) of the lobby's choice.
+  There is no bet dialog: the lobby screen names the bet A places (`bet-prompt`, "A: BET 0.010 MON
+  · FEE ~0.018", `data-ready` once a wallet can place it), and `submit_bet` checks it and presses A
+  (`btn-a`, `data-action="start"` in the lobby), which bets at once. A is ignored for 300 ms after
+  the lobby comes up (a new game, a failed bet, a wallet connected, a dialog closed), so
+  `submit_bet` waits that long before the press. From the press on the console's screen shows the
+  steps (`bet-loading`, `bet-step-<check|sign|ticket|tx|confirm>`: the balance read, then the
+  bet's) and the line under it what the step waits for (`bet-status`); a refused bet comes back to
+  the lobby with the reason under the screen (`bet-error`) and in the error banner
+  (`error-message`), and the next A only clears it. The
+  scenarios' client seeds carry no start-side mark ("MZ>E" / "MZ>S"), so their mazes come from the
+  plain seed formula; the planner uses the shared `deriveFinalSeed` either way.
 - **Moves.** The D-pad buttons `move-N/E/S/W` are never disabled: `data-legal` says whether the
   move is open, and a press that is not is refused on the page (it sends nothing). `move` waits
   for `data-legal="true"` before it clicks or presses the arrow key.

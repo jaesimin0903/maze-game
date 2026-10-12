@@ -35,7 +35,6 @@ async function playToExit(world: FakeWorld): Promise<Hex> {
   fireEvent.click(await screen.findByTestId('wallet-dev-option'));
   await screen.findByTestId('wallet-address');
   fireEvent.click(screen.getByTestId('btn-a'));
-  fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   const gameId = attr('board', 'data-game-id') as Hex;
   for (const dir of planExit(world.mazeOf(gameId))) {
@@ -61,8 +60,7 @@ describe('verify dialog', () => {
     await screen.findByTestId('verify-modal');
     expect(await screen.findByTestId('verify-empty')).toBeTruthy();
     expect(screen.getByTestId('verify-import')).toBeTruthy();
-    // It takes the focus and leaves nothing behind it reachable, the header included (the bet
-    // sheet leaves the header live for the wallet; this dialog has no use for it).
+    // It takes the focus and leaves nothing behind it reachable, the header included.
     expect(document.activeElement).toBe(screen.getByTestId('verify-close'));
     expect(inert('board')).toBe(true);
     expect(inert('console')).toBe(true);
@@ -73,7 +71,8 @@ describe('verify dialog', () => {
     press('Enter');
     await settle();
     expect(attr('tier-0', 'data-selected')).toBe('true');
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
+    // Enter was not A: nothing asks for a login.
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
     // Opening it changed no address: it is not a page of its own.
     expect(window.location.pathname + window.location.search).toBe('/');
 

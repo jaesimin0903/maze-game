@@ -2,10 +2,12 @@
 
 // What the console shows around its screen at each moment of a game: the row above the screen
 // (the stake before a game, the HP meter during it, the result after it) and the menu on the
-// screen (the cash-out question, the choices after the end, the bet's reclaim).
+// screen (the bet A places and its fee, the steps while it is placed, the cash-out question, the
+// choices after the end, the bet's reclaim).
 
 import { refundBps, refundWei, type FoundChest, type GameView, type Hex, type TuningTable } from '@maze/shared';
-import { formatClock, formatEth, formatEthFixed, formatPercent, formatPoints, shortHex } from '../format';
+import type { PlaceStep } from '../bet-form';
+import { formatApprox, formatClock, formatEth, formatEthFixed, formatPercent, formatPoints, shortHex } from '../format';
 import { explorerLink, useNetwork } from '../network';
 import type { GameResult, ReclaimInfo, ResultOutcome } from '../use-game';
 
@@ -19,9 +21,21 @@ export interface PanelReclaim {
 
 export type PanelModel =
   | {
-      /** Before a game; `betting` while the bet is being placed. */
-      kind: 'ready' | 'betting';
+      /** Before a game: the stake, and what A does with it. */
+      kind: 'ready';
       betWei: bigint;
+      /** What sending the bet typically costs in network fees; `null` while the gas price is unknown. */
+      feeWei: bigint | null;
+      /** Why A does not bet now, in a few words for the screen, or `null` when A bets. */
+      blocked: string | null;
+    }
+  | {
+      /** The bet being placed: the balance read, then the wallet's, the server's and the chain's steps. */
+      kind: 'betting';
+      betWei: bigint;
+      step: PlaceStep;
+      /** The chain's name, for the last step: "Monad Testnet", or "chain" without one. */
+      chainName: string;
     }
   | { kind: 'waiting'; betWei: bigint | null }
   | {
@@ -91,6 +105,7 @@ export function hpTone(bps: number): 'g' | 'y' | 'r' {
 }
 
 const four = (wei: bigint): string => formatEthFixed(wei, 4);
+const three = (wei: bigint): string => formatEthFixed(wei, 3);
 
 /** A signed difference in the chain's coin: "+0.0161" or "-0.0027". */
 function signed(wei: bigint): string {
@@ -288,6 +303,10 @@ function NextStep({ table, view }: { table: TuningTable; view: GameView }) {
 
 export function ScreenMenu({ model: m }: { model: PanelModel }) {
   switch (m.kind) {
+    case 'ready':
+      return <BetPrompt m={m} />;
+    case 'betting':
+      return <BetLoading m={m} />;
     case 'play':
       if (m.confirm !== null) return <ConfirmMenu m={m} confirm={m.confirm} />;
       if (m.reclaim !== null) {
@@ -315,6 +334,81 @@ export function ScreenMenu({ model: m }: { model: PanelModel }) {
     default:
       return null;
   }
+}
+
+/**
+ * The lobby's consent line on the screen: the bet A places and what sending it typically costs in
+ * network fees. A bets at once, so the screen names the bet before the press; when A cannot bet
+ * yet, a second line says why in a few words.
+ */
+function BetPrompt({ m }: { m: Extract<PanelModel, { kind: 'ready' }> }) {
+  const { symbol } = useNetwork();
+  return (
+    <div
+      className="scr-prompt"
+      data-testid="bet-prompt"
+      data-wei={m.betWei.toString()}
+      data-ready={m.blocked === null}
+    >
+      <p className="scr-prompt-line">
+        <span className="scr-prompt-arrow" aria-hidden="true">
+          ▶{' '}
+        </span>
+        A: BET {three(m.betWei)} {symbol}
+        {' · '}
+        <span
+          data-testid="bet-fee"
+          data-wei={m.feeWei?.toString() ?? ''}
+          title="What sending the bet typically costs in network fees, on top of the bet"
+        >
+          FEE {m.feeWei === null ? '—' : `~${formatApprox(m.feeWei)}`}
+        </span>
+      </p>
+      {m.blocked !== null && (
+        <p className="scr-prompt-why" data-testid="bet-prompt-why">
+          {m.blocked}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const BET_STEPS: { key: PlaceStep; label(chainName: string): string }[] = [
+  { key: 'check', label: () => 'Check balance' },
+  { key: 'sign', label: () => 'Sign ticket' },
+  { key: 'ticket', label: () => 'Server locks the maze' },
+  { key: 'tx', label: () => 'Send bet' },
+  { key: 'confirm', label: (chainName) => `Confirm on ${chainName}` },
+];
+
+/**
+ * The screen while the bet is placed, from the press of A on: the balance read and the bet's four
+ * steps, done, under way or still to come, and the hero walking in place. What the step under way waits for (a wallet prompt, a block) is said
+ * under the screen.
+ */
+function BetLoading({ m }: { m: Extract<PanelModel, { kind: 'betting' }> }) {
+  const at = BET_STEPS.findIndex((s) => s.key === m.step);
+  return (
+    <div className="scr-load" data-testid="bet-loading" data-step={m.step}>
+      <p className="scr-title">PLACING BET</p>
+      <div className="load-hero" aria-hidden="true">
+        <div className="hero walking">
+          <div className="body">
+            <div className="fr f0 spr s-R0" />
+            <div className="fr f1 spr s-R1" />
+            <div className="fr f2 spr s-R2" />
+          </div>
+        </div>
+      </div>
+      <ol className="load-steps" aria-label="Bet progress">
+        {BET_STEPS.map((s, k) => (
+          <li key={s.key} data-testid={`bet-step-${s.key}`} data-state={k < at ? 'done' : k === at ? 'now' : 'todo'}>
+            {s.label(m.chainName)}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
 function ConfirmMenu({

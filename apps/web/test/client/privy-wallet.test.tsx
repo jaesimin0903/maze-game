@@ -594,7 +594,10 @@ describe('the account panel', () => {
     await waitFor(() => expect(document.activeElement).toBe(panel));
     fireEvent.keyDown(panel, { key: 'Enter', code: 'Enter' });
     fireEvent.keyDown(panel, { key: 'ArrowDown', code: 'ArrowDown' });
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
+    // Enter there is not A, which would bet at once with this wallet.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(screen.getByTestId('console').getAttribute('data-mode')).toBe('ready');
+    expect(world.signed).toEqual([]);
     expect(screen.getByTestId('tier-0').getAttribute('data-selected')).toBe('true');
 
     act(() => release());

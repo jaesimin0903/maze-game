@@ -113,7 +113,6 @@ async function openAndBet(world: FakeWorld, clientSeed: Hex): Promise<Hex> {
   fireEvent.click(screen.getByTestId('bet-preset-.01'));
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: clientSeed } });
   fireEvent.click(screen.getByTestId('btn-a'));
-  fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   return attr('board', 'data-game-id') as Hex;
 }

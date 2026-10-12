@@ -4,17 +4,17 @@
 #
 # Connects the dev wallet, reads the escape payout and the refund schedule BEFORE betting (for
 # every size of the table, with two different amounts: 0.02 set on the slider between its ticks,
-# and BET_ETH), bets on the smallest size from the bet sheet A opens, walks the solution to the
-# exit, and opens the verify dialog.
+# and BET_ETH), bets on the smallest size with A (which bets at once what the lobby screen names),
+# walks the solution to the exit, and opens the verify dialog.
 #
 #   DOM    the dev wallet option is offered and connects Anvil #2; before any bet the side
 #          panel's difficulty keys carry the table's sizes and multipliers, the slider holds the
 #          bet set, and escape-payout equals bet x multiplier for the chosen size and bet,
-#          following a change of size and bet; in
-#          the bet sheet every schedule row and the exit payout equal the table for that size and
-#          amount (the other sizes' sheets are closed with Escape, so they need the pressKey
-#          capability); the sheet's rules state the refund right after the bet and after the
-#          first step, and the idle and maximum-time rules; the board appears with the start and
+#          following a change of size and bet; in the game's details that the transaction log
+#          opens before a bet, every schedule row and the exit payout equal the table for that
+#          size and amount (closed again with their close button); their rules state the refund
+#          right after the bet and after the first step, and the idle and maximum-time rules; the
+#          lobby screen names the bet A places (bet-prompt); the board appears with the start and
 #          the exit marked and no wall data on unvisited cells; result-outcome = exit with bet x
 #          multiplier; the settlement transaction is named; the verify dialog shows the hash
 #          match, every observed cell matching, and the solution
@@ -65,35 +65,32 @@ check chain "no game exists on chain while the payouts are read" 0 "$LOGS_BEFORE
 
 # Every other size of the table and another amount first, set on the slider between two ticks, to
 # see that the escape payout and the schedule follow the side panel for each size the table
-# offers. The open sheet covers the device, so it is closed again (Escape) before the next size is
-# chosen.
+# offers. The details cover the device, so they are closed again before the next size is chosen.
 OTHER=$(($(tier_count) - 1))
 while [ "$OTHER" -ge 1 ]; do
   choose_bet A "$OTHER" 0.02
   expect_escape_payout A "$OTHER" "$BET_WEI"
-  if cap pressKey; then
-    ui_click A btn-a 10 || fail_scenario "btn-a (A, START) is not clickable"
-    expect_schedule A "$OTHER" "$BET_WEI"
-    close_sheet A || fail_scenario "the bet sheet did not close on Escape"
-  else
-    dom_blocked "size $OTHER: the refund schedule in the bet sheet" "closing the bet sheet again needs a key press (capability pressKey not verified)"
-  fi
+  open_details A || fail_scenario "the game's details did not open from the transaction log (tx-log-open)"
+  expect_schedule A "$OTHER" "$BET_WEI"
+  close_details A || fail_scenario "the game's details did not close (details-close)"
   OTHER=$((OTHER - 1))
 done
 choose_bet A 0 "$BET_ETH"
 expect_escape_payout A 0 "$BET_WEI"
 
-# A opens the bet sheet: the schedule of the size and amount the bet is placed with, and the
+# The details before the bet: the schedule of the size and amount the bet is placed with, and the
 # rules naming the refund right after the bet and after the first step, and the idle and
 # maximum-time rules, as the table and /api/config give them.
 fill_bet A 0 "$BET_ETH" "$(client_seed 1)"
+open_details A || fail_scenario "the game's details did not open from the transaction log (tx-log-open)"
+expect_attr "the details show the lobby's choice before the bet" A game-details data-mode preview 5
 expect_schedule A 0 "$BET_WEI"
 expect_attr "schedule-row-0 is the refund right after the bet" A schedule-row-0 data-wei "$(refund_wei "$BET_WEI" 0 0)" 5
 expect_attr "schedule-row-1 is the refund after the first move" A schedule-row-1 data-wei "$(refund_wei "$BET_WEI" 0 1)" 5
 # percent <bps>: as the page prints it, 9500 -> 95.00%
 percent() { printf '%d.%02d%%' $(($1 / 100)) $(($1 % 100)); }
 RULES_WANT="$(percent "$(tier_refund_bps 0 0)") $(percent "$(tier_refund_bps 0 1)") $(printf '%s' "$CONFIG_JSON" | jq -r '.idleTimeoutSec')s $(printf '%s' "$CONFIG_JSON" | jq -r '.maxGameSec')s"
-expect_present "A opens the bet sheet with its rules (bet-rules)" A bet-rules 5
+expect_present "the details state the rules (bet-rules)" A bet-rules 5
 if RULES_TEXT="$(dom_text A bet-rules)"; then
   RULES_SEEN=""
   for RULE in $RULES_WANT; do
@@ -103,6 +100,7 @@ if RULES_TEXT="$(dom_text A bet-rules)"; then
 else
   dom_blocked "bet-rules names the refunds and the time rules" "the DOM could not be read over path $READ_PATH"
 fi
+close_details A || fail_scenario "the game's details did not close (details-close)"
 
 # ----- the game -----
 

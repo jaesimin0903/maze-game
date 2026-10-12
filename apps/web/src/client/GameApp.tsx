@@ -7,9 +7,11 @@ import {
   markStartSide,
   type ConfigResponse,
   type Dir,
+  type Hex,
 } from '@maze/shared';
 import { ApiError, ServerUnreachableError, apiMessage } from './api';
 import {
+  TYPICAL_BET_GAS,
   betBlocked,
   betShortfall,
   betTicks,
@@ -18,10 +20,12 @@ import {
   normalizeBet,
   stepPreset,
   stepTag,
+  stepText,
+  type PlaceStep,
 } from './bet-form';
 import { assertConfig, tableFromConfig, tierName } from './config';
 import { defaultDeps, type ClientDeps } from './deps';
-import { formatClock, formatMultiplier, formatPoints, shortHex } from './format';
+import { formatClock, formatPoints, shortHex } from './format';
 import { NetworkContext, explorerLink, networkView, useNetwork } from './network';
 import { useChainClock } from './poll';
 import { dungeonOf } from './dungeon';
@@ -31,11 +35,12 @@ import { useGame } from './use-game';
 import type { WalletApi } from './wallet';
 import { Console, type ConsoleAction, type ScreenNotice, type ScreenTimer } from './components/Console';
 import { DexPanel } from './components/DexPanel';
+import { GameDetails, type DetailsGame } from './components/GameDetails';
 import { HpRow, ScreenMenu, panelMode, type PanelModel } from './components/Panel';
 import { PointsBalance } from './components/PointsBalance';
 import { Bankroll, Leaderboard, RecentGames } from './components/SidePanels';
-import { SignSheet } from './components/SignSheet';
 import { TestBeacon } from './components/TestBeacon';
+import { TxLog } from './components/TxLog';
 import { VerifyModal } from './components/VerifyView';
 import { WalletButton } from './components/WalletButton';
 
@@ -144,6 +149,16 @@ const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 /** A press of A this soon after the cash-out question opened is the same press, not an answer. */
 const CONFIRM_GUARD_MS = 300;
 
+/**
+ * A press of A this soon after the lobby comes up (a new game, a failed bet, an abandoned game, a
+ * wallet connected, a dialog closed) is the press that led there coming twice, not a decision: in
+ * the lobby A bets at once. `ClientDeps.timing.startGuardMs` overrides it.
+ */
+const START_GUARD_MS = 300;
+
+/** How long the balance read before a bet may take (`ClientDeps.timing.balanceCheckMs` overrides it). */
+const BALANCE_CHECK_MS = 5000;
+
 /** Where the lobby keeps the difficulty and the bet chosen last, so that a reload shows them. */
 const LOBBY_KEY = 'maze:lobby';
 
@@ -174,8 +189,8 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const { phase, record, view } = state;
 
   // The wallet's balance for the console, and the fee bid for the bet's fee: read on connect, again
-  // after every phase change (a bet or a payout moves the balance), when the bet sheet opens, and
-  // every 15 seconds while the lobby shows them.
+  // after every phase change (a bet or a payout moves the balance), when A is pressed while the
+  // wallet is short, and every 15 seconds while the lobby shows them.
   const [balance, setBalance] = useState<{ address: string; wei: bigint } | null>(null);
   const [maxFeeWei, setMaxFeeWei] = useState<bigint | null>(null);
   const [balanceTick, setBalanceTick] = useState(0);
@@ -202,6 +217,44 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       if (timer !== null) clearInterval(timer);
     };
   }, [chain, balanceOf, phase, balanceTick]);
+
+  // The gas price, for the bet's typical fee on the lobby screen: read in the lobby every 15
+  // seconds, wallet or not.
+  const [gasPriceWei, setGasPriceWei] = useState<bigint | null>(null);
+  useEffect(() => {
+    if (phase !== 'lobby') return;
+    let live = true;
+    const read = (): void => {
+      chain
+        .gasPrice()
+        .then((wei) => live && setGasPriceWei(wei))
+        .catch(() => undefined);
+    };
+    read();
+    const timer = setInterval(read, 15_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [chain, phase]);
+
+  // What the bet transaction cost in fees, from its receipt, for the end screen and the game's
+  // details. A game restored without its transaction, or a receipt that cannot be read, shows no
+  // fee rather than a guess; a read that failed during play is tried again at the end.
+  const createTx: Hex | null = phase === 'playing' || phase === 'ended' ? (record?.createTxHash ?? null) : null;
+  const [betFee, setBetFee] = useState<{ hash: Hex; wei: bigint } | null>(null);
+  const betFeeWei = betFee !== null && betFee.hash === createTx ? betFee.wei : null;
+  useEffect(() => {
+    if (createTx === null || betFeeWei !== null) return;
+    let live = true;
+    chain
+      .txFee(createTx)
+      .then((wei) => live && wei !== null && setBetFee({ hash: createTx, wei }))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [chain, createTx, betFeeWei, phase]);
 
   // ----- the bet being set up: a difficulty and an amount on the side panel, and the client seed
   const ticks = useMemo(() => betTicks(BigInt(config.minBetWei), BigInt(config.maxBetWei)), [config]);
@@ -235,10 +288,10 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     }
   }, [tier, amountWei]);
   const [seedText, setSeedText] = useState<string>(() => randomStartSeed());
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   /** The game the fairness dialog checks, `'import'` for a pasted record, or `null` when closed. */
   const [verifyOf, setVerifyOf] = useState<string | null>(null);
-  const modalOpen = sheetOpen || verifyOf !== null;
+  const modalOpen = detailsOpen || verifyOf !== null;
   const seedOk = isHex32(seedText.trim());
   // A wallet that cannot pay the bet and its fee is not asked to sign for it, and A does not start.
   const shortWei =
@@ -262,6 +315,40 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const [pulse, setPulse] = useState(0);
   const [bump, setBump] = useState<{ tick: number; text: string; step: number } | null>(null);
   const [flash, setFlash] = useState(0);
+  /** When the lobby last came up for A (see `START_GUARD_MS`). */
+  const lobbyAt = useRef(0);
+  /**
+   * A was pressed and the balance is being read before the bet: A and the lobby keys wait, set at
+   * once on the press, and the screen shows the first step.
+   */
+  const placing = useRef(false);
+  const [checking, setChecking] = useState(false);
+  /**
+   * Why the last A in the lobby did not bet, shown under the screen while the wallet, the
+   * difficulty, the bet, the seed and whether the wallet is short are what they were then.
+   */
+  const [hint, setHint] = useState<{ text: string; key: string } | null>(null);
+  /** The bet A would place now: the wallet, the difficulty, the amount and the seed. */
+  const betKey = `${wallet?.address ?? ''}:${tier}:${amountWei}:${seedText.trim()}`;
+  const lobbyKey = `${phase}:${betKey}:${shortWei === null ? 'paid' : 'short'}`;
+  /** The latest of both, for a balance read that returns after the render it started in. */
+  const lobbyNow = useRef({ betKey, lobbyKey });
+  useLayoutEffect(() => {
+    lobbyNow.current = { betKey, lobbyKey };
+  });
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  // The guard starts over whenever the lobby comes up for A: on load, after a new game, a failed
+  // bet or an abandoned game, when a wallet connects, and when a dialog closes.
+  const lobbyUp = phase === 'lobby' && !modalOpen;
+  useEffect(() => {
+    if (lobbyUp) lobbyAt.current = performance.now();
+  }, [lobbyUp, wallet?.address]);
 
   const rec = phase === 'lobby' || phase === 'betting' ? null : record;
   const inLobby = rec === null;
@@ -288,10 +375,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   // New game button itself always works.
   const endKeysFree = phase === 'ended' && result !== null && (confirmed || result.outcome === 'reclaimed');
 
-  // The sheet closes once the bet is on chain; a cash-out question closes when play stops.
-  useEffect(() => {
-    if (phase === 'playing' || phase === 'ended') setSheetOpen(false);
-  }, [phase]);
+  // A cash-out question closes when play stops.
   useEffect(() => {
     if (!active) setConfirm((c) => (c.open ? { open: false, choice: 1 } : c));
   }, [active]);
@@ -309,35 +393,106 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     if (move !== 0) window.scrollBy?.({ top: move, behavior: scrollBehavior() });
   }, [active]);
 
-  const openSheet = (): void => {
-    if (phase !== 'lobby') return;
-    game.dismissError();
-    // A seed set by script without an input event is still the one the sheet shows and bets.
-    const domSeed = (document.getElementById('client-seed') as HTMLInputElement | null)?.value.trim();
-    if (domSeed !== undefined && domSeed !== seedText.trim() && isHex32(domSeed)) setSeedText(domSeed);
-    setSheetOpen(true);
-    setBalanceTick((t) => t + 1);
-    // The wallet controls sit in the header, above the sheet; bring them into view when needed.
-    if (wallet === null) window.scrollTo?.({ top: 0, behavior: scrollBehavior() });
+  /** The client seed in the side panel's field: a value set by script without an input event counts. */
+  const domSeed = (): string =>
+    ((document.getElementById('client-seed') as HTMLInputElement | null)?.value ?? seedText).trim();
+
+  /**
+   * A in the lobby: the bet the screen names. Without a wallet the screen says to log in and the
+   * header's login comes into view; a bet that cannot be placed says why. Otherwise the screen
+   * shows the first step at once while the balance is read again, and the bet is placed as it was
+   * when A was pressed: a change of wallet, difficulty, bet or seed meanwhile cancels it.
+   */
+  const submitBet = (): void => {
+    if (phase !== 'lobby' || placing.current) return;
+    if (wallet === null) {
+      setHint({ text: 'Log in to bet', key: lobbyKey });
+      window.scrollTo?.({ top: 0, behavior: scrollBehavior() });
+      return;
+    }
+    const seed = domSeed();
+    const why = betBlocked({
+      walletConnected: true,
+      betWei: amountWei,
+      minWei,
+      maxWei,
+      seedOk: isHex32(seed),
+      shortWei,
+      symbol: network.symbol,
+    });
+    if (why !== null || !isHex32(seed) || !tierOk(tier)) {
+      setHint({ text: why ?? 'Choose a difficulty', key: lobbyKey });
+      return;
+    }
+    setHint(null);
+    if (seed !== seedText.trim()) setSeedText(seed);
+    const bet = { tier, betWei: amountWei, clientSeed: seed };
+    const address = wallet.address;
+    const pressed = `${address}:${tier}:${amountWei}:${seed}`;
+    // The seed just taken from the field is the bet's, before the render that shows it.
+    lobbyNow.current = { ...lobbyNow.current, betKey: pressed };
+    placing.current = true;
+    setChecking(true);
+    // The balance on screen may be 15 seconds old: read it again before the signature, so a wallet
+    // that cannot pay the bet and its fee is stopped here. A chain that cannot be read, or not in
+    // time, leaves it to the wallet.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const slow = new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), deps.timing.balanceCheckMs ?? BALANCE_CHECK_MS);
+    });
+    // Started inside a promise, so that even a read that throws at once ends in the race below,
+    // which lets go of `placing` on every path.
+    const read = Promise.resolve()
+      .then(() => Promise.all([chain.balanceOf(address), chain.maxFeePerGas()]))
+      .then(
+        ([wei, maxFee]) => {
+          if (alive.current) {
+            setBalance({ address, wei });
+            setMaxFeeWei(maxFee);
+          }
+          return betShortfall(wei, bet.betWei, maxFee);
+        },
+        () => null,
+      );
+    void Promise.race([read, slow]).then((short) => {
+      clearTimeout(timer);
+      placing.current = false;
+      if (!alive.current) return;
+      setChecking(false);
+      const now = lobbyNow.current;
+      if (now.betKey !== pressed) {
+        setHint({ text: 'The bet changed before it was placed. Nothing was sent: press A to bet', key: now.lobbyKey });
+        return;
+      }
+      if (short !== null) {
+        // The slider turns red from the balance just read; the screen says why A did not bet.
+        const text = betBlocked({
+          walletConnected: true,
+          betWei: bet.betWei,
+          minWei,
+          maxWei,
+          seedOk: true,
+          shortWei: short,
+          symbol: network.symbol,
+        });
+        setHint(text === null ? null : { text, key: `lobby:${pressed}:short` });
+        return;
+      }
+      // A bet refused at once can bring the lobby back before any render shows that it left: the
+      // guard also starts over when the attempt ends.
+      void game.placeBet(bet).finally(() => {
+        lobbyAt.current = performance.now();
+      });
+    });
   };
 
-  const submitBet = (): void => {
-    // Read the seed from the DOM, so a value set by script without events is still honoured.
-    const nowSeed = ((document.getElementById('client-seed') as HTMLInputElement | null)?.value ?? seedText).trim();
-    // The sheet's button is off while the bet is blocked; this is the last word on it all the same.
-    if (!wallet || !isHex32(nowSeed) || amountWei < minWei || amountWei > maxWei || !tierOk(tier)) return;
-    const bet = { tier, betWei: amountWei, clientSeed: nowSeed };
-    const address = wallet.address;
-    // The balance on screen may be 15 seconds old: read it again before the signature, so a wallet
-    // that cannot pay the bet and its fee is stopped here. An unreadable chain leaves it to the wallet.
-    void Promise.all([chain.balanceOf(address), chain.maxFeePerGas()]).then(
-      ([wei, maxFee]) => {
-        setBalance({ address, wei });
-        setMaxFeeWei(maxFee);
-        if (betShortfall(wei, bet.betWei, maxFee) === null) void game.placeBet(bet);
-      },
-      () => void game.placeBet(bet),
-    );
+  /** Opens the game's details; before a bet, the lobby's choice with the seed the field holds. */
+  const openDetails = (): void => {
+    if (phase === 'lobby') {
+      const seed = domSeed();
+      if (seed !== seedText.trim() && isHex32(seed)) setSeedText(seed);
+    }
+    setDetailsOpen(true);
   };
 
   const newGame = (): void => {
@@ -354,7 +509,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
 
   /** A new client seed before the bet: a new look, and maybe the other start side. */
   const reroll = (): void => {
-    if (phase === 'lobby' && !modalOpen) setSeedText(randomStartSeed());
+    if (phase === 'lobby' && !modalOpen && !placing.current) setSeedText(randomStartSeed());
   };
 
   const openVerify = (target: string): void => setVerifyOf(target);
@@ -370,10 +525,10 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     else dropVerifyQuery();
   }, []);
 
-  /** The player's own seed from the sheet: kept but for its last four bytes, the start-side mark. */
+  /** The player's own seed from the details: kept but for its last four bytes, the start-side mark. */
   const applyOwnSeed = (text: string): void => {
     const seed = text.trim();
-    if (phase === 'lobby' && isHex32(seed)) setSeedText(markStartSide(seed, dungeon?.side ?? 'E'));
+    if (phase === 'lobby' && !placing.current && isHex32(seed)) setSeedText(markStartSide(seed, dungeon?.side ?? 'E'));
   };
 
   const takeCashOut = (): void => {
@@ -396,7 +551,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const onDir = (dir: Dir): void => {
     if (modalOpen) return;
     if (inLobby) {
-      if (phase !== 'lobby') return;
+      if (phase !== 'lobby' || placing.current) return;
       if (dir === 0 || dir === 2) {
         setTier((t) => Math.max(0, Math.min(config.tiers.length - 1, t + (dir === 2 ? 1 : -1))));
       } else {
@@ -423,16 +578,20 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   };
 
   /**
-   * A starts (the bet sheet), cashes out (asks, then takes the highlighted answer) and, once a game
-   * is over, opens the highlighted choice. It never moves: the D-pad does.
+   * A bets (what the screen names), cashes out (asks, then takes the highlighted answer) and, once a
+   * game is over, opens the highlighted choice. It never moves: the D-pad does.
    */
   const onA = (): void => {
     if (modalOpen) return;
     if (inLobby) {
+      const guardMs = deps.timing.startGuardMs ?? START_GUARD_MS;
+      if (phase !== 'lobby' || placing.current || performance.now() - lobbyAt.current < guardMs) return;
+      // An error on the screen is read first: the press that clears it does not bet as well.
+      if (state.error !== null) return game.dismissError();
       // A wallet short of the bet and its fee is told so on the slider; A waits for the coins, and
       // looks again at once, so that coins just fetched from a faucet count.
-      if (shortWei === null) openSheet();
-      else if (phase === 'lobby') {
+      if (shortWei === null) submitBet();
+      else {
         setBalanceTick((t) => t + 1);
         setPulse((n) => n + 1);
       }
@@ -476,9 +635,8 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     onA,
     onBack,
     showRank,
-    sheetOpen,
-    closeSheet: () => setSheetOpen(false),
-    betting: phase === 'betting',
+    detailsOpen,
+    closeDetails: () => setDetailsOpen(false),
     verifyOpen: verifyOf !== null,
     closeVerify,
   };
@@ -491,24 +649,17 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target as HTMLElement | null;
       const isEnter = event.code === 'Enter' || event.code === 'NumpadEnter';
-      // The bet slider keeps its arrows and page keys; Enter, which it has no use for, is still A.
-      const onSlider = target instanceof HTMLInputElement && target.type === 'range';
-      if (target && !(onSlider && isEnter) && (TYPING_TAGS.has(target.tagName) || target.isContentEditable)) return;
+      // A field keeps its keys, the bet slider included: Enter there is not A, which would bet.
+      if (target && (TYPING_TAGS.has(target.tagName) || target.isContentEditable)) return;
       // A key pressed in a window laid over the page from outside it (the Privy login) is its own.
       if (target instanceof Element && target !== document.body && target.closest('.app') === null) return;
       const k = keys.current;
-      if (k.verifyOpen) {
-        // The dialog handles keys inside it; this catches Escape with focus left outside.
+      if (k.verifyOpen || k.detailsOpen) {
+        // A dialog handles keys inside it; this catches Escape with focus left outside.
         if (event.code === 'Escape' && !event.repeat) {
           event.preventDefault();
-          k.closeVerify();
-        }
-        return;
-      }
-      if (k.sheetOpen) {
-        if (event.code === 'Escape' && !event.repeat && !k.betting) {
-          event.preventDefault();
-          k.closeSheet();
+          if (k.verifyOpen) k.closeVerify();
+          else k.closeDetails();
         }
         return;
       }
@@ -553,10 +704,12 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
   const pathChests = (rec?.chests ?? []).filter((c) => c.kind === 'path');
   const gamePoints = (rec?.chests ?? []).reduce((sum, c) => sum + BigInt(c.points), 0n);
   if (inLobby) {
-    tag =
-      phase === 'betting' && state.betStep !== null
-        ? stepTag(state.betStep)
-        : `READY ${tierName(tier, config.tiers.length)}`;
+    const placeStep: PlaceStep | null = phase === 'betting' ? state.betStep : checking ? 'check' : null;
+    tag = placeStep !== null ? stepTag(placeStep) : `READY ${tierName(tier, config.tiers.length)}`;
+    // What the bet waits for while it is placed; else why the last bet failed, or why A did not bet.
+    if (placeStep !== null) notice = { text: stepText(placeStep, wallet?.kind ?? null), step: placeStep };
+    else if (state.error !== null) notice = { text: state.error, error: true };
+    else if (hint !== null && hint.key === lobbyKey) notice = { text: hint.text };
   } else if (phase === 'playing' && observations.length === 0) {
     tag = 'WAITING FOR CHAIN';
     notice = { text: 'The server is confirming your bet on chain...', waiting: true };
@@ -590,8 +743,32 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
     game.reclaim === null ? null : { info: game.reclaim, now: clock.now, onReclaim: () => void game.reclaimBet() };
   const noBoardYet = view === null || observations.length === 0;
   let panel: PanelModel;
-  if (rec === null) {
-    panel = { kind: phase === 'betting' ? 'betting' : 'ready', betWei: amountWei };
+  if (rec === null && (phase === 'betting' || checking)) {
+    panel = {
+      kind: 'betting',
+      betWei: amountWei,
+      step: phase === 'betting' ? (state.betStep ?? 'sign') : 'check',
+      chainName: config.network?.name ?? 'chain',
+    };
+  } else if (rec === null) {
+    panel = {
+      kind: 'ready',
+      betWei: amountWei,
+      feeWei: gasPriceWei === null ? null : TYPICAL_BET_GAS * gasPriceWei,
+      // In a few words: the full reason is said under the screen when A is pressed.
+      blocked:
+        state.error !== null
+          ? 'PRESS A TO DISMISS THE ERROR'
+          : blocked === null
+            ? null
+            : wallet === null
+              ? 'LOG IN TO BET'
+              : !seedOk
+                ? 'INVALID CLIENT SEED'
+                : shortWei !== null
+                  ? `NOT ENOUGH ${network.symbol}`
+                  : blocked.toUpperCase(),
+    };
   } else if (game.reclaim !== null && (phase === 'ended' ? result === null : noBoardYet)) {
     panel = {
       kind: 'reclaim',
@@ -671,13 +848,33 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
       : 'cashout';
 
   const refreshKey = `${phase}:${state.onchain?.status ?? ''}:${record?.gameId ?? ''}`;
-  const sheetTier = config.tiers[tier];
+  // The game the details dialog shows, from its ticket on; before that, the lobby's choice.
+  const detailsGame: DetailsGame | null =
+    record === null || phase === 'lobby'
+      ? null
+      : {
+          gameId: record.gameId,
+          tier: tierOk(view?.tier) ? view.tier : tierOk(record.tier) ? record.tier : tier,
+          betWei,
+          clientSeed: record.clientSeed,
+          commitment: record.commitment,
+          serverSeed: record.terminal?.serverSeed ?? null,
+          betTx: record.createTxHash ?? null,
+          betConfirmed: phase === 'playing' || phase === 'ended',
+          betFeeWei,
+          settleTx: state.settledTx,
+          settle: state.settledTx !== null || settledOnChain ? 'settled' : record.terminal ? 'settling' : 'none',
+          reclaimed: record.reclaimed
+            ? { txHash: record.reclaimed.txHash, amountWei: BigInt(record.reclaimed.amountWei) }
+            : null,
+          ended: phase === 'ended',
+        };
   const chainName = config.network?.name ?? `Chain ${config.chainId}`;
   const contractUrl = explorerLink(network.explorerUrl, 'address', config.contract);
 
   return (
-    <div className={sheetOpen ? 'app sheet-open' : 'app'} data-phase={phase}>
-      <header className="masthead" inert={verifyOf !== null}>
+    <div className="app" data-phase={phase}>
+      <header className="masthead" inert={modalOpen}>
         <div className="head-group">
           <Brand />
           <Bankroll chain={chain} contract={config.contract} refreshKey={refreshKey} />
@@ -739,7 +936,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
         )}
       </div>
 
-      {/* Behind an open dialog only the header (the wallet) stays reachable. */}
+      {/* Nothing behind an open dialog is reachable. */}
       <div className="layout" inert={modalOpen}>
         <div className="col-main">
           <div className="device" data-device="">
@@ -759,6 +956,7 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
                   ? {
                       payoutWei: result.payoutWei,
                       betWei,
+                      feeWei: betFeeWei,
                       points: (result.chests ?? []).reduce((sum, c) => sum + BigInt(c.points), 0n),
                     }
                   : null
@@ -846,7 +1044,15 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
             </a>
           </div>
         </div>
-        <aside className="side col-left" aria-label="Recent games">
+        <aside className="side col-left" aria-label="Transactions and recent games">
+          <TxLog
+            record={phase === 'lobby' ? null : record}
+            phase={phase}
+            betStep={state.betStep}
+            result={result}
+            settled={confirmed}
+            onOpen={openDetails}
+          />
           <RecentGames api={deps.api} me={wallet?.address ?? null} now={clock.now} refreshKey={refreshKey} />
         </aside>
         <aside className="side col-right" aria-label="Leaderboard">
@@ -860,31 +1066,18 @@ function Game({ config, deps }: { config: ConfigResponse; deps: ClientDeps }) {
         </aside>
       </div>
 
-      {sheetOpen && (
-        <SignSheet
-          size={`${sheetTier.n}×${sheetTier.n}`}
-          multiplier={formatMultiplier(sheetTier.multiplierBps)}
-          betWei={amountWei}
-          exitWei={exitPayoutWei(table, amountWei, tier)}
-          seedCode={dungeon?.code ?? null}
-          startSide={dungeon?.side ?? null}
-          seedText={seedText}
-          onOwnSeed={applyOwnSeed}
-          step={phase === 'betting' ? state.betStep : null}
-          walletKind={wallet?.kind ?? null}
-          blocked={blocked}
-          commitment={phase === 'betting' && record ? record.commitment : null}
-          error={state.error}
-          rules={{
-            idleSec: config.idleTimeoutSec,
-            maxGameSec: config.maxGameSec,
-            refundStartBps: sheetTier.refundBps[0],
-            refundStep1Bps: sheetTier.refundBps[1] ?? sheetTier.refundBps[0],
-          }}
+      {detailsOpen && (
+        <GameDetails
+          config={config}
           table={table}
-          tier={tier}
-          onSubmit={submitBet}
-          onClose={() => setSheetOpen(false)}
+          game={detailsGame}
+          lobby={{ tier, betWei: amountWei, seedText }}
+          onOwnSeed={phase === 'lobby' && !checking ? applyOwnSeed : null}
+          onVerify={(gameId) => {
+            setDetailsOpen(false);
+            openVerify(gameId);
+          }}
+          onClose={() => setDetailsOpen(false)}
         />
       )}
 

@@ -87,10 +87,14 @@ describe('on Monad', () => {
     await waitFor(() => expect(text('console-balance')).toBe('BALANCE 10 MON'));
     expect(screen.getByTestId('console-balance').getAttribute('data-wei')).toBe((10n ** 19n).toString());
 
-    fireEvent.click(screen.getByTestId('btn-a'));
-    expect((await screen.findByTestId('bet-submit')).textContent).toBe('Sign and bet 0.01 MON');
+    // The screen names the bet A places, and its fee, in MON.
+    await waitFor(() => expect(text('bet-prompt')).toContain('A: BET 0.010 MON · FEE ~'));
+    expect(screen.getByTestId('console').textContent).not.toContain('ETH');
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
+    expect(text('details-bet')).toBe('0.01 MON');
     expect(text('schedule-exit-payout')).toBe(`Reaching the exit pays ${formatEth(exitPayoutWei(TABLE, BET, 0))} MON.`);
-    expect(screen.getByTestId('sign-sheet').textContent).not.toContain('ETH');
+    expect(screen.getByTestId('game-details').textContent).not.toContain('ETH');
   });
 
   it('links the settlement of a finished game to the explorer', () => {
@@ -155,13 +159,14 @@ describe('on Monad', () => {
     // The LCD still names the bet and what the exit pays.
     expect(text('escape-payout')).toContain(formatEthFixed(exitPayoutWei(TABLE, START_BET, 0), 3));
 
-    // While short, A (the button, Enter, Space or Z) does not start: no sheet, nothing signed. It
-    // says NEED again (a pulse), and the alert, said once, stays the same element.
+    // While short, A (the button, Enter, Space or Z) does not start: nothing signed, and the screen
+    // says why. It says NEED again (a pulse), and the alert, said once, stays the same element.
     expect(short.querySelector('.need')?.classList.contains('pulse')).toBe(false);
+    expect(text('bet-prompt-why')).toBe('NOT ENOUGH MON');
     fireEvent.click(screen.getByTestId('btn-a'));
     for (const code of ['Enter', 'Space', 'KeyZ']) fireEvent.keyDown(window, { code });
     await new Promise((resolve) => setTimeout(resolve, 60));
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
+    expect(screen.getByTestId('console').getAttribute('data-mode')).toBe('ready');
     expect(world.signed).toEqual([]);
     expect(screen.getByTestId('bet-short').querySelector('.need')?.classList.contains('pulse')).toBe(true);
     expect(screen.getByTestId('bet-short-alert')).toBe(alert);
@@ -172,17 +177,19 @@ describe('on Monad', () => {
     fireEvent.keyDown(screen.getByTestId('bet-slider'), { key: 'ArrowLeft' });
     await waitFor(() => expect(screen.getByTestId('bet-short').getAttribute('data-wei')).toBe(fee.toString()));
 
-    // A smaller bet fits: the message and the red go, the hatching stays, and A opens the sheet.
+    // A smaller bet fits: the message and the red go, the hatching stays, and A bets.
     fireEvent.click(screen.getByTestId('bet-preset-.01'));
     await waitFor(() => expect(screen.queryByTestId('bet-short')).toBeNull());
     expect(screen.queryByTestId('bet-faucet')).toBeNull();
     expect(slider.getAttribute('data-short')).toBe('false');
     expect(slider.parentElement?.querySelector('.fill')?.classList.contains('red')).toBe(false);
     expect(screen.getByTestId('bet-hatch')).toBeTruthy();
+    expect(screen.getByTestId('bet-prompt').getAttribute('data-ready')).toBe('true');
+    expect(text('bet-prompt')).toContain('A: BET 0.010 MON');
     fireEvent.click(screen.getByTestId('btn-a'));
-    const submit = (await screen.findByTestId('bet-submit')) as HTMLButtonElement;
-    expect(submit.disabled).toBe(false);
-    expect(text('bet-submit')).toBe('Sign and bet 0.01 MON');
+    await waitFor(() => expect(world.signed).toHaveLength(1));
+    await waitFor(() => expect(screen.getByTestId('cell-0-0').getAttribute('data-state')).toBe('current'));
+    expect([...world.onchain.values()].map((g) => g.bet)).toEqual([BET]);
   });
 
   it('A while short looks at the balance again at once, so coins from the faucet count', async () => {
@@ -195,9 +202,10 @@ describe('on Monad', () => {
     world.balance = 10n ** 18n;
     fireEvent.click(screen.getByTestId('btn-a'));
     await waitFor(() => expect(screen.queryByTestId('bet-short')).toBeNull());
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
+    expect(world.signed).toEqual([]);
+    // The next A bets.
     fireEvent.click(screen.getByTestId('btn-a'));
-    expect(await screen.findByTestId('sign-sheet')).toBeTruthy();
+    await waitFor(() => expect(world.signed).toHaveLength(1));
   });
 
   it('turns red exactly past what the wallet pays, and rounds what it lacks up', async () => {
@@ -239,15 +247,16 @@ describe('on Monad', () => {
     render(<GameApp deps={world.deps()} />);
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
-    fireEvent.click(screen.getByTestId('btn-a'));
-    const submit = (await screen.findByTestId('bet-submit')) as HTMLButtonElement;
-    await waitFor(() => expect(submit.disabled).toBe(false));
+    await waitFor(() => expect(text('console-balance')).toBe('BALANCE 10 MON'));
+    expect(screen.getByTestId('bet-prompt').getAttribute('data-ready')).toBe('true');
     // The wallet is emptied elsewhere after the page last looked.
     world.balance = 0n;
-    fireEvent.click(submit);
-    await waitFor(() => expect(text('bet-status')).toContain('Not enough MON'));
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await waitFor(() => expect(text('screen-msg')).toContain('Not enough MON'));
     expect(world.signed).toEqual([]);
     expect(world.requests.filter((r) => r.startsWith('POST'))).toEqual([]);
+    // The slider says it too, from the balance just read.
+    expect(await screen.findByTestId('bet-short')).toBeTruthy();
   });
 
   it('counts the bet fee at the bid the wallet makes, never below what the chain wants up front', async () => {

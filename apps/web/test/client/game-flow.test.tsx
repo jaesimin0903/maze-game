@@ -49,13 +49,12 @@ const calls = (world: FakeWorld): string[] =>
 /** Without the periodic poll, so that only an explicit trigger can reach the server. */
 const noPoll = (world: FakeWorld): ClientDeps => ({
   ...world.deps(),
-  timing: { pollMs: 600_000, clockMs: 15, startRetryMs: 15 },
+  timing: { ...world.deps().timing, pollMs: 600_000 },
 });
 
 /**
- * Opens the page, connects the dev wallet, picks the smallest maze, the 0.01 coin and the client
- * seed (a hidden field of the pad) and presses A, which opens the bet sheet. The console is inert
- * behind the open sheet, so everything on it is set first.
+ * Opens the page, connects the dev wallet and picks the smallest maze, the 0.01 coin and the
+ * client seed (a hidden field of the pad). The screen then names the bet A places.
  */
 async function openLobby(world: FakeWorld, deps: ClientDeps = world.deps()): Promise<void> {
   render(<GameApp deps={deps} />);
@@ -64,15 +63,14 @@ async function openLobby(world: FakeWorld, deps: ClientDeps = world.deps()): Pro
   fireEvent.click(screen.getByTestId('tier-0'));
   fireEvent.click(screen.getByTestId('bet-preset-.01'));
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
-  fireEvent.click(screen.getByTestId('btn-a'));
-  await screen.findByTestId('sign-sheet');
+  await waitFor(() => expect(screen.getByTestId('bet-prompt').textContent).toContain('A: BET 0.010 ETH'));
 }
 
-/** Presses "Sign and bet" in the sheet and waits for the first cell; the sheet closes by itself. */
+/** Presses A, which bets at once, and waits for the first cell; the loading screen goes by itself. */
 async function bet(): Promise<Hex> {
-  fireEvent.click(screen.getByTestId('bet-submit'));
+  fireEvent.click(screen.getByTestId('btn-a'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
-  await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+  expect(screen.queryByTestId('bet-loading')).toBeNull();
   return attr('board', 'data-game-id') as Hex;
 }
 
@@ -82,25 +80,40 @@ async function startGame(world: FakeWorld, deps: ClientDeps = world.deps()): Pro
 }
 
 /**
- * The bet failed: the page is back in the lobby (the empty board, the ready console) with `text` on
- * screen, and the sheet is still open with "Sign and bet" usable again.
+ * The bet failed: the page is back in the lobby (the empty board, the ready console) with `text` in
+ * the error banner and on the console under the screen. The next A clears the error (and only that;
+ * the screen says so), and the A after it bets again.
  */
 async function backInLobbyWith(text: string): Promise<void> {
   expect((await screen.findByTestId('error-message')).textContent).toContain(text);
+  expect(screen.getByTestId('bet-error').textContent).toContain(text);
+  expect(screen.getByTestId('bet-error').closest('[data-testid="console"]')).not.toBeNull();
   expect(attr('board', 'data-game-id')).toBe('');
   expect(attr('console', 'data-mode')).toBe('ready');
-  expect(screen.getByTestId('sign-sheet')).toBeTruthy();
-  expect(button('bet-submit').disabled).toBe(false);
-  expect(attr('bet-status', 'data-step')).toBe('');
+  expect(attr('btn-a', 'data-action')).toBe('start');
+  expect(attr('bet-prompt', 'data-ready')).toBe('false');
+  expect(screen.getByTestId('bet-prompt-why').textContent).toBe('PRESS A TO DISMISS THE ERROR');
+  expect(screen.queryByTestId('bet-loading')).toBeNull();
+  expect(screen.queryByTestId('bet-status')).toBeNull();
 }
 
-/** With the bet sheet open: closes it, chooses size `tier` on the pad and opens it again. */
-async function chooseSize(tier: number): Promise<void> {
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-  await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
-  fireEvent.click(screen.getByTestId(`tier-${tier}`));
+/** A clears the error on the screen, and bets nothing. */
+async function dismiss(world: FakeWorld): Promise<void> {
+  const signed = world.signed.length;
+  const posts = world.requests.length;
   fireEvent.click(screen.getByTestId('btn-a'));
-  await screen.findByTestId('sign-sheet');
+  await waitFor(() => expect(screen.queryByTestId('bet-error')).toBeNull());
+  expect(screen.queryByTestId('error-message')).toBeNull();
+  expect(attr('bet-prompt', 'data-ready')).toBe('true');
+  expect(attr('console', 'data-mode')).toBe('ready');
+  expect(world.signed).toHaveLength(signed);
+  expect(world.requests.slice(posts).filter((r) => r.startsWith('POST'))).toEqual([]);
+}
+
+/** Back in the lobby: chooses size `tier` on the pad. */
+async function chooseSize(tier: number): Promise<void> {
+  fireEvent.click(screen.getByTestId(`tier-${tier}`));
+  await waitFor(() => expect(attr(`tier-${tier}`, 'data-selected')).toBe('true'));
 }
 
 async function walk(dirs: Dir[]): Promise<void> {
@@ -538,7 +551,7 @@ describe('ticket request', () => {
     const world = new FakeWorld();
     world.signer = anvilAccount(3);
     await openLobby(world);
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('could not verify the wallet signature');
     expect(world.games.size).toBe(0);
     expect(world.txs).toEqual([]);
@@ -548,11 +561,12 @@ describe('ticket request', () => {
     const world = new FakeWorld();
     world.rejectNext = 'sign';
     await openLobby(world);
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('signature was rejected in the wallet');
     expect(ticketPosts(world)).toBe(0);
     expect(world.txs).toEqual([]);
 
+    await dismiss(world);
     const gameId = await bet();
     expect(world.games.get(gameId)?.onChain).not.toBeNull();
     expect(screen.queryByTestId('error-message')).toBeNull();
@@ -563,12 +577,13 @@ describe('ticket request', () => {
     const world = new FakeWorld();
     world.rejectNext = 'tx';
     await openLobby(world);
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('transaction was rejected in the wallet');
     expect(world.txs).toEqual([]);
     expect(world.games.size).toBe(1);
     const [ticketId] = [...world.games.keys()];
 
+    await dismiss(world);
     const gameId = await bet();
     expect(gameId).toBe(ticketId);
     expect(world.games.size).toBe(1);
@@ -584,7 +599,7 @@ describe('ticket request', () => {
     const world = new FakeWorld();
     world.rejectNext = 'tx';
     await openLobby(world);
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('transaction was rejected in the wallet');
     const [ticketId] = [...world.games.keys()];
     cleanup();
@@ -597,13 +612,13 @@ describe('ticket request', () => {
     const world = new FakeWorld();
     world.rejectNext = 'tx';
     await openLobby(world);
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('transaction was rejected in the wallet');
 
-    // The 5×5 ticket is still unused; the player now asks for 7×7. The size is chosen in the
-    // pad, which the open sheet makes inert: close the sheet, choose, press A again.
+    // The 5×5 ticket is still unused; the player now asks for 7×7: chosen on the pad, then A.
     await chooseSize(1);
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    await dismiss(world);
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('unused 5×5 ticket');
     const message = screen.getByTestId('error-message').textContent as string;
     expect(message).toContain('7×7');
@@ -613,6 +628,7 @@ describe('ticket request', () => {
 
     // Betting the size of the ticket goes through.
     await chooseSize(0);
+    await dismiss(world);
     const gameId = await bet();
     expect(attr('board', 'data-n')).toBe('5');
     expect(world.games.get(gameId)?.tier).toBe(0);
@@ -652,14 +668,17 @@ describe('ticket request', () => {
       expect((await screen.findByTestId('wallet-address')).getAttribute('data-kind')).toBe(kind);
       fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
       fireEvent.click(screen.getByTestId('btn-a'));
-      fireEvent.click(await screen.findByTestId('bet-submit'));
 
+      // The console says it under the screen, while the screen shows the step under way.
       await waitFor(() => expect(attr('bet-status', 'data-step')).toBe('sign'));
       const signText = screen.getByTestId('bet-status').textContent as string;
-      expect(button('bet-submit').disabled).toBe(true);
+      expect(screen.getByTestId('bet-status').closest('[data-testid="console"]')).not.toBeNull();
+      expect(attr('bet-step-sign', 'data-state')).toBe('now');
+      expect(attr('console', 'data-mode')).toBe('betting');
       releaseSign();
       await waitFor(() => expect(attr('bet-status', 'data-step')).toBe('tx'));
       const txText = screen.getByTestId('bet-status').textContent as string;
+      expect(attr('bet-step-tx', 'data-state')).toBe('now');
       releaseTx();
       await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
 
@@ -719,7 +738,7 @@ describe('server errors', () => {
     const world = new FakeWorld();
     await openLobby(world);
     world.answerNext = answer(500, { error: { code: 'INTERNAL', message: 'boom' } });
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await backInLobbyWith('internal error');
     expect(screen.queryByTestId('server-unreachable')).toBeNull();
     expect(world.txs).toEqual([]);
@@ -888,8 +907,8 @@ describe('recovery', () => {
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
     await screen.findByTestId('wallet-address');
     fireEvent.click(screen.getByTestId('btn-a'));
-    fireEvent.click(await screen.findByTestId('bet-submit'));
     expect((await screen.findByTestId('error-message')).textContent).toContain('already has a game in progress');
+    expect(screen.getByTestId('bet-error').textContent).toContain('already has a game in progress');
     expect(attr('board', 'data-game-id')).toBe('');
     expect(world.txs).toEqual(['createGame']);
     expect(world.games.get(gameId)?.status).toBe('active');

@@ -1,7 +1,8 @@
 // The bet as the lobby sets it up: the device's side panel (difficulty keys, the bet slider and its
-// tick labels, the client seed and MIX, the LCD with the escape payout), A, and the sheet A opens
-// (the seed's code and start side, refund schedule, rules, wallet steps, "Sign and bet"). Nothing
-// here reaches the server beyond the config.
+// tick labels, the client seed and MIX, the LCD with the escape payout), A, which bets at once, and
+// the details the transaction log opens before a bet (the client seed and its start side, the
+// player's own seed, the refund schedule and the rules). Nothing here reaches the server beyond the
+// config, unless a test bets.
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -268,11 +269,13 @@ describe('bet panel: the side panel', () => {
     expect(wei()).toBe((10n ** 15n).toString());
     press('End');
     await waitFor(() => expect(wei()).toBe((10n ** 17n).toString()));
-    // The slider's keys stay its own: the difficulty does not move, and no sheet opens.
+    // The slider's keys stay its own: the difficulty does not move, and A is not pressed, not even
+    // by Enter, which on the slider would otherwise bet.
     expect(attr('tier-0', 'aria-pressed')).toBe('true');
-    // Enter on the slider is A: the sheet opens.
     fireEvent.keyDown(slider, { key: 'Enter', code: 'Enter' });
-    await screen.findByTestId('sign-sheet');
+    fireEvent.keyDown(slider, { key: 'Enter', code: 'NumpadEnter' });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
     expect(world.requests).toEqual(['GET /api/config']);
   });
 
@@ -303,35 +306,42 @@ describe('bet panel: the side panel', () => {
   });
 });
 
-describe('bet panel: the sheet', () => {
-  const openSheet = async (): Promise<HTMLButtonElement> => {
-    fireEvent.click(screen.getByTestId('btn-a'));
-    return (await screen.findByTestId('bet-submit')) as HTMLButtonElement;
+describe('bet panel: the details before a bet', () => {
+  const openDetails = async (): Promise<HTMLElement> => {
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    return screen.findByTestId('game-details');
   };
-  const closeSheet = async (): Promise<void> => {
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+  const closeDetails = async (): Promise<void> => {
+    fireEvent.click(screen.getByTestId('details-close'));
+    await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
   };
   const inert = (testId: string): boolean => screen.getByTestId(testId).closest('[inert]') !== null;
 
-  it('A opens the sheet with a random 32-byte client seed, the bet and the rules; Cancel closes it', async () => {
+  it('the log\'s entry before a bet opens the rules & odds of the lobby\'s choice: the client seed, the bet and the rules', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
-    const start = (await screen.findByTestId('btn-a')) as HTMLButtonElement;
-    expect(screen.queryByTestId('sign-sheet')).toBeNull();
-    start.focus();
-    await openSheet();
+    const entry = (await screen.findByTestId('txlog-none')).querySelector('button') as HTMLButtonElement;
+    expect(entry.textContent).toBe('No bet yet · Rules & odds');
+    entry.focus();
+    fireEvent.click(entry);
+    const details = await screen.findByTestId('game-details');
+    expect(details.getAttribute('data-mode')).toBe('preview');
+    expect(text('details-preview-note')).toContain('No bet yet');
 
-    const sheet = screen.getByTestId('sign-sheet');
-    // The seed is set on the side panel; the sheet names it and the start side it picks.
+    // The seed is set on the side panel; the details name it whole, and the start side it picks.
     const seed = (screen.getByTestId('client-seed-input') as HTMLInputElement).value as Hex;
     expect(seed).toMatch(/^0x[0-9a-f]{64}$/);
-    expect(text('sheet-seed-code')).toBe(`SEED ${seed.slice(2, 6).toUpperCase()}`);
-    expect(attr('sheet-start-side', 'data-side')).toBe(startSideOf(seed));
-    expect(within(sheet).queryByTestId('client-seed-input')).toBeNull();
-    expect(within(sheet).queryByRole('button', { name: /seed/i })).toBeNull();
-    expect(sheet.textContent).toContain(`${formatEth(exitPayoutWei(TABLE, START_BET, 0), 4)} ETH`);
-    expect(text('bet-submit')).toBe('Sign and bet 0.05 ETH');
+    expect(text('details-client-seed')).toBe(seed);
+    expect(attr('details-start-side', 'data-side')).toBe(startSideOf(seed));
+    expect(within(details).queryByTestId('client-seed-input')).toBeNull();
+    // The commitment comes with the ticket, after the bet; there is no game to verify yet.
+    expect(attr('details-commitment', 'data-pending')).toBe('true');
+    expect(text('details-commitment')).toContain('Appears after the bet');
+    expect(screen.queryByTestId('details-game-id')).toBeNull();
+    expect(screen.queryByTestId('details-verify')).toBeNull();
+    expect(attr('details-board', 'data-n')).toBe(String(TABLE.tiers[0].n));
+    expect(attr('details-bet', 'data-wei')).toBe(START_BET.toString());
+    expect(text('details-exit-payout')).toBe(`${formatEth(exitPayoutWei(TABLE, START_BET, 0), 4)} ETH`);
     expect(text('bet-rules')).toContain(`If you do not move for ${TABLE.timing.idleTimeoutSec}s`);
     expect(text('bet-rules')).toContain(`${TABLE.timing.maxGameSec}s after the start`);
     // AC-W6: the drop at bet time and after the first move, in words, for the chosen size.
@@ -339,21 +349,20 @@ describe('bet panel: the sheet', () => {
     expect(text('bet-rules')).toContain(`Right after the bet you get back ${formatPercent(atBet)}`);
     expect(text('bet-rules')).toContain(`after the first step ${formatPercent(afterOne)}`);
 
-    // The sheet takes the focus (its bet button is disabled without a wallet, so its first
-    // control that can take it), and everything behind it but the header is inert.
-    expect(sheet.contains(document.activeElement)).toBe(true);
+    // The dialog takes the focus, and everything behind it is inert, the header included.
+    expect(document.activeElement).toBe(screen.getByTestId('details-close'));
     expect(inert('side-panel')).toBe(true);
     expect(inert('board')).toBe(true);
     expect(inert('btn-a')).toBe(true);
-    expect(inert('wallet-connect')).toBe(false);
-    expect(inert('sign-sheet')).toBe(false);
+    expect(inert('wallet-connect')).toBe(true);
+    expect(inert('game-details')).toBe(false);
 
     // Closed, the page is live again and the focus is back where it was.
-    await closeSheet();
+    await closeDetails();
     expect(attr('console', 'data-mode')).toBe('ready');
     expect(inert('side-panel')).toBe(false);
     expect(inert('board')).toBe(false);
-    expect(document.activeElement).toBe(start);
+    expect(document.activeElement).toBe(entry);
     expect(world.requests).toEqual(['GET /api/config']);
   });
 
@@ -371,7 +380,7 @@ describe('bet panel: the sheet', () => {
       coin(value.slice(1));
       const bet = parseEther(value);
       await waitFor(() => expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, bet, tier).toString()));
-      await openSheet();
+      await openDetails();
 
       const { refundBps, multiplierBps } = TABLE.tiers[tier];
       expect(attr('refund-schedule', 'data-tier')).toBe(String(tier));
@@ -384,14 +393,15 @@ describe('bet panel: the sheet', () => {
       expect(screen.queryByTestId(`schedule-row-${refundBps.length}`)).toBeNull();
       expect(attr('schedule-exit-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, bet, tier).toString());
       expect(attr('schedule-exit-payout', 'data-multiplier-bps')).toBe(String(multiplierBps));
-      await closeSheet();
+      expect(attr('details-board', 'data-multiplier-bps')).toBe(String(multiplierBps));
+      await closeDetails();
     }
 
     // In words and figures: the drop at bet time and after the first move, and the exit.
     fireEvent.click(screen.getByTestId('tier-0'));
     coin('.01');
     await waitFor(() => expect(attr('escape-payout', 'data-wei')).toBe(exitPayoutWei(TABLE, BET, 0).toString()));
-    await openSheet();
+    await openDetails();
     expect(text('schedule-row-0')).toContain('At bet');
     expect(text('schedule-row-0')).toContain('95.00%');
     expect(text('schedule-row-0')).toContain('0.0095 ETH');
@@ -399,54 +409,43 @@ describe('bet panel: the sheet', () => {
     expect(text('schedule-row-1')).toContain('73.00%');
     expect(text('schedule-row-1')).toContain('0.0073 ETH');
     expect(text('schedule-exit-payout')).toContain(`Reaching the exit pays ${formatEth(exitPayoutWei(TABLE, BET, 0))} ETH`);
-    await closeSheet();
+    await closeDetails();
 
     expect(world.requests).toEqual(['GET /api/config']);
   });
 
-  it('does not let a bet through without a wallet or with a malformed seed', async () => {
+  it('does not let a bet through without a wallet or with a malformed seed, and says why on the screen', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('btn-a');
-    let submit = await openSheet();
-    expect(submit.disabled).toBe(true);
-    expect(text('bet-status')).toBe('Connect a wallet first');
-    expect(attr('bet-status', 'data-blocked')).toBe('true');
-    expect(attr('bet-status', 'data-step')).toBe('');
+    expect(text('bet-prompt-why')).toBe('LOG IN TO BET');
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await waitFor(() => expect(text('screen-msg')).toBe('Log in to bet'));
+    expect(attr('console', 'data-mode')).toBe('ready');
 
-    // The header stays reachable behind the sheet: the wallet connects from there.
-    expect(inert('wallet-dev-option')).toBe(false);
+    // The wallet connects from the header; then the screen names the bet A places.
     fireEvent.click(screen.getByTestId('wallet-dev-option'));
-    await waitFor(() => expect(submit.disabled).toBe(false));
-    expect(text('bet-status')).toBe('');
-    expect(attr('bet-status', 'data-blocked')).toBe('false');
-    await closeSheet();
+    await waitFor(() => expect(attr('bet-prompt', 'data-ready')).toBe('true'));
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
+    expect(text('bet-prompt')).toContain('A: BET 0.050 ETH');
 
-    submit = await openSheet();
-    expect(submit.disabled).toBe(false);
-    // With the bet ready, the sheet puts the focus on its bet button.
-    expect(document.activeElement).toBe(submit);
-    expect(text('bet-submit')).toBe('Sign and bet 0.05 ETH');
-    await closeSheet();
-
-    // A malformed seed in the side panel's hidden field blocks the bet, and the sheet says why.
+    // A malformed seed in the side panel's hidden field blocks the bet, and the screen says why.
     fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: '0x1234' } });
     // It names no dungeon: the screen shows no seed tag and no start side.
     await waitFor(() => expect(screen.queryByTestId('seed-tag')).toBeNull());
     expect(attr('board', 'data-start-side')).toBe('');
-    submit = await openSheet();
-    expect(submit.disabled).toBe(true);
-    expect(text('bet-status')).toBe('The client seed must be 0x followed by 64 hex digits');
-    expect(text('sheet-seed-code')).toBe('—');
-    // Pressing it anyway sends nothing.
-    fireEvent.click(submit);
+    expect(text('bet-prompt-why')).toBe('INVALID CLIENT SEED');
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await waitFor(() => expect(text('screen-msg')).toBe('The client seed must be 0x followed by 64 hex digits'));
+    await openDetails();
+    expect(text('details-client-seed')).toBe('—');
+    await closeDetails();
     await new Promise((resolve) => setTimeout(resolve, 60));
-    await closeSheet();
 
     fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: `0x${'AB'.repeat(32)}` } });
-    submit = await openSheet();
-    expect(submit.disabled).toBe(false);
-    expect(text('sheet-seed-code')).toBe('SEED ABAB');
+    await waitFor(() => expect(attr('bet-prompt', 'data-ready')).toBe('true'));
+    expect(screen.queryByTestId('screen-msg')).toBeNull();
+    expect(text('seed-tag')).toBe('SEED ABAB');
 
     expect(world.requests).toEqual(['GET /api/config']);
     expect(world.signed).toEqual([]);
@@ -469,7 +468,7 @@ describe('bet panel: the client seed', () => {
   const heroFacing = (): string | undefined =>
     document.querySelector('[data-testid="board"] .hero .f0')?.className.match(/\bs-([URDL])0\b/)?.[1];
 
-  it('the lobby starts from a random seed that picks a start side, and the screen, the reroll button and the sheet show it', async () => {
+  it('the lobby starts from a random seed that picks a start side, and the screen, the reroll button and the details show it', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('btn-a');
@@ -490,14 +489,15 @@ describe('bet panel: the client seed', () => {
     expect([ring.N, ring.W]).toEqual(['wall', 'wall']);
     expect(heroFacing()).toBe(side === 'E' ? 'R' : 'D');
 
-    fireEvent.click(screen.getByTestId('btn-a'));
-    await screen.findByTestId('sign-sheet');
-    expect(text('sheet-seed-code')).toBe(`SEED ${look.code}`);
-    expect(attr('sheet-start-side', 'data-side')).toBe(side);
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
+    expect(text('details-client-seed')).toBe(seed);
+    expect(text('details-client-seed').slice(2, 6).toUpperCase()).toBe(look.code);
+    expect(attr('details-start-side', 'data-side')).toBe(side);
     expect(world.requests).toEqual(['GET /api/config']);
   });
 
-  it('reroll draws a new marked seed in the lobby, and does nothing behind the bet sheet or the verify dialog', async () => {
+  it('reroll draws a new marked seed in the lobby, and does nothing behind the details or the verify dialog', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('btn-a');
@@ -517,13 +517,13 @@ describe('bet panel: the client seed', () => {
     // Both sides come up (each reroll picks one at random: 2^-11 to miss one in 12).
     expect(sides).toEqual(new Set(['E', 'S']));
 
-    fireEvent.click(screen.getByTestId('btn-a'));
-    await screen.findByTestId('sign-sheet');
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
     fireEvent.click(screen.getByTestId('reroll'));
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(seedOf()).toBe(seed);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+    fireEvent.click(screen.getByTestId('details-close'));
+    await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
 
     fireEvent.click(screen.getByTestId('fairness-link'));
     await screen.findByTestId('verify-modal');
@@ -547,10 +547,12 @@ describe('bet panel: the client seed', () => {
       await waitFor(() => expect(attr('board', 'data-start-side')).toBe(side));
       expect(attr('reroll', 'data-start-side')).toBe(side);
       expect(startRing(5)[side]).toBe('floor');
+      fireEvent.click(screen.getByTestId('tx-log-open'));
+      await screen.findByTestId('game-details');
+      expect(attr('details-start-side', 'data-side')).toBe(side);
+      fireEvent.click(screen.getByTestId('details-close'));
+      await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
       fireEvent.click(screen.getByTestId('btn-a'));
-      await screen.findByTestId('sign-sheet');
-      expect(attr('sheet-start-side', 'data-side')).toBe(side);
-      fireEvent.click(screen.getByTestId('bet-submit'));
 
       await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
       const gameId = attr('board', 'data-game-id') as Hex;
@@ -583,21 +585,23 @@ describe('bet panel: the client seed', () => {
     expect(text('seed-tag')).toBe(`SEED ${CLIENT_SEED.slice(2, 6).toUpperCase()}`);
     // No ring around the start: nothing is known about its walls.
     expect(Object.values(startRing(5))).toEqual(['void', 'void', 'void', 'void']);
-    fireEvent.click(screen.getByTestId('btn-a'));
-    await screen.findByTestId('sign-sheet');
-    expect(screen.queryByTestId('sheet-start-side')).toBeNull();
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
+    expect(screen.queryByTestId('details-start-side')).toBeNull();
+    fireEvent.click(screen.getByTestId('details-close'));
+    await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
 
-    // A script that writes the field without an event (the side panel is inert now) is still honoured.
+    // A script that writes the field without an event is still honoured: A bets what it holds.
     const scripted: Hex = `0x${'5c'.repeat(32)}`;
     (screen.getByTestId('client-seed-input') as HTMLInputElement).value = scripted;
-    fireEvent.click(screen.getByTestId('bet-submit'));
+    fireEvent.click(screen.getByTestId('btn-a'));
     await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
     const gameId = attr('board', 'data-game-id') as Hex;
     expect(loadRecord(gameId)?.clientSeed).toBe(scripted);
     expect(world.onchain.get(gameId)?.clientSeed).toBe(scripted);
   });
 
-  it('the sheet takes a seed of the player, keeping the picked start side; a malformed one is refused and changes nothing', async () => {
+  it('the details take a seed of the player before the bet, keeping the picked start side; a malformed one is refused and changes nothing', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     fireEvent.click(await screen.findByTestId('wallet-dev-option'));
@@ -606,10 +610,10 @@ describe('bet panel: the client seed', () => {
       const start = markStartSide(`0x${'21'.repeat(32)}`, side);
       setSeed(start);
       await waitFor(() => expect(attr('board', 'data-start-side')).toBe(side));
-      fireEvent.click(screen.getByTestId('btn-a'));
-      await screen.findByTestId('sign-sheet');
-      expect(screen.getByTestId('sheet-own-seed').tagName).toBe('DETAILS');
-      expect(text('sheet-full-seed')).toBe(start);
+      fireEvent.click(screen.getByTestId('tx-log-open'));
+      await screen.findByTestId('game-details');
+      expect(screen.getByTestId('own-seed').tagName).toBe('DETAILS');
+      expect(text('details-client-seed')).toBe(start);
 
       // Not 32 bytes of hex: refused, with the reason, and the seed stays.
       for (const bad of ['0x12', 'abc', `0x${'zz'.repeat(32)}`, `${'ab'.repeat(32)}`]) {
@@ -617,7 +621,7 @@ describe('bet panel: the client seed', () => {
         fireEvent.click(screen.getByTestId('own-seed-apply'));
         await waitFor(() => expect(text('own-seed-note')).toBe('Enter 0x followed by 64 hex digits'));
         expect(attr('own-seed-note', 'role'), bad).toBe('alert');
-        expect(text('sheet-full-seed'), bad).toBe(start);
+        expect(text('details-client-seed'), bad).toBe(start);
         expect(seedOf(), bad).toBe(start);
       }
 
@@ -626,21 +630,20 @@ describe('bet panel: the client seed', () => {
       fireEvent.change(screen.getByTestId('own-seed-input'), { target: { value: `  ${own}  ` } });
       fireEvent.click(screen.getByTestId('own-seed-apply'));
       const expected = markStartSide(own, side);
-      await waitFor(() => expect(text('sheet-full-seed')).toBe(expected));
+      await waitFor(() => expect(text('details-client-seed')).toBe(expected));
       expect(expected.slice(0, 58)).toBe(own.slice(0, 58));
       expect(seedOf()).toBe(expected);
-      expect(text('sheet-seed-code')).toBe('SEED ABAB');
-      expect(attr('sheet-start-side', 'data-side')).toBe(side);
+      expect(text('seed-tag')).toBe('SEED ABAB');
+      expect(attr('details-start-side', 'data-side')).toBe(side);
       expect(attr('board', 'data-start-side')).toBe(side);
       expect(attr('own-seed-note', 'role')).toBeNull();
       expect(text('own-seed-note')).not.toContain('Enter 0x');
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-      await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+      fireEvent.click(screen.getByTestId('details-close'));
+      await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
     }
 
     // The own seed is the one the bet uses.
     fireEvent.click(screen.getByTestId('btn-a'));
-    fireEvent.click(await screen.findByTestId('bet-submit'));
     await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
     const gameId = attr('board', 'data-game-id') as Hex;
     expect(loadRecord(gameId)?.clientSeed).toBe(markStartSide(`0x${'ab'.repeat(30)}cdef`, 'E'));
@@ -653,16 +656,16 @@ describe('bet panel: the client seed', () => {
     await screen.findByTestId('btn-a');
     setSeed(CLIENT_SEED);
     await waitFor(() => expect(attr('board', 'data-start-side')).toBe(''));
-    fireEvent.click(screen.getByTestId('btn-a'));
-    await screen.findByTestId('sign-sheet');
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
     const own: Hex = `0x${'0f'.repeat(32)}`;
     fireEvent.change(screen.getByTestId('own-seed-input'), { target: { value: own } });
     fireEvent.click(screen.getByTestId('own-seed-apply'));
-    await waitFor(() => expect(text('sheet-full-seed')).toBe(markStartSide(own, 'E')));
-    expect(attr('sheet-start-side', 'data-side')).toBe('E');
+    await waitFor(() => expect(text('details-client-seed')).toBe(markStartSide(own, 'E')));
+    expect(attr('details-start-side', 'data-side')).toBe('E');
   });
 
-  it('A picks up a seed a script wrote into the field without an event: the sheet and the screen show it', async () => {
+  it('the details pick up a seed a script wrote into the field without an event: the details and the screen show it', async () => {
     const world = new FakeWorld();
     render(<GameApp deps={world.deps()} />);
     await screen.findByTestId('btn-a');
@@ -672,19 +675,27 @@ describe('bet panel: the client seed', () => {
     // Nothing on the page knows of it yet.
     expect(text('seed-tag')).toBe(`SEED ${before.slice(2, 6).toUpperCase()}`);
 
-    fireEvent.click(screen.getByTestId('btn-a'));
-    await screen.findByTestId('sign-sheet');
-    expect(text('sheet-full-seed')).toBe(scripted);
-    expect(text('sheet-seed-code')).toBe('SEED 7A7A');
-    expect(attr('sheet-start-side', 'data-side')).toBe(startSideOf(scripted));
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
+    expect(text('details-client-seed')).toBe(scripted);
+    await waitFor(() => expect(text('seed-tag')).toBe('SEED 7A7A'));
+    expect(attr('details-start-side', 'data-side')).toBe(startSideOf(scripted));
     expect(attr('board', 'data-start-side')).toBe(startSideOf(scripted));
 
-    // A malformed value written that way is not taken over.
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
+    // A malformed value written that way is not taken over, and A does not bet it.
+    fireEvent.click(screen.getByTestId('details-close'));
+    await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
+    (screen.getByTestId('client-seed-input') as HTMLInputElement).value = '0xnot-a-seed';
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await screen.findByTestId('game-details');
+    expect(text('details-client-seed')).toBe(scripted);
+    fireEvent.click(screen.getByTestId('details-close'));
+    await waitFor(() => expect(screen.queryByTestId('game-details')).toBeNull());
+    fireEvent.click(screen.getByTestId('wallet-dev-option'));
+    await screen.findByTestId('wallet-address');
     (screen.getByTestId('client-seed-input') as HTMLInputElement).value = '0xnot-a-seed';
     fireEvent.click(screen.getByTestId('btn-a'));
-    await screen.findByTestId('sign-sheet');
-    expect(text('sheet-full-seed')).toBe(scripted);
+    await waitFor(() => expect(text('screen-msg')).toBe('The client seed must be 0x followed by 64 hex digits'));
+    expect(world.signed).toEqual([]);
   });
 });

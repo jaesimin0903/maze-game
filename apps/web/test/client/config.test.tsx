@@ -113,8 +113,8 @@ describe('runtime configuration', () => {
   it('tells the player what the idle and maximum-time rules are, from the config', async () => {
     const world = new FakeWorld({ idleTimeoutSec: 77, maxGameSec: 555 });
     render(<GameApp deps={world.deps()} />);
-    // The rules come with the bet sheet that A opens.
-    fireEvent.click(await screen.findByTestId('btn-a'));
+    // The rules come with the game's details, which the transaction log opens before a bet too.
+    fireEvent.click(await screen.findByTestId('tx-log-open'));
     const rules = (await screen.findByTestId('bet-rules')).textContent;
     expect(rules).toContain('If you do not move for 77s');
     expect(rules).toContain('555s after the start');

@@ -189,6 +189,14 @@ export class FakeWorld {
   /** Contract functions the wallet sent, in order. */
   txs: string[] = [];
   snapshots: UiSnapshotInput[] = [];
+  /** The chain's gas price (`ChainApi.gasPrice`); the fee bid is 6/5 of 1 gwei regardless. */
+  gasPriceWei = 1_000_000_000n;
+  /**
+   * What every transaction of the fake chain cost in fees (`ChainApi.txFee`): 173,824 gas at 102
+   * gwei, the bet transaction of a live game on Monad testnet. `null`: no receipt; an `Error`: the
+   * receipt cannot be read.
+   */
+  txFeeWei: bigint | null | Error = 173_824n * 102_000_000_000n;
   /** Configs the chain factory was called with. */
   chainConfigs: ConfigResponse[] = [];
 
@@ -551,10 +559,14 @@ export class FakeWorld {
     },
     pendingOf: async () => this.pending,
     balanceOf: async () => this.balance,
-    gasPrice: async () => 1_000_000_000n,
+    gasPrice: async () => this.gasPriceWei,
     maxFeePerGas: async () => 1_200_000_000n,
     estimateTransferGas: async () => 21_000n,
     waitForTx: async () => 'success',
+    txFee: async () => {
+      if (this.txFeeWei instanceof Error) throw this.txFeeWei;
+      return this.txFeeWei;
+    },
     settledBy: async (hash, gameId) => {
       if (!this.rpcUp) throw new Error('rpc down');
       return this.settledBy.get(gameId) === hash;
@@ -646,7 +658,9 @@ export class FakeWorld {
         return this.wallet();
       },
       connectPrivy: async () => ({ ...this.wallet(), kind: 'privy' }),
-      timing: { pollMs: 40, clockMs: 15, startRetryMs: 15 },
+      // A's guard after the lobby comes up is off here, so a test may press A at once; the tests of
+      // the guard turn it on.
+      timing: { pollMs: 40, clockMs: 15, startRetryMs: 15, startGuardMs: 0 },
     };
   }
 }

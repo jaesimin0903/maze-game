@@ -8,9 +8,10 @@
 #   HTTP   /api/config reports devWallet false, then true after the restart; chain id 31337 and
 #          the same contract both times
 #   DOM    with devWallet false the lobby renders (wallet-connect is there, the page is fully
-#          up) but wallet-dev-option and wallet-dev-account are not in the DOM, and bet-submit,
-#          in the bet sheet that A (btn-a) opens, is disabled; after the restart and a
-#          reload the option is there and connects Anvil #2
+#          up) but wallet-dev-option and wallet-dev-account are not in the DOM, and A (btn-a),
+#          which bets at once with a wallet, only asks for a login on the console's screen
+#          (bet-prompt not ready, screen-msg "Log in to bet"); after the restart and a reload the
+#          option is there and connects Anvil #2
 #   chain  the chain is 31337; no game was created while no wallet could be connected
 #
 # The scenario never clicks wallet-connect: that button talks to whatever wallet extension the
@@ -38,16 +39,18 @@ expect_present "the lobby is up: wallet-connect is offered" A wallet-connect 10
 expect_attr "the page knows the chain from /api/config" A chain-info data-chain-id 31337 5
 expect_absent "wallet-dev-option is not in the DOM while devWallet is false" A wallet-dev-option 3
 expect_absent "wallet-dev-account is not in the DOM while devWallet is false" A wallet-dev-account 1
-# A (btn-a, named START in the lobby) opens the bet sheet; without a wallet its bet-submit stays
-# disabled.
+# A (btn-a, named START in the lobby) bets at once with a wallet; without one the lobby screen says
+# it cannot, and A only asks for a login on the screen.
 expect_attr "A is named START in the lobby" A btn-a data-action start 5
+expect_attr "without a wallet the lobby screen does not offer the bet (bet-prompt not ready)" A bet-prompt data-ready false 5
 ui_click A btn-a 10 || fail_scenario "btn-a (A, START) is not clickable"
-expect_present "A opens the bet sheet" A bet-submit 10
-if SUBMIT="$(dom_item A bet-submit)" && [ "$SUBMIT" != null ]; then
-  check dom "bet-submit is disabled without a wallet" true "$(printf '%s' "$SUBMIT" | jq -r '.attrs | has("disabled")')"
+expect_present "A without a wallet says why on the screen (screen-msg)" A screen-msg 10
+if MSG="$(dom_text A screen-msg)"; then
+  check dom "A without a wallet asks for a login" "Log in to bet" "$MSG"
 else
-  dom_blocked "bet-submit is disabled without a wallet" "the DOM could not be read over path $READ_PATH"
+  dom_blocked "A without a wallet asks for a login" "the DOM could not be read over path $READ_PATH"
 fi
+expect_attr "A without a wallet places no bet (the console stays in the lobby)" A console data-mode ready 5
 check chain "no game was created while no wallet could be connected" 0 \
   "$(event_logs 'GameCreated(bytes32 indexed,address indexed,uint8,uint256,uint256,bytes32,bytes32,uint64)' | jq 'length')"
 

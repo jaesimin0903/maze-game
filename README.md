@@ -24,9 +24,9 @@ A dead end loses the bet. Before any step you can cash out for a refund that shr
 
 ## Why it feels like a consumer app
 
-- **Log in with email, Google or a passkey (Privy).** A new player gets an embedded wallet. Ticket signing and the bet go through without wallet popups: pressing "Sign and bet" is the consent. External wallets also work.
+- **Log in with email, Google or a passkey (Privy).** A new player gets an embedded wallet. Ticket signing and the bet go through without wallet popups: the screen shows the bet, and pressing A to start is the consent. The console shows signing and confirmation as a short loading screen, and a transaction log beside it opens the seed, commitment, transactions and verification for each game. External wallets also work.
 - **Monad makes every step feel instant.** The bet is one transaction. Moves are off-chain calls to the game server. The server's relayer settles the result on chain, so the player never sends or pays for a second transaction.
-- **The UI shows the fees.** The bet panel shows the network fee and the net result.
+- **The UI shows the fees.** The lobby shows the typical network fee next to the bet before the press, and the end screen shows the fee and the net result.
 
 ## Provably fair
 

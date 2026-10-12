@@ -33,6 +33,16 @@ export interface ClientDeps {
      * says so and offers to try again (default 20 seconds).
      */
     walletWaitMs?: number;
+    /**
+     * How long A is ignored after the lobby comes up (a new game, a failed bet, a wallet connected,
+     * a dialog closed), so the press that led there is not taken for a bet (default 300 ms).
+     */
+    startGuardMs?: number;
+    /**
+     * How long the balance read before a bet may take; past it the bet goes ahead and the wallet
+     * checks the balance itself (default 5 seconds).
+     */
+    balanceCheckMs?: number;
   };
 }
 

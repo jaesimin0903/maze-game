@@ -252,8 +252,17 @@ describe('stepText', () => {
     for (const step of ['ticket', 'confirm'] as const) {
       expect(stepText(step, 'dev')).toBe(stepText(step, 'injected'));
     }
-    expect(stepText('ticket', 'dev')).toContain('commit');
+    expect(stepText('ticket', 'dev')).toContain('maze');
     expect(stepText('confirm', 'dev')).toContain('block');
+  });
+
+  it('says what the step waits for in plain words: no hashes or commitments on the console', () => {
+    for (const kind of ['injected', 'dev', 'privy', null] as const) {
+      for (const step of STEPS) {
+        expect(stepText(step, kind)).not.toMatch(/hash|commit/i);
+        expect(stepTag(step)).not.toMatch(/hash|commit/i);
+      }
+    }
   });
 
   it('every step has its own screen tag', () => {

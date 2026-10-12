@@ -1,4 +1,5 @@
-// The device: the name engraved under A for each moment of a game, the HP meter above the screen
+// The device: the name engraved under A for each moment of a game, the bet A places named on the
+// lobby screen, the steps on the screen while the bet is placed, the HP meter above the screen
 // (what a cash-out pays now, read from the table with the server's refund function), its colours,
 // the side panel's LCD and the console's LEDs for each difficulty, the side panel locked during a
 // game, the result row after it, and the wallet's balance under the screen.
@@ -9,6 +10,9 @@ import { exitPayoutWei, refundBps, refundWei, type GameView, type Hex, type Tuni
 import production from '@maze/shared/tuning.json';
 import { GameApp } from '../../src/client/GameApp';
 import { createApi } from '../../src/client/api';
+import { stepText } from '../../src/client/bet-form';
+import type { ClientDeps } from '../../src/client/deps';
+import type { WalletApi } from '../../src/client/wallet';
 import { DIR_NAMES } from '../../src/client/board-view';
 import { HpMeter, HpRow, hpTone, panelMode, type PanelModel } from '../../src/client/components/Panel';
 import { ESCAPE_RATES, escapeOdds } from '../../src/client/config';
@@ -35,9 +39,7 @@ async function startGame(world: FakeWorld): Promise<Hex> {
   await screen.findByTestId('wallet-address');
   fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
   fireEvent.click(screen.getByTestId('btn-a'));
-  fireEvent.click(await screen.findByTestId('bet-submit'));
   await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
-  await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
   return attr('board', 'data-game-id') as Hex;
 }
 
@@ -350,9 +352,7 @@ describe('the side panel during a game', () => {
     for (let k = 0; k < 22; k++) fireEvent.keyDown(slider, { key: 'ArrowRight' });
     await waitFor(() => expect(slider.getAttribute('data-wei')).toBe((32n * 10n ** 15n).toString()));
     fireEvent.click(screen.getByTestId('btn-a'));
-    fireEvent.click(await screen.findByTestId('bet-submit'));
     await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
     const gameId = attr('board', 'data-game-id') as Hex;
     expect(world.onchain.get(gameId)?.bet).toBe(32n * 10n ** 15n);
 
@@ -404,9 +404,7 @@ describe('the side panel during a game', () => {
     await screen.findByTestId('wallet-address');
     fireEvent.click(screen.getByTestId('bet-preset-.1'));
     fireEvent.click(screen.getByTestId('btn-a'));
-    fireEvent.click(await screen.findByTestId('bet-submit'));
     await waitFor(() => expect(attr('console', 'data-mode')).toBe('play'));
-    await waitFor(() => expect(screen.queryByTestId('sign-sheet')).toBeNull());
     fireEvent.click(screen.getByTestId('btn-a'));
     fireEvent.click(await screen.findByTestId('cashout-button'));
     await screen.findByTestId('result-outcome');
@@ -514,8 +512,166 @@ describe('the balance under the screen', () => {
     // At the start of a game the hint takes its place under the screen.
     fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: CLIENT_SEED } });
     fireEvent.click(screen.getByTestId('btn-a'));
-    fireEvent.click(await screen.findByTestId('bet-submit'));
     await screen.findByTestId('screen-msg');
     expect(screen.queryByTestId('console-balance')).toBeNull();
+  });
+
+  it('gives way to "Log in to bet" when A is pressed without a wallet', async () => {
+    const world = new FakeWorld();
+    render(<GameApp deps={world.deps()} />);
+    fireEvent.click(await screen.findByTestId('btn-a'));
+    await waitFor(() => expect(text('screen-msg')).toBe('Log in to bet'));
+    expect(screen.queryByTestId('console-balance')).toBeNull();
+    expect(screen.getByTestId('screen-msg').closest('.bezel-foot')).not.toBeNull();
+  });
+});
+
+describe('the lobby screen', () => {
+  it('names the bet A places, and when A cannot place it, why in a few words', async () => {
+    const world = new FakeWorld();
+    render(<GameApp deps={world.deps()} />);
+    await screen.findByTestId('bet-prompt');
+    // The consent line sits on the screen itself.
+    expect(screen.getByTestId('bet-prompt').closest('[data-testid="board"]')).not.toBeNull();
+    expect(attr('bet-prompt', 'data-wei')).toBe(BET.toString());
+    expect(text('bet-prompt')).toContain('A: BET 0.050 ETH · FEE ');
+    expect(attr('bet-prompt', 'data-ready')).toBe('false');
+    expect(text('bet-prompt-why')).toBe('LOG IN TO BET');
+
+    fireEvent.click(screen.getByTestId('wallet-dev-option'));
+    await waitFor(() => expect(attr('bet-prompt', 'data-ready')).toBe('true'));
+    expect(screen.queryByTestId('bet-prompt-why')).toBeNull();
+    // It follows the slider.
+    fireEvent.click(screen.getByTestId('bet-preset-.01'));
+    await waitFor(() => expect(text('bet-prompt')).toContain('A: BET 0.010 ETH'));
+    expect(attr('bet-prompt', 'data-wei')).toBe((10n ** 16n).toString());
+
+    // A seed that is not 32 bytes of hex: A does not bet, and says why under the screen.
+    fireEvent.change(screen.getByTestId('client-seed-input'), { target: { value: '0x1234' } });
+    await waitFor(() => expect(text('bet-prompt-why')).toBe('INVALID CLIENT SEED'));
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await waitFor(() => expect(text('screen-msg')).toBe('The client seed must be 0x followed by 64 hex digits'));
+    expect(world.signed).toEqual([]);
+    // No jargon on the screen.
+    expect(screen.getByTestId('console').textContent).not.toMatch(/hash|commit/i);
+  });
+
+  it('says so when the wallet is short, and A does not bet', async () => {
+    const world = new FakeWorld();
+    world.balance = BET;
+    render(<GameApp deps={world.deps()} />);
+    fireEvent.click(await screen.findByTestId('wallet-dev-option'));
+    await waitFor(() => expect(text('bet-prompt-why')).toBe('NOT ENOUGH ETH'));
+    expect(attr('bet-prompt', 'data-ready')).toBe('false');
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(world.signed).toEqual([]);
+    expect(attr('console', 'data-mode')).toBe('ready');
+  });
+});
+
+describe('while the bet is placed', () => {
+  const MONAD = { name: 'Monad Testnet', symbol: 'MON', explorerUrl: 'https://testnet.monadexplorer.com', faucetUrl: null };
+
+  it('the screen shows PLACING BET and the steps (the balance check, then the bet\'s four), each done, under way or still to come; then the board', async () => {
+    const world = new FakeWorld({ network: MONAD, chainId: 10143 });
+    const real = world.wallet();
+    const gate = () => {
+      let open = (): void => undefined;
+      const held = new Promise<void>((resolve) => (open = resolve));
+      return { held, open: () => open() };
+    };
+    const sign = gate();
+    const ticket = gate();
+    const tx = gate();
+    const mined = gate();
+    const wallet: WalletApi = {
+      ...real,
+      signMessage: async (message) => {
+        await sign.held;
+        return real.signMessage(message);
+      },
+      createGame: async (p) => {
+        await tx.held;
+        return real.createGame(p);
+      },
+    };
+    const deps: ClientDeps = {
+      ...world.deps(),
+      api: createApi(async (input, init) => {
+        if (input === '/api/games' && init?.method === 'POST') await ticket.held;
+        return world.fetch(input, init);
+      }),
+      chain: () => ({
+        ...world.chain,
+        waitForTx: async () => {
+          await mined.held;
+          return 'success';
+        },
+      }),
+      connectDev: async () => wallet,
+    };
+    render(<GameApp deps={deps} />);
+    fireEvent.click(await screen.findByTestId('wallet-dev-option'));
+    await screen.findByTestId('wallet-address');
+    fireEvent.click(screen.getByTestId('btn-a'));
+
+    const states = (): string[] =>
+      ['check', 'sign', 'ticket', 'tx', 'confirm'].map((k) => attr(`bet-step-${k}`, 'data-state') as string);
+    const at = async (step: 'sign' | 'ticket' | 'tx' | 'confirm', expected: string[], tag: string): Promise<void> => {
+      await waitFor(() => expect(attr('bet-loading', 'data-step')).toBe(step));
+      expect(states()).toEqual(expected);
+      expect(attr('console', 'data-mode')).toBe('betting');
+      expect(text('screen-tag')).toBe(tag);
+      // What the step waits for is said under the screen, in place of the balance.
+      expect(attr('bet-status', 'data-step')).toBe(step);
+      expect(text('bet-status')).toBe(stepText(step, 'dev'));
+      expect(screen.queryByTestId('console-balance')).toBeNull();
+      // Consumer words only: no hashes or commitments on the console.
+      expect(screen.getByTestId('console').textContent).not.toMatch(/hash|commit/i);
+    };
+
+    await at('sign', ['done', 'now', 'todo', 'todo', 'todo'], 'SIGNING...');
+    expect(text('bet-loading')).toContain('PLACING BET');
+    // The hero walks in place while it waits.
+    expect(screen.getByTestId('bet-loading').querySelector('.load-hero .hero.walking')).not.toBeNull();
+    expect(screen.getByTestId('bet-loading').closest('[data-testid="board"]')).not.toBeNull();
+    expect(screen.queryByTestId('bet-prompt')).toBeNull();
+    expect(text('bet-step-check')).toBe('Check balance');
+    expect(text('bet-step-sign')).toBe('Sign ticket');
+    expect(text('bet-step-ticket')).toBe('Server locks the maze');
+    expect(text('bet-step-tx')).toBe('Send bet');
+    expect(text('bet-step-confirm')).toBe('Confirm on Monad Testnet');
+    sign.open();
+    await at('ticket', ['done', 'done', 'now', 'todo', 'todo'], 'LOCKING MAZE...');
+    ticket.open();
+    await at('tx', ['done', 'done', 'done', 'now', 'todo'], 'SENDING BET...');
+    tx.open();
+    await at('confirm', ['done', 'done', 'done', 'done', 'now'], 'CONFIRMING...');
+    mined.open();
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
+    expect(screen.queryByTestId('bet-loading')).toBeNull();
+    expect(screen.queryByTestId('bet-status')).toBeNull();
+  });
+
+  it('names the last step after the chain, or "chain" without a network name', async () => {
+    const world = new FakeWorld();
+    const real = world.wallet();
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const wallet: WalletApi = {
+      ...real,
+      signMessage: async (message) => {
+        await held;
+        return real.signMessage(message);
+      },
+    };
+    render(<GameApp deps={{ ...world.deps(), connectDev: async () => wallet }} />);
+    fireEvent.click(await screen.findByTestId('wallet-dev-option'));
+    await screen.findByTestId('wallet-address');
+    fireEvent.click(screen.getByTestId('btn-a'));
+    await waitFor(() => expect(text('bet-step-confirm')).toBe('Confirm on chain'));
+    release();
+    await waitFor(() => expect(attr('cell-0-0', 'data-state')).toBe('current'));
   });
 });

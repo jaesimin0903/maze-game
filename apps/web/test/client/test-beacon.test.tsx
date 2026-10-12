@@ -52,13 +52,22 @@ describe('TestBeacon', () => {
       expect(latest.items['escape-payout'].attrs['data-wei']).toBe(exitPayoutWei(TABLE, BET, 1).toString());
     });
 
-    // The bet sheet: its button, disabled without a wallet, is reported with its attribute, and
-    // its refund schedule for the chosen size with the rows' text as the DOM has it.
+    // A without a wallet: the screen's consent line and its login hint are reported as the DOM
+    // has them.
     fireEvent.click(screen.getByTestId('btn-a'));
     await waitFor(() => {
       const latest = world.snapshots[world.snapshots.length - 1];
-      expect(latest.items['bet-submit'].attrs).toHaveProperty('disabled');
-      expect(latest.items['bet-status'].text).toBe('Connect a wallet first');
+      expect(latest.items['screen-msg'].text).toBe('Log in to bet');
+      expect(latest.items['bet-prompt'].attrs['data-ready']).toBe('false');
+      expect(latest.items['bet-prompt-why'].text).toBe('LOG IN TO BET');
+    });
+
+    // The details before a bet: the refund schedule for the chosen size, with the rows' text as
+    // the DOM has it.
+    fireEvent.click(screen.getByTestId('tx-log-open'));
+    await waitFor(() => {
+      const latest = world.snapshots[world.snapshots.length - 1];
+      expect(latest.items['game-details'].attrs['data-mode']).toBe('preview');
       expect(latest.items['refund-schedule'].attrs['data-tier']).toBe('1');
       expect(latest.items['schedule-row-1'].attrs['data-bps']).toBe('7300');
       expect(latest.items['schedule-row-1'].text).toBe(

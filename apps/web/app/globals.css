@@ -641,6 +641,81 @@ textarea {
   color: var(--text);
 }
 
+/* The current game's log: one row per step of the game, the one it waits for blinking. The whole
+   card opens the game's details. */
+.txlog {
+  gap: 8px;
+  cursor: pointer;
+}
+
+.txlog-more {
+  min-height: 32px;
+  padding: 0 10px;
+  border-width: 2px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--px);
+  font-size: 8px;
+  font-weight: 400;
+}
+
+.txlog-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.txlog-row::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--brand);
+  background: var(--brand);
+}
+
+.txlog-row[data-state='now']::before {
+  background: transparent;
+  animation: blink 0.8s steps(1, end) infinite;
+}
+
+.txlog-entry {
+  display: block;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0;
+  line-height: 36px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.txlog-entry:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.txlog-row[data-state='now'] .txlog-entry {
+  color: var(--brand);
+}
+
+.txlog-detail {
+  font-family: var(--vt);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.txlog-tx {
+  color: var(--muted);
+  font-size: 16px;
+}
+
 /* Leaderboard */
 .lb-title {
   text-align: center;
@@ -1499,6 +1574,119 @@ textarea {
   outline-offset: 2px;
 }
 
+/* Before a game: the bet A places and its typical fee across the middle of the screen, the arrow
+   blinking like a title screen's PRESS START. Taps go through to the screen. */
+.scr-prompt {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 50%;
+  z-index: 6;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6cqw;
+  padding: 2.6cqw 2cqw;
+  border: 3px solid var(--ink);
+  background: rgba(16, 13, 30, 0.88);
+  box-shadow: inset 0 0 0 2px var(--line), 3px 3px 0 var(--ink);
+  text-align: center;
+  pointer-events: none;
+}
+
+.scr-prompt-line {
+  color: var(--brand);
+  font-family: var(--px);
+  font-size: min(9px, 2.4cqw);
+  line-height: 1.6;
+}
+
+.scr-prompt[data-ready='false'] .scr-prompt-line {
+  color: var(--text);
+}
+
+.scr-prompt-arrow {
+  animation: blink 1s steps(1, end) infinite;
+}
+
+.scr-prompt[data-ready='false'] .scr-prompt-arrow {
+  animation: none;
+  visibility: hidden;
+}
+
+.scr-prompt-why {
+  color: var(--danger);
+  font-family: var(--px);
+  font-size: min(8px, 2.2cqw);
+  line-height: 1.5;
+}
+
+/* While the bet is placed: the four steps over the whole screen, the hero walking in place. */
+.scr-load {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3cqw;
+  padding: 6cqw;
+  background: rgba(12, 10, 22, 0.94);
+}
+
+.scr-load .scr-title {
+  font-size: min(12px, 3.4cqw);
+}
+
+.load-hero {
+  position: relative;
+  width: 14cqw;
+  height: 14cqw;
+}
+
+.load-steps {
+  display: grid;
+  gap: 1.8cqw;
+  font-family: var(--vt);
+  font-size: min(20px, 5.4cqw);
+  line-height: 1;
+}
+
+.load-steps li {
+  display: flex;
+  align-items: center;
+  gap: 2.4cqw;
+  color: var(--muted);
+}
+
+.load-steps li::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 2.6cqw;
+  height: 2.6cqw;
+  border: 2px solid var(--line);
+}
+
+.load-steps li[data-state='done'] {
+  color: var(--text);
+}
+
+.load-steps li[data-state='done']::before {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.load-steps li[data-state='now'] {
+  color: var(--brand);
+}
+
+.load-steps li[data-state='now']::before {
+  border-color: var(--brand);
+  animation: blink 0.8s steps(1, end) infinite;
+}
+
 .screen {
   position: relative;
   width: 100%;
@@ -2150,6 +2338,12 @@ textarea {
   color: var(--brand);
 }
 
+/* Why the last bet failed. */
+.lcd-msg.err {
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
 /* Under the end banner: the money, then the treasure points. */
 .end-amt {
   font-family: var(--px);
@@ -2164,6 +2358,29 @@ textarea {
 
 .end-amt.loss {
   color: var(--danger);
+}
+
+/* The bet transaction's fee and the game's result with it counted, under the money. */
+.end-net {
+  max-width: 92%;
+  padding: 0.4cqw 2.4cqw;
+  background: rgba(10, 8, 20, 0.8);
+  color: var(--text);
+  font-family: var(--vt);
+  font-size: 6.6cqw;
+  line-height: 1;
+}
+
+.end-net .win {
+  color: var(--brand);
+}
+
+.end-net .loss {
+  color: var(--danger);
+}
+
+.end-net .even {
+  color: var(--text);
 }
 
 .end-pts {
@@ -2228,20 +2445,9 @@ textarea {
   background: rgba(8, 6, 16, 0.75);
 }
 
-/* The banners' wrapper only carries `inert` while the sheet is open; it adds no box of its own. */
+/* The banners' wrapper only carries `inert` while a dialog is open; it adds no box of its own. */
 .banners {
   display: contents;
-}
-
-/* A bet needs a connected wallet, so the header stays above the open sheet and the sheet below it. */
-.sheet-open .masthead {
-  position: relative;
-  z-index: 60;
-}
-
-.sheet-open .sheet-backdrop {
-  align-items: flex-start;
-  padding-top: 84px;
 }
 
 .sheet {
@@ -2371,55 +2577,29 @@ textarea {
   text-align: right;
 }
 
-.steps {
+/* The game's details: label over value, the long hashes broken anywhere. */
+.details-list {
   display: grid;
-  gap: 4px;
-  font-size: 13px;
+  gap: 10px;
 }
 
-.steps li {
-  display: flex;
-  gap: 8px;
+.details-list dt {
   color: var(--muted);
+  font-size: 12px;
 }
 
-.steps li::before {
-  content: '';
-  flex: 0 0 auto;
-  width: 10px;
-  height: 10px;
-  margin-top: 5px;
-  border: 2px solid var(--line);
+.details-list dd {
+  min-width: 0;
+  font-size: 14px;
 }
 
-.steps li[data-state='done'] {
+.details-list a {
   color: var(--text);
 }
 
-.steps li[data-state='done']::before {
-  border-color: var(--brand);
-  background: var(--brand);
-}
-
-.steps li[data-state='now'] {
-  color: var(--brand);
-  font-weight: 700;
-}
-
-.steps li[data-state='now']::before {
-  border-color: var(--brand);
-  animation: blink 1s steps(1, end) infinite;
-}
-
-.bet-status {
-  min-height: 1.5em;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.bet-status[data-blocked='true'] {
-  color: var(--danger);
+.details-rules {
+  display: grid;
+  gap: 4px;
 }
 
 .sheet-actions {

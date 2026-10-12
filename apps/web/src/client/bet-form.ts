@@ -123,6 +123,12 @@ export function initialBet(ticks: Preset[]): bigint {
 export const BET_GAS = 250_000n;
 
 /**
+ * The gas a bet transaction typically uses, for the fee the lobby screen names next to the bet:
+ * 173,824 on Monad testnet. The balance check counts `BET_GAS` instead.
+ */
+export const TYPICAL_BET_GAS = 175_000n;
+
+/**
  * The largest bet the balance pays with the bet transaction's fee reserved (`BET_GAS` at the fee
  * bid per gas), or `null` when the balance does not even cover the fee.
  */
@@ -165,19 +171,24 @@ export function betBlocked(p: {
   return null;
 }
 
+/** The steps of placing a bet as the screen shows them: the balance read A starts with, then the bet's. */
+export type PlaceStep = 'check' | BetStep;
+
 /**
  * What the page is waiting for at each bet step. A browser wallet asks the player at `sign` and
  * `tx`; the dev wallet and the account wallet of a Privy login sign without asking.
  */
-export function stepText(step: BetStep, kind: WalletKind | null): string {
+export function stepText(step: PlaceStep, kind: WalletKind | null): string {
   const signer = kind === 'dev' ? 'the dev wallet' : kind === 'privy' ? 'your account wallet' : null;
   switch (step) {
+    case 'check':
+      return 'Checking your balance before the bet';
     case 'sign':
       return signer === null
         ? 'Wallet 1 of 2: approve the ticket request signature. Signing sends no money'
         : `Signing the ticket request with ${signer}`;
     case 'ticket':
-      return 'The server is fixing the maze seed and sending its commit';
+      return 'The server is locking in the maze before your bet';
     case 'tx':
       return signer === null ? 'Wallet 2 of 2: approve the bet transaction' : `Sending the bet transaction from ${signer}`;
     case 'confirm':
@@ -186,6 +197,12 @@ export function stepText(step: BetStep, kind: WalletKind | null): string {
 }
 
 /** Short screen tag for each bet step. */
-export function stepTag(step: BetStep): string {
-  return { sign: 'SIGNING...', ticket: 'COMMITTING...', tx: 'SENDING BET...', confirm: 'CONFIRMING...' }[step];
+export function stepTag(step: PlaceStep): string {
+  return {
+    check: 'CHECKING...',
+    sign: 'SIGNING...',
+    ticket: 'LOCKING MAZE...',
+    tx: 'SENDING BET...',
+    confirm: 'CONFIRMING...',
+  }[step];
 }

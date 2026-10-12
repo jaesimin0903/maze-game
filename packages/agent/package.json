@@ -1,0 +1,25 @@
+{
+  "name": "@maze/agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "mcp": "tsx src/mcp.ts",
+    "play": "tsx src/play.ts",
+    "wallet": "tsx src/wallet-cli.ts"
+  },
+  "dependencies": {
+    "@maze/shared": "workspace:*",
+    "@maze/sim": "workspace:*",
+    "@noble/hashes": "2.4.0",
+    "viem": "2.57.2"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.9",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

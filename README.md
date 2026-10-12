@@ -6,6 +6,10 @@
 - **Contract:** [`0x19803911DC8121523452b1Dd05f4cA13abCCCD22`](https://testnet.monadvision.com/address/0x19803911DC8121523452b1Dd05f4cA13abCCCD22)
 - **Monad Metropolis:** Track 02, Consumer Products & Payments
 
+## The problem and who it is for
+
+Online betting games ask players to trust a random number they cannot check, and crypto versions add wallet popups, gas prompts and a second transaction to collect winnings. Maze Bet is for casual players who like quick push-your-luck games and have never set up a wallet. They log in with email, bet in one press, and can check every game afterwards.
+
 ## The game
 
 Pick a board (5×5, 7×7 or 9×9) and a bet. You start in the top-left corner of a hidden maze and walk toward the exit in the bottom-right corner, one cell at a time. You see only the walls of the cells you have stood on, and you can never step back.
@@ -53,6 +57,50 @@ pnpm agent:play --games 3 --size 5 --bet 0.01            # play without a model
 
 Verified on Monad testnet. Bet and payout transactions are linked in [`docs/agent-play.md`](docs/agent-play.md).
 
+## Why Monad
+
+- **Sub-second blocks.** Blocks come about every 0.4 s, so the bet lands and the game opens within seconds of the press. That is what lets the bet feel like a game input instead of a transaction.
+- **One on-chain step per side.** The player sends only the bet. The server's relayer sends the settlement, and its gas comes from the house, not the player.
+- **EVM.** The same Solidity contract, Foundry tests, viem client and Privy embedded wallet run unchanged on Monad.
+- **Monad-specific handling.** Monad charges the full gas limit, and it has a reserve-balance rule. The relayer uses a fixed settle gas limit, embedded wallets stay plain accounts with no EIP-7702 delegation, and the agent spaces its bets 4 blocks apart. See [`docs/deploy-monad.md`](docs/deploy-monad.md).
+
+## Architecture
+
+```
+Browser (Next.js + Privy embedded wallet)            AI agent (MCP, packages/agent)
+   │ 1. sign ticket request ──► POST /api/games ◄─────────┤
+   │                              (server commits to its seed, signs an EIP-712 ticket)
+   │ 2. createGame(ticket, clientSeed) + bet ──► MazeBet.sol on Monad ◄───┤
+   │                                               │ GameCreated event
+   │ 3. /start, /move, /cashout ──► game server ◄──┘ (indexes the chain)
+   │                                 │ holds the server seed, enforces walls, refunds
+   │                                 │ 4. signs the EIP-712 Settlement
+   │                                 └─► relayer: settle() ──► MazeBet pays the player
+   │ 5. /verify/<gameId>: rebuild the maze from public data and the revealed seed
+```
+
+The server keeps its state in one append-only event log on a persistent volume, so it runs as one long-lived container (Fly.io). If it stops, the player can still submit a signed settlement, or reclaim the bet after the deadline.
+
+## Tech stack
+
+- **Contract:** Solidity 0.8.28 (via-IR), Foundry, OpenZeppelin Contracts
+- **App and server:** Next.js 16, React 19, TypeScript, viem
+- **Wallet and login:** Privy (`@privy-io/react-auth`): email, Google, passkey and external wallets; embedded wallets
+- **Hashing and randomness:** `@noble/hashes`, EIP-712 typed data
+- **Simulator and agent:** TypeScript and Node 25. The MCP server is a hand-written JSON-RPC stdio server.
+- **Tests:** Vitest, Foundry (unit, exploit, invariant, production table), and browser scenarios through the Aside CLI
+- **Hosting:** Fly.io, on Monad testnet
+
+## Third-party code
+
+- `contracts/lib/openzeppelin-contracts` and `contracts/lib/forge-std` are vendored, unmodified, under their own licenses.
+- npm dependencies are listed in each `package.json`: Next.js, React, viem, Privy, `@noble/hashes`, Vitest, tsup and tsx.
+- Everything else was written for this project.
+
+## Use of AI tools
+
+This project was built with an AI coding agent, Claude Code (Claude Opus 5.5). The author set the requirements and design and made the product decisions. Claude Code wrote most of the code, tests and documents. Every commit carries a `Co-Authored-By: Claude` trailer. The demo video narration is a synthetic voice made with ElevenLabs.
+
 ## Repository
 
 | Path | What |
@@ -83,3 +131,7 @@ To deploy to Monad testnet, see [`docs/deploy-monad.md`](docs/deploy-monad.md).
 ## Built during Metropolis
 
 The first commit is dated 2026-10-02. All project code was written during the hackathon window; only `contracts/lib/` is third-party.
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
